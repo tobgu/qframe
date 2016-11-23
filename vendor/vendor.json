@@ -3,6 +3,72 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "tJLFSeWyXG8RWcdQ3oNtI7meD3c=",
+			"path": "github.com/gonum/blas",
+			"revision": "137ec3a3614a44909e87a0e1ce384e8598c82f7e",
+			"revisionTime": "2016-11-17T22:01:02Z"
+		},
+		{
+			"checksumSHA1": "Hc4+U8HpN0345fLzyzrxlqYBBMs=",
+			"path": "github.com/gonum/blas/blas64",
+			"revision": "137ec3a3614a44909e87a0e1ce384e8598c82f7e",
+			"revisionTime": "2016-11-17T22:01:02Z"
+		},
+		{
+			"checksumSHA1": "J9gEA5+8UjrU/7vNbGBeeJEQikM=",
+			"path": "github.com/gonum/blas/native",
+			"revision": "137ec3a3614a44909e87a0e1ce384e8598c82f7e",
+			"revisionTime": "2016-11-17T22:01:02Z"
+		},
+		{
+			"checksumSHA1": "4URlS0sh4+VMLN6iDIYdt0JfpFg=",
+			"path": "github.com/gonum/blas/native/internal/math32",
+			"revision": "137ec3a3614a44909e87a0e1ce384e8598c82f7e",
+			"revisionTime": "2016-11-17T22:01:02Z"
+		},
+		{
+			"checksumSHA1": "Z/2UmBcGPVG2JKszHGwoS4e1UsE=",
+			"path": "github.com/gonum/floats",
+			"revision": "9fe75c11ab14e9efe0445ce5b96ac8fd552be30c",
+			"revisionTime": "2016-11-19T06:49:57Z"
+		},
+		{
+			"checksumSHA1": "c9Iryr2u6jMi4TlwBHfLxS1vnYc=",
+			"path": "github.com/gonum/internal/asm",
+			"revision": "3065419bb46aefed1d66b0c951f2ef01da74fcbe",
+			"revisionTime": "2016-11-19T06:49:11Z"
+		},
+		{
+			"checksumSHA1": "nAIOtfSdshVgyCDukk5xmrwrtdc=",
+			"path": "github.com/gonum/lapack",
+			"revision": "aabe3c202532979f8dc2646618741aa268f70d5f",
+			"revisionTime": "2016-11-19T06:47:02Z"
+		},
+		{
+			"checksumSHA1": "duOxKDxW5hl5pFfXzuaw2wiO+eA=",
+			"path": "github.com/gonum/lapack/lapack64",
+			"revision": "aabe3c202532979f8dc2646618741aa268f70d5f",
+			"revisionTime": "2016-11-19T06:47:02Z"
+		},
+		{
+			"checksumSHA1": "EAmu0YKJ/yxMFJFYEZhq/7/dY4o=",
+			"path": "github.com/gonum/lapack/native",
+			"revision": "aabe3c202532979f8dc2646618741aa268f70d5f",
+			"revisionTime": "2016-11-19T06:47:02Z"
+		},
+		{
+			"checksumSHA1": "Kc/zUGRoA9S4HyhXvEHM7ye12d0=",
+			"path": "github.com/gonum/matrix",
+			"revision": "a0bdc894a7ae662d14cb15d117c01ed1aaf834b8",
+			"revisionTime": "2016-11-19T06:51:02Z"
+		},
+		{
+			"checksumSHA1": "ZmOKG+xa9+VU11djrBoADyEsObU=",
+			"path": "github.com/gonum/matrix/mat64",
+			"revision": "a0bdc894a7ae662d14cb15d117c01ed1aaf834b8",
+			"revisionTime": "2016-11-19T06:51:02Z"
+		},
+		{
 			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
 			"path": "github.com/gorilla/context",
 			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
@@ -15,11 +81,13 @@
 			"revisionTime": "2016-09-20T23:08:13Z"
 		},
 		{
-			"checksumSHA1": "0RQFq+5a4DVSb3rcPN3SjzabrRo=",
+			"checksumSHA1": "znJgCTiaulvTYqQ4mUJ6MMvhtIE=",
 			"path": "github.com/kniren/gota",
-			"revision": "7fd6b0cb629d9f84dfa59c1090035f49afe8dd3b",
-			"revisionTime": "2016-10-29T11:33:24Z",
-			"tree": true
+			"revision": "1156f596a21fea9237a2a081b3a51cf1bf48ed69",
+			"revisionTime": "2016-11-20T20:55:44Z",
+			"tree": true,
+			"version": "=dev",
+			"versionExact": "dev"
 		}
 	],
 	"rootPath": "github.com/tobgu/go-qcache"
