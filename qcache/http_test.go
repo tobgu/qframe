@@ -44,6 +44,18 @@ func (c *QCache) insertDataset(key string, headers map[string]string, body io.Re
 	return rr
 }
 
+func (c *QCache) insertJson(key string, headers map[string]string, input interface{}) {
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(input)
+	headers["Content-Type"] = "application/json"
+	rr := c.insertDataset("FOO", headers, b)
+
+	// Check the status code is what we expect.
+	if rr.Code != http.StatusCreated {
+		c.t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, http.StatusCreated)
+	}
+}
+
 func (c *QCache) queryDataset(key string, headers map[string]string) *httptest.ResponseRecorder {
 	req, err := http.NewRequest("GET", fmt.Sprintf("/qcache/dataset/%s", key), nil)
 	if err != nil {
@@ -59,40 +71,33 @@ func (c *QCache) queryDataset(key string, headers map[string]string) *httptest.R
 	return rr
 }
 
-func TestBasicInsertAndQueryJson(t *testing.T) {
-	qcache := newQCache(t)
-	input := []TestData{{S: "Foo", I: 123, F: 1.5, B: true}}
-	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(input)
-	rr := qcache.insertDataset("FOO", map[string]string{"Content-Type": "application/json"}, b)
-
-	// Check the status code is what we expect.
-	if rr.Code != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, http.StatusCreated)
-	}
-
-	rr = qcache.queryDataset("FOO", map[string]string{"Accept": "application/json"})
+func (c *QCache) queryJson(key string, headers map[string]string, output interface{}) *httptest.ResponseRecorder {
+	headers["Accept"] = "application/json"
+	rr := c.queryDataset("FOO", headers)
 	if rr.Code != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, http.StatusOK)
+		return rr
 	}
 
 	contentType := rr.Header().Get("Content-Type")
 	if rr.Header().Get("Content-Type") != "application/json" {
-		t.Errorf("Wrong Content-type: %s", contentType)
+		c.t.Errorf("Wrong Content-type: %s", contentType)
 	}
 
-	var output []TestData
-	err := json.NewDecoder(rr.Body).Decode(&output)
+	err := json.NewDecoder(rr.Body).Decode(output)
 	if err != nil {
-		t.Fatal("Failed to unmarshal JSON")
+		c.t.Fatal("Failed to unmarshal JSON")
 	}
 
-	if len(output) == len(input) {
-		if output[0] != input[0] {
-			t.Errorf("Wrong record content: got %v want %v", output, input)
+	return rr
+}
+
+func compareTestData(t *testing.T, actual, expected []TestData) {
+	if len(actual) == len(expected) {
+		if actual[0] != expected[0] {
+			t.Errorf("Wrong record content: got %v want %v", actual, expected)
 		}
 	} else {
-		t.Errorf("Wrong record count: got %v want %v", output, input)
+		t.Errorf("Wrong record count: got %v want %v", actual, expected)
 	}
 }
 
@@ -103,7 +108,6 @@ func TestBasicInsertAndQueryCsv(t *testing.T) {
 	gocsv.Marshal(input, b)
 	rr := qcache.insertDataset("FOO", map[string]string{"Content-Type": "text/csv"}, b)
 
-	// Check the status code is what we expect.
 	if rr.Code != http.StatusCreated {
 		t.Errorf("Wrong status code: got %v want %v", rr.Code, http.StatusCreated)
 	}
@@ -124,11 +128,22 @@ func TestBasicInsertAndQueryCsv(t *testing.T) {
 		t.Fatal("Failed to unmarshal CSV")
 	}
 
-	if len(output) == len(input) {
-		if output[0] != input[0] {
-			t.Errorf("Wrong record content: got %v want %v", output, input)
-		}
-	} else {
-		t.Errorf("Wrong record count: got %v want %v", output, input)
+	compareTestData(t, output, input)
+}
+
+func TestBasicInsertAndQueryJson(t *testing.T) {
+	qcache := newQCache(t)
+	input := []TestData{{S: "Foo", I: 123, F: 1.5, B: true}}
+	output := []TestData{}
+	qcache.insertJson("FOO", map[string]string{}, input)
+	qcache.queryJson("FOO", map[string]string{}, &output)
+	compareTestData(t, output, input)
+}
+
+func TestQueryNonExistingKey(t *testing.T) {
+	qcache := newQCache(t)
+	rr := qcache.queryJson("FOO", map[string]string{}, nil)
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("Unexpected status code: %v", rr.Code)
 	}
 }
