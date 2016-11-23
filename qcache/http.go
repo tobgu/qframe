@@ -1,32 +1,42 @@
 package qcache
 
 import (
-	"net/http"
+	"fmt"
 	"github.com/gorilla/mux"
-	"log"
 	"github.com/kniren/gota/data-frame"
+	"net/http"
 )
 
-
-func NewDataset(w http.ResponseWriter, r *http.Request) {
+func newDataset(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	contentType := r.Header.Get("Content-Type")
-	if contentType == "text/csv" {
+	switch r.Header.Get("Content-Type") {
+	case "text/csv":
 		frame := df.ReadCSV(r.Body)
-		err := frame.WriteCSV(w)
-
-		if err != nil {
-			http.Error(w, "Could not convert data to CSV", http.StatusInternalServerError)
+		if frame.Err() != nil {
+			errorMsg := fmt.Sprintf("Could decode CSV data: %v", frame.Err())
+			http.Error(w, errorMsg, http.StatusBadRequest)
 			return
 		}
-
-		w.Header().Set("Content-Type", "text/csv")
+		w.WriteHeader(http.StatusCreated)
+	case "application/json":
+		frame := df.ReadJSON(r.Body)
+		if frame.Err() != nil {
+			errorMsg := fmt.Sprintf("Could decode JSON data: %v", frame.Err())
+			http.Error(w, errorMsg, http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+	default:
+		http.Error(w, "Unknown content type", http.StatusBadRequest)
 	}
 }
 
+func Application() *mux.Router {
+	return Router()
+}
 
-func Serve() {
+func Router() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/qcache/dataset/{category}", NewDataset).Methods("POST")
-	log.Fatal(http.ListenAndServe(":8888", r))
+	r.HandleFunc("/qcache/dataset/{key}", newDataset).Methods("POST")
+	return r
 }
