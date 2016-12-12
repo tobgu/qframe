@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -56,8 +57,14 @@ func (c *QCache) insertJson(key string, headers map[string]string, input interfa
 	}
 }
 
-func (c *QCache) queryDataset(key string, headers map[string]string) *httptest.ResponseRecorder {
-	req, err := http.NewRequest("GET", fmt.Sprintf("/qcache/dataset/%s", key), nil)
+func (c *QCache) queryDataset(key string, headers map[string]string, q qcache.Query) *httptest.ResponseRecorder {
+	jq, err := json.Marshal(q)
+	if err != nil {
+		c.t.Fatal(err)
+	}
+
+	ujq := url.QueryEscape(string(jq[:]))
+	req, err := http.NewRequest("GET", fmt.Sprintf("/qcache/dataset/%s?q=%s", key, ujq), nil)
 	if err != nil {
 		c.t.Fatal(err)
 	}
@@ -71,9 +78,9 @@ func (c *QCache) queryDataset(key string, headers map[string]string) *httptest.R
 	return rr
 }
 
-func (c *QCache) queryJson(key string, headers map[string]string, output interface{}) *httptest.ResponseRecorder {
+func (c *QCache) queryJson(key string, headers map[string]string, q qcache.Query, output interface{}) *httptest.ResponseRecorder {
 	headers["Accept"] = "application/json"
-	rr := c.queryDataset("FOO", headers)
+	rr := c.queryDataset(key, headers, q)
 	if rr.Code != http.StatusOK {
 		return rr
 	}
@@ -102,17 +109,17 @@ func compareTestData(t *testing.T, actual, expected []TestData) {
 }
 
 func TestBasicInsertAndQueryCsv(t *testing.T) {
-	qcache := newQCache(t)
+	cache := newQCache(t)
 	input := []TestData{{S: "Foo", I: 123, F: 1.5, B: true}}
 	b := new(bytes.Buffer)
 	gocsv.Marshal(input, b)
-	rr := qcache.insertDataset("FOO", map[string]string{"Content-Type": "text/csv"}, b)
+	rr := cache.insertDataset("FOO", map[string]string{"Content-Type": "text/csv"}, b)
 
 	if rr.Code != http.StatusCreated {
 		t.Errorf("Wrong status code: got %v want %v", rr.Code, http.StatusCreated)
 	}
 
-	rr = qcache.queryDataset("FOO", map[string]string{"Accept": "text/csv"})
+	rr = cache.queryDataset("FOO", map[string]string{"Accept": "text/csv"}, qcache.Query{})
 	if rr.Code != http.StatusOK {
 		t.Errorf("Wrong status code: got %v want %v", rr.Code, http.StatusOK)
 	}
@@ -131,19 +138,28 @@ func TestBasicInsertAndQueryCsv(t *testing.T) {
 	compareTestData(t, output, input)
 }
 
-func TestBasicInsertAndQueryJson(t *testing.T) {
-	qcache := newQCache(t)
+func TestBasicInsertAndGetJson(t *testing.T) {
+	cache := newQCache(t)
 	input := []TestData{{S: "Foo", I: 123, F: 1.5, B: true}}
 	output := []TestData{}
-	qcache.insertJson("FOO", map[string]string{}, input)
-	qcache.queryJson("FOO", map[string]string{}, &output)
+	cache.insertJson("FOO", map[string]string{}, input)
+	cache.queryJson("FOO", map[string]string{}, qcache.Query{}, &output)
 	compareTestData(t, output, input)
 }
 
 func TestQueryNonExistingKey(t *testing.T) {
-	qcache := newQCache(t)
-	rr := qcache.queryJson("FOO", map[string]string{}, nil)
+	cache := newQCache(t)
+	rr := cache.queryJson("FOO", map[string]string{}, qcache.Query{}, nil)
 	if rr.Code != http.StatusNotFound {
 		t.Errorf("Unexpected status code: %v", rr.Code)
 	}
+}
+
+func TestBasicInsertAndQueryWithProjection(t *testing.T) {
+	cache := newQCache(t)
+	input := []TestData{{S: "Foo", I: 123, F: 1.5, B: true}}
+	output := []TestData{}
+	cache.insertJson("FOO", map[string]string{}, input)
+	cache.queryJson("FOO", map[string]string{}, qcache.Query{Select: qcache.Clause{"S"}}, &output)
+	compareTestData(t, output, []TestData{{S: "Foo"}})
 }

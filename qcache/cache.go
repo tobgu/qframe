@@ -1,13 +1,8 @@
 package qcache
 
 import (
-	"github.com/kniren/gota/data-frame"
 	"sync"
 )
-
-type QFrame struct {
-	dataFrame *df.DataFrame
-}
 
 type Cache interface {
 	Put(key string, frame *QFrame)

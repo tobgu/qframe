@@ -51,6 +51,14 @@ func (a *application) queryDataset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var err error = nil
+	r.ParseForm()
+	if qstring := r.Form.Get("q"); qstring != "" {
+		frame, err = frame.Query(qstring)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error executing query: %v", err), http.StatusBadRequest)
+		}
+	}
+
 	accept := r.Header.Get("Accept")
 	w.Header().Set("Content-Type", accept)
 
