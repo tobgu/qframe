@@ -1,8 +1,8 @@
 package dataframe
 
 import (
-	"log"
 	"fmt"
+	"log"
 )
 
 type comparator string
@@ -101,8 +101,8 @@ func New(d map[string]interface{}) DataFrame {
 
 // TODO
 type TargetFilter struct {
-	operator string  // Comparisons, and, or, etc
-	args []interface{}  // Columns, constants, or nested filters
+	operator string        // Comparisons, and, or, etc
+	args     []interface{} // Columns, constants, or nested filters
 }
 
 // For now...
@@ -112,22 +112,20 @@ type SimpleFilter struct {
 	Arg        interface{}
 }
 
-
 func countTrue(bools []bool) int {
 	result := 0
 	for _, b := range bools {
 		if b {
-			result +=1
+			result += 1
 		}
 	}
 	return result
 }
 
-
 // TODO: Bool index should perhaps be changed to a unint64 bitmap slice instead
 //       for tighter representation
 
-func (df DataFrame) Filter(filters... SimpleFilter) DataFrame {
+func (df DataFrame) Filter(filters ...SimpleFilter) DataFrame {
 	index := make([]bool, df.length)
 	for _, f := range filters {
 		// TODO: Check that Column exists

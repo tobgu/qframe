@@ -1,11 +1,11 @@
 package dataframe_test
 
 import (
-	"github.com/kniren/gota/series"
 	"github.com/kniren/gota/dataframe"
-	"testing"
-	"reflect"
+	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
+	"reflect"
+	"testing"
 )
 
 func TestDataGotaFrame_Filter(t *testing.T) {
@@ -52,9 +52,8 @@ func TestDataGotaFrame_Filter(t *testing.T) {
 	}
 }
 
-
 func TestQCacheFrame_Filter(t *testing.T) {
-	a := qf.New(map[string]interface{} {
+	a := qf.New(map[string]interface{}{
 		"COL.1": []int{1, 2, 3, 4, 5},
 	})
 
@@ -63,13 +62,13 @@ func TestQCacheFrame_Filter(t *testing.T) {
 		expDf   qf.DataFrame
 	}{
 		{
-			[]qf.SimpleFilter{{Column:"COL.1", Comparator: ">", Arg: 3}},
+			[]qf.SimpleFilter{{Column: "COL.1", Comparator: ">", Arg: 3}},
 			qf.New(map[string]interface{}{"COL.1": []int{4, 5}}),
 		},
 		{
 			[]qf.SimpleFilter{
-				{Column:"COL.1", Comparator: ">", Arg: 4},
-				{Column:"COL.1", Comparator: "<", Arg: 2}},
+				{Column: "COL.1", Comparator: ">", Arg: 4},
+				{Column: "COL.1", Comparator: "<", Arg: 2}},
 			qf.New(map[string]interface{}{"COL.1": []int{1, 5}}),
 		},
 	}
