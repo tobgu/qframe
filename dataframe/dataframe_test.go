@@ -6,7 +6,6 @@ import (
 	"testing"
 	"reflect"
 	qf "github.com/tobgu/go-qcache/dataframe"
-
 )
 
 func TestDataGotaFrame_Filter(t *testing.T) {

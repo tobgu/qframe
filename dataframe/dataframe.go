@@ -167,4 +167,6 @@ func (df DataFrame) Equals(other DataFrame) (equal bool, reason string) {
 	return true, ""
 }
 
-
+func (df DataFrame) Len() int {
+	return df.length
+}
