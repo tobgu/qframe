@@ -9,7 +9,7 @@ type comparator string
 
 type Series interface {
 	Filter(c comparator, comparatee interface{}, index []bool)
-	Subset(index []bool, sizeHint int) Series
+	Subset(index []int) Series
 	Equals(other Series) bool
 }
 
@@ -66,13 +66,10 @@ func (s IntSeries) Equals(other Series) bool {
 	return true
 }
 
-// TODO: Additional size hint to avoid having to grow slice?
-func (s IntSeries) Subset(index []bool, sizeHint int) Series {
-	data := make([]int, 0, sizeHint)
-	for i, include := range index {
-		if include {
-			data = append(data, s.data[i])
-		}
+func (s IntSeries) Subset(index []int) Series {
+	data := make([]int, 0, len(index))
+	for _, ix := range index {
+		data = append(data, s.data[ix])
 	}
 
 	return IntSeries{data: data}
@@ -112,11 +109,11 @@ type SimpleFilter struct {
 	Arg        interface{}
 }
 
-func countTrue(bools []bool) int {
-	result := 0
-	for _, b := range bools {
+func boolToIntIndex(bools []bool) []int {
+	result := make([]int, 0)
+	for ix, b := range bools {
 		if b {
-			result += 1
+			result = append(result, ix)
 		}
 	}
 	return result
@@ -134,12 +131,12 @@ func (df DataFrame) Filter(filters ...SimpleFilter) DataFrame {
 	}
 
 	newSeries := make(map[string]Series, len(df.series))
-	sizeHint := countTrue(index)
+	intIndex := boolToIntIndex(index)
 	for column, series := range df.series {
-		newSeries[column] = series.Subset(index, sizeHint)
+		newSeries[column] = series.Subset(intIndex)
 	}
 
-	return DataFrame{series: newSeries, length: sizeHint}
+	return DataFrame{series: newSeries, length: len(intIndex)}
 }
 
 func (df DataFrame) Equals(other DataFrame) (equal bool, reason string) {

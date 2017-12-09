@@ -66,7 +66,17 @@ func BenchmarkQCacheFrame_Filter(b *testing.B) {
 }
 
 /*
+Go 1.7
+
+go test -bench=.
+go test -bench=BenchmarkQCacheFrame_Filter -cpuprofile filter_cpu.out
+go tool pprof dataframe.test filter_cpu.out
+
 Initial results:
 BenchmarkDataFrame_Filter-2     	      30	  40542568 ns/op	 7750730 B/op	  300134 allocs/op
 BenchmarkQCacheFrame_Filter-2   	     300	   3997702 ns/op	  991720 B/op	      14 allocs/op
+
+After converting bool index to int index before subseting:
+BenchmarkDataFrame_Filter-2     	      30	  40330898 ns/op	 7750731 B/op	  300134 allocs/op
+BenchmarkQCacheFrame_Filter-2   	     500	   2631666 ns/op	 2098409 B/op	      38 allocs/op
 */

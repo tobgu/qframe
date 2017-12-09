@@ -1,2 +1,4 @@
 vendor/*/
 go-qcache
+*.test
+*.out
