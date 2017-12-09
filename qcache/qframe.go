@@ -3,7 +3,7 @@ package qcache
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kniren/gota/data-frame"
+	"github.com/kniren/gota/dataframe"
 )
 
 type Clause []interface{}
@@ -20,7 +20,7 @@ type Query struct {
 }
 
 type QFrame struct {
-	dataFrame *df.DataFrame
+	dataFrame *dataframe.DataFrame
 }
 
 func (c *Clause) strings() ([]string, error) {
@@ -44,18 +44,18 @@ func (f *QFrame) Query(qString string) (*QFrame, error) {
 		return nil, err
 	}
 
-	columns, err := query.Select.strings()
-	if err != nil {
-		return nil, err
-	}
+//	columns, err := query.Select.strings()
+//	if err != nil {
+//		return nil, err
+//	}
 
 	newDf := *f.dataFrame
-	if len(columns) > 0 {
-		newDf = f.dataFrame.Select(columns...)
-	}
+//	if len(columns) > 0 {
+//		newDf = f.dataFrame.Select(columns...)
+//	}
 
-	if err := newDf.Err(); err != nil {
-		return nil, err
+	if newDf.Err != nil {
+		return nil, newDf.Err
 	}
 
 	return &QFrame{&newDf}, nil

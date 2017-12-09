@@ -75,6 +75,12 @@
 			"revisionTime": "2016-11-19T06:51:02Z"
 		},
 		{
+			"checksumSHA1": "MI9ofu41N+bMR/xc3zCJ+Ze+GUg=",
+			"path": "github.com/gonum/stat",
+			"revision": "40602ac931a7ab7f72cb1eff5ce1753a2d28d345",
+			"revisionTime": "2017-07-31T00:46:32Z"
+		},
+		{
 			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
 			"path": "github.com/gorilla/context",
 			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
@@ -87,10 +93,10 @@
 			"revisionTime": "2016-09-20T23:08:13Z"
 		},
 		{
-			"checksumSHA1": "znJgCTiaulvTYqQ4mUJ6MMvhtIE=",
+			"checksumSHA1": "K49l+FFED/GIAexNDN59xh/Y/8U=",
 			"path": "github.com/kniren/gota",
-			"revision": "1156f596a21fea9237a2a081b3a51cf1bf48ed69",
-			"revisionTime": "2016-11-20T20:55:44Z",
+			"revision": "e7f4a01dace1c69cf146beb60d246968a6b5ee75",
+			"revisionTime": "2017-10-03T07:20:42Z",
 			"tree": true,
 			"version": "=dev",
 			"versionExact": "dev"

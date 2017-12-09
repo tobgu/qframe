@@ -3,7 +3,7 @@ package qcache
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/kniren/gota/data-frame"
+	"github.com/kniren/gota/dataframe"
 	"log"
 	"net/http"
 )
@@ -19,18 +19,18 @@ func (a *application) newDataset(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Header.Get("Content-Type") {
 	case "text/csv":
-		frame := df.ReadCSV(r.Body)
-		if frame.Err() != nil {
-			errorMsg := fmt.Sprintf("Could decode CSV data: %v", frame.Err())
+		frame := dataframe.ReadCSV(r.Body)
+		if frame.Err != nil {
+			errorMsg := fmt.Sprintf("Could decode CSV data: %v", frame.Err)
 			http.Error(w, errorMsg, http.StatusBadRequest)
 			return
 		}
 		a.cache.Put(key, &QFrame{dataFrame: &frame})
 		w.WriteHeader(http.StatusCreated)
 	case "application/json":
-		frame := df.ReadJSON(r.Body)
-		if frame.Err() != nil {
-			errorMsg := fmt.Sprintf("Could decode JSON data: %v", frame.Err())
+		frame := dataframe.ReadJSON(r.Body)
+		if frame.Err != nil {
+			errorMsg := fmt.Sprintf("Could decode JSON data: %v", frame.Err)
 			http.Error(w, errorMsg, http.StatusBadRequest)
 			return
 		}
