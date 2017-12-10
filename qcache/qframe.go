@@ -44,15 +44,15 @@ func (f *QFrame) Query(qString string) (*QFrame, error) {
 		return nil, err
 	}
 
-//	columns, err := query.Select.strings()
-//	if err != nil {
-//		return nil, err
-//	}
+	//	columns, err := query.Select.strings()
+	//	if err != nil {
+	//		return nil, err
+	//	}
 
 	newDf := *f.dataFrame
-//	if len(columns) > 0 {
-//		newDf = f.dataFrame.Select(columns...)
-//	}
+	//	if len(columns) > 0 {
+	//		newDf = f.dataFrame.Select(columns...)
+	//	}
 
 	if newDf.Err != nil {
 		return nil, newDf.Err

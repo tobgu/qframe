@@ -4,6 +4,7 @@ import (
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
+	"github.com/tobgu/go-qcache/dataframe/filter"
 	"math/rand"
 	"testing"
 )
@@ -55,9 +56,9 @@ func BenchmarkQCacheFrame_Filter(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		newData := data.Filter(
-			qf.SimpleFilter{Column: "S1", Comparator: "<", Arg: frameSize / 10},
-			qf.SimpleFilter{Column: "S2", Comparator: "<", Arg: frameSize / 10},
-			qf.SimpleFilter{Column: "S3", Comparator: ">", Arg: int(0.9 * frameSize)})
+			filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize / 10},
+			filter.Filter{Column: "S2", Comparator: "<", Arg: frameSize / 10},
+			filter.Filter{Column: "S3", Comparator: ">", Arg: int(0.9 * frameSize)})
 
 		if newData.Len() != 27142 {
 			b.Errorf("Length was %d", newData.Len())
@@ -79,4 +80,9 @@ BenchmarkQCacheFrame_Filter-2   	     300	   3997702 ns/op	  991720 B/op	      1
 After converting bool index to int index before subseting:
 BenchmarkDataFrame_Filter-2     	      30	  40330898 ns/op	 7750731 B/op	  300134 allocs/op
 BenchmarkQCacheFrame_Filter-2   	     500	   2631666 ns/op	 2098409 B/op	      38 allocs/op
+
+Only evolve indexes, don't realize the dataframe (note that the tests tests are running slower in general,
+the BenchmarkDataFrame_Filter is the exact same as above):
+BenchmarkDataFrame_Filter-2     	      30	  46309948 ns/op	 7750730 B/op	  300134 allocs/op
+BenchmarkQCacheFrame_Filter-2   	    1000	   2083198 ns/op	  606505 B/op	      29 allocs/op
 */

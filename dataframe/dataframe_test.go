@@ -4,6 +4,7 @@ import (
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
+	"github.com/tobgu/go-qcache/dataframe/filter"
 	"reflect"
 	"testing"
 )
@@ -34,9 +35,7 @@ func TestDataGotaFrame_Filter(t *testing.T) {
 		if b.Err != nil {
 			t.Errorf("Test: %d\nError:%v", i, b.Err)
 		}
-		//if err := checkAddrDf(a, b); err != nil {
-		//t.Error(err)
-		//}
+
 		// Check that the types are the same between both DataFrames
 		if !reflect.DeepEqual(tc.expDf.Types(), b.Types()) {
 			t.Errorf("Test: %d\nDifferent types:\nA:%v\nB:%v", i, tc.expDf.Types(), b.Types())
@@ -58,15 +57,15 @@ func TestQCacheFrame_Filter(t *testing.T) {
 	})
 
 	table := []struct {
-		filters []qf.SimpleFilter
+		filters []filter.Filter
 		expDf   qf.DataFrame
 	}{
 		{
-			[]qf.SimpleFilter{{Column: "COL.1", Comparator: ">", Arg: 3}},
+			[]filter.Filter{{Column: "COL.1", Comparator: ">", Arg: 3}},
 			qf.New(map[string]interface{}{"COL.1": []int{4, 5}}),
 		},
 		{
-			[]qf.SimpleFilter{
+			[]filter.Filter{
 				{Column: "COL.1", Comparator: ">", Arg: 4},
 				{Column: "COL.1", Comparator: "<", Arg: 2}},
 			qf.New(map[string]interface{}{"COL.1": []int{1, 5}}),
