@@ -101,7 +101,6 @@ func BenchmarkQFrame_Sort(b *testing.B) {
 	}
 }
 
-
 /*
 Go 1.7
 
@@ -122,8 +121,15 @@ the BenchmarkDataFrame_Filter is the exact same as above):
 BenchmarkDataFrame_Filter-2     	      30	  46309948 ns/op	 7750730 B/op	  300134 allocs/op
 BenchmarkQCacheFrame_Filter-2   	    1000	   2083198 ns/op	  606505 B/op	      29 allocs/op
 
-Initial sorting implementation using built in interface-based sort.Sort
+Initial sorting implementation using built in interface-based sort.Sort. Not sure if this is actually
+OK going forward since the Sort is not guaranteed to be stable.
 BenchmarkDataFrame_Sort-2     	       5	 245155627 ns/op	50547024 B/op	     148 allocs/op
 BenchmarkQFrame_Sort-2        	      20	  78297649 ns/op	  401504 B/op	       3 allocs/op
 
+Sorting using a copy of the stdlib Sort but with the Interface switched to a concrete type. A fair
+bit quicker but not as quick as expected.
+BenchmarkDataFrame_Filter-2   	      30	  46760882 ns/op	 7750731 B/op	  300134 allocs/op
+BenchmarkQFrame_Filter-2      	    1000	   2062230 ns/op	  606504 B/op	      29 allocs/op
+BenchmarkDataFrame_Sort-2     	       5	 242068573 ns/op	50547024 B/op	     148 allocs/op
+BenchmarkQFrame_Sort-2        	      30	  50057905 ns/op	  401408 B/op	       1 allocs/op
 */

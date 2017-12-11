@@ -3,8 +3,8 @@ package dataframe
 import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
-	"github.com/tobgu/go-qcache/dataframe/internal/series"
 	"github.com/tobgu/go-qcache/dataframe/internal/intseries"
+	"github.com/tobgu/go-qcache/dataframe/internal/series"
 )
 
 type DataFrame struct {
@@ -97,16 +97,20 @@ type Order struct {
 	Reverse bool
 }
 
-func (df DataFrame) Sort(orders... Order) DataFrame {
+func (df DataFrame) Sort(orders ...Order) DataFrame {
 	// Only copy on sort now, may provide in place later
 	newIndex := make([]uint32, len(df.index))
 	copy(newIndex, df.index)
 	newDf := DataFrame{series: df.series, index: newIndex}
 
-	for i := len(orders) - 1; i >= 0; i-- {
+	start := len(orders) - 1
+	for i := start; i >= 0; i-- {
 		order := orders[i]
 		if s, ok := df.series[order.Column]; ok {
-			s.Sort(newIndex, order.Reverse)
+			// Every column but the last must use stable sorting to keep the sort order promise.
+			// Not using stable sort for the last column is an optimization.
+			stable := i < start
+			s.Sort(newIndex, order.Reverse, stable)
 		} else {
 			newDf.Err = fmt.Errorf("unknown column: %s", order.Column)
 			break

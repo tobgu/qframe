@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
-	"sort"
 )
 
 type IntSeries struct {
@@ -60,12 +59,18 @@ func (s IntSeries) Subset(index []uint32) series.Series {
 	return IntSeries{data: data}
 }
 
-func (s IntSeries) Sort(index []uint32, reverse bool) {
+func (s IntSeries) Sort(index []uint32, reverse bool, stable bool) {
 	si := SortIndex{data: s.data, index: index}
-	if reverse {
-		sort.Sort(ReverseSortIndex{SortIndex: si})
+	if stable {
+		Stable(si)
 	} else {
-		sort.Sort(si)
+		Sort(si)
+	}
+
+	if reverse {
+		for i, j := 0, len(index)-1; i < j; i, j = i+1, j-1 {
+			index[i], index[j] = index[j], index[i]
+		}
 	}
 }
 

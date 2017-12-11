@@ -1,9 +1,8 @@
 package intseries
 
-
 type SortIndex struct {
 	index []uint32
-	data []int
+	data  []int
 }
 
 func (si SortIndex) Less(i, j int) bool {
