@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
+	"github.com/tobgu/go-qcache/dataframe/internal/intseries"
 )
 
 type DataFrame struct {
@@ -20,7 +21,7 @@ func New(d map[string]interface{}) DataFrame {
 		switch column.(type) {
 		case []int:
 			c := column.([]int)
-			df.series[name] = series.NewIntSeries(c)
+			df.series[name] = intseries.New(c)
 			currentLen = len(c)
 		}
 

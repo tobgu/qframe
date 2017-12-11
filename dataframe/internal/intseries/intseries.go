@@ -1,21 +1,22 @@
-package series
+package intseries
 
 import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
+	"github.com/tobgu/go-qcache/dataframe/internal/series"
 )
 
 type IntSeries struct {
 	data []int
 }
 
-func NewIntSeries(d []int) IntSeries {
+func New(d []int) IntSeries {
 	return IntSeries{data: d}
 }
 
 var intFilterFuncs = map[filter.Comparator]func([]uint32, []int, interface{}, []bool) error{
-	filter.Gt: intGt,
-	filter.Lt: intLt,
+	filter.Gt: gt,
+	filter.Lt: lt,
 }
 
 func (s IntSeries) Filter(index []uint32, c filter.Comparator, comparatee interface{}, bIndex []bool) error {
@@ -34,7 +35,7 @@ func (s IntSeries) Filter(index []uint32, c filter.Comparator, comparatee interf
 	return nil
 }
 
-func (s IntSeries) Equals(index []uint32, other Series, otherIndex []uint32) bool {
+func (s IntSeries) Equals(index []uint32, other series.Series, otherIndex []uint32) bool {
 	otherI, ok := other.(IntSeries)
 	if !ok {
 		return false
@@ -49,7 +50,7 @@ func (s IntSeries) Equals(index []uint32, other Series, otherIndex []uint32) boo
 	return true
 }
 
-func (s IntSeries) Subset(index []uint32) Series {
+func (s IntSeries) Subset(index []uint32) series.Series {
 	data := make([]int, 0, len(index))
 	for _, ix := range index {
 		data = append(data, s.data[ix])
@@ -60,7 +61,7 @@ func (s IntSeries) Subset(index []uint32) Series {
 
 // TODO: Some kind of code generation for all the below functions for all supported types
 
-func intGt(index []uint32, column []int, comparatee interface{}, bIndex []bool) error {
+func gt(index []uint32, column []int, comparatee interface{}, bIndex []bool) error {
 	comp, ok := comparatee.(int)
 	if !ok {
 		return fmt.Errorf("invalid comparison type")
@@ -73,7 +74,7 @@ func intGt(index []uint32, column []int, comparatee interface{}, bIndex []bool) 
 	return nil
 }
 
-func intLt(index []uint32, column []int, comparatee interface{}, bIndex []bool) error {
+func lt(index []uint32, column []int, comparatee interface{}, bIndex []bool) error {
 	comp, ok := comparatee.(int)
 	if !ok {
 		return fmt.Errorf("invalid comparison type")
