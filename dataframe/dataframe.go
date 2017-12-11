@@ -92,7 +92,32 @@ func (df DataFrame) Len() int {
 	return len(df.index)
 }
 
+type Order struct {
+	Column  string
+	Reverse bool
+}
+
+func (df DataFrame) Sort(orders... Order) DataFrame {
+	// Only copy on sort now, may provide in place later
+	newIndex := make([]uint32, len(df.index))
+	copy(newIndex, df.index)
+	newDf := DataFrame{series: df.series, index: newIndex}
+
+	for i := len(orders) - 1; i >= 0; i-- {
+		order := orders[i]
+		if s, ok := df.series[order.Column]; ok {
+			s.Sort(newIndex, order.Reverse)
+		} else {
+			newDf.Err = fmt.Errorf("unknown column: %s", order.Column)
+			break
+		}
+	}
+
+	return newDf
+}
+
 // TODO dataframe:
+// - Error checks and general improvements to error structures
 // - Sorting based on one or multiple columns, ascending and descending
 // - Select/projection
 // - Code generation to support all common operations for all data types

@@ -45,7 +45,7 @@ func BenchmarkDataFrame_Filter(b *testing.B) {
 	}
 }
 
-func BenchmarkQCacheFrame_Filter(b *testing.B) {
+func BenchmarkQFrame_Filter(b *testing.B) {
 	data := qf.New(map[string]interface{}{
 		"S1": genInts(seed1, frameSize),
 		"S2": genInts(seed2, frameSize),
@@ -66,6 +66,42 @@ func BenchmarkQCacheFrame_Filter(b *testing.B) {
 	}
 }
 
+func BenchmarkDataFrame_Sort(b *testing.B) {
+	data := dataframe.New(
+		series.New(genInts(seed1, frameSize), series.Int, "S1"),
+		series.New(genInts(seed2, frameSize), series.Int, "S2"),
+		series.New(genInts(seed3, frameSize), series.Int, "S3"),
+		series.New(genInts(seed4, frameSize), series.Int, "S4"))
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		newData := data.Arrange(dataframe.Sort("S1"), dataframe.RevSort("S2"))
+		if newData.Err != nil {
+			b.Errorf("Unexpected sort error: %s", newData.Err)
+		}
+	}
+}
+
+func BenchmarkQFrame_Sort(b *testing.B) {
+	data := qf.New(map[string]interface{}{
+		"S1": genInts(seed1, frameSize),
+		"S2": genInts(seed2, frameSize),
+		"S3": genInts(seed3, frameSize),
+		"S4": genInts(seed4, frameSize)})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		newData := data.Sort(qf.Order{Column: "S1"}, qf.Order{Column: "S2", Reverse: true})
+		if newData.Err != nil {
+			b.Errorf("Unexpected sort error: %s", newData.Err)
+		}
+	}
+}
+
+
 /*
 Go 1.7
 
@@ -85,4 +121,9 @@ Only evolve indexes, don't realize the dataframe (note that the tests tests are 
 the BenchmarkDataFrame_Filter is the exact same as above):
 BenchmarkDataFrame_Filter-2     	      30	  46309948 ns/op	 7750730 B/op	  300134 allocs/op
 BenchmarkQCacheFrame_Filter-2   	    1000	   2083198 ns/op	  606505 B/op	      29 allocs/op
+
+Initial sorting implementation using built in interface-based sort.Sort
+BenchmarkDataFrame_Sort-2     	       5	 245155627 ns/op	50547024 B/op	     148 allocs/op
+BenchmarkQFrame_Sort-2        	      20	  78297649 ns/op	  401504 B/op	       3 allocs/op
+
 */

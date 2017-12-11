@@ -80,3 +80,42 @@ func TestQCacheFrame_Filter(t *testing.T) {
 		}
 	}
 }
+
+func TestQCacheFrame_Sort(t *testing.T) {
+	a := qf.New(map[string]interface{}{
+		"COL.1": []int{0, 1, 3, 2},
+		"COL.2": []int{3, 2, 1, 1},
+	})
+
+	table := []struct {
+		orders []qf.Order
+		expDf  qf.DataFrame
+	}{
+		{
+			[]qf.Order{{Column: "COL.1"}},
+			qf.New(map[string]interface{}{
+				"COL.1": []int{0, 1, 2, 3},
+				"COL.2": []int{3, 2, 1, 1}}),
+		},
+		{
+			[]qf.Order{{Column: "COL.1", Reverse: true}},
+			qf.New(map[string]interface{}{
+				"COL.1": []int{3, 2, 1, 0},
+				"COL.2": []int{1, 1, 2, 3}}),
+		},
+		{
+			[]qf.Order{{Column: "COL.2"}, {Column: "COL.1"}},
+			qf.New(map[string]interface{}{
+				"COL.1": []int{2, 3, 1, 0},
+				"COL.2": []int{1, 1, 2, 3}}),
+		},
+	}
+
+	for i, tc := range table {
+		b := a.Sort(tc.orders...)
+		equal, reason := tc.expDf.Equals(b)
+		if !equal {
+			t.Errorf("TC %d: Dataframes not equal, %s", i, reason)
+		}
+	}
+}

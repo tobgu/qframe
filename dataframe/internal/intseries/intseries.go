@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
+	"sort"
 )
 
 type IntSeries struct {
@@ -57,6 +58,15 @@ func (s IntSeries) Subset(index []uint32) series.Series {
 	}
 
 	return IntSeries{data: data}
+}
+
+func (s IntSeries) Sort(index []uint32, reverse bool) {
+	si := SortIndex{data: s.data, index: index}
+	if reverse {
+		sort.Sort(ReverseSortIndex{SortIndex: si})
+	} else {
+		sort.Sort(si)
+	}
 }
 
 // TODO: Some kind of code generation for all the below functions for all supported types
