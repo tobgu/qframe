@@ -138,4 +138,10 @@ BenchmarkDataFrame_Filter-2   	      30	  44818293 ns/op	 7750731 B/op	  300134 
 BenchmarkQFrame_Filter-2      	    1000	   2126636 ns/op	  606505 B/op	      29 allocs/op
 BenchmarkDataFrame_Sort-2     	       5	 239796901 ns/op	50547024 B/op	     148 allocs/op
 BenchmarkQFrame_Sort-2        	      10	 119140365 ns/op	  401408 B/op	       1 allocs/op
+
+Test using timsort instead of built in sort, gives stability by default. Better, but slightly disappointing.
+BenchmarkDataFrame_Filter-2   	      30	  44576205 ns/op	 7750731 B/op	  300134 allocs/op
+BenchmarkQFrame_Filter-2      	    1000	   2121513 ns/op	  606504 B/op	      29 allocs/op
+BenchmarkDataFrame_Sort-2     	       5	 245788389 ns/op	50547024 B/op	     148 allocs/op
+BenchmarkQFrame_Sort-2        	      20	  94122521 ns/op	 3854980 B/op	      25 allocs/op
 */

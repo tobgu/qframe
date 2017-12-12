@@ -120,7 +120,6 @@ func TestQCacheFrame_Sort(t *testing.T) {
 	}
 }
 
-
 func TestQCacheFrame_SortStability(t *testing.T) {
 	a := qf.New(map[string]interface{}{
 		"COL.1": []int{0, 1, 3, 2},
