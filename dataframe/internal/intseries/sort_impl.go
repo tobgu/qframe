@@ -4,6 +4,22 @@
 
 package intseries
 
+func (si SortIndex) Less(i, j int) bool {
+	if si.reverse {
+		return si.data[si.index[i]] > si.data[si.index[j]]
+	}
+
+	return si.data[si.index[i]] < si.data[si.index[j]]
+}
+
+func (si SortIndex) Swap(i, j int) {
+	si.index[i], si.index[j] = si.index[j], si.index[i]
+}
+
+func (si SortIndex) Len() int {
+	return len(si.index)
+}
+
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.

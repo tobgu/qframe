@@ -61,12 +61,14 @@ func (s IntSeries) Subset(index []uint32) series.Series {
 
 func (s IntSeries) Sort(index []uint32, reverse bool, stable bool) {
 	si := SortIndex{data: s.data, index: index, reverse: reverse}
-	TimSort(si)
-	//	if stable {
-	//		Stable(si)
-	//	} else {
-	//		Sort(si)
-	//	}
+
+	// Specific stdlib
+	if stable {
+		Stable(si)
+	} else {
+		Sort(si)
+	}
+
 }
 
 // TODO: Some kind of code generation for all the below functions for all supported types
