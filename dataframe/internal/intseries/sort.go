@@ -3,9 +3,14 @@ package intseries
 type SortIndex struct {
 	index []uint32
 	data  []int
+	reverse bool
 }
 
 func (si SortIndex) Less(i, j int) bool {
+	if si.reverse {
+		return si.data[si.index[i]] > si.data[si.index[j]]
+	}
+
 	return si.data[si.index[i]] < si.data[si.index[j]]
 }
 

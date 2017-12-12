@@ -132,4 +132,10 @@ BenchmarkDataFrame_Filter-2   	      30	  46760882 ns/op	 7750731 B/op	  300134 
 BenchmarkQFrame_Filter-2      	    1000	   2062230 ns/op	  606504 B/op	      29 allocs/op
 BenchmarkDataFrame_Sort-2     	       5	 242068573 ns/op	50547024 B/op	     148 allocs/op
 BenchmarkQFrame_Sort-2        	      30	  50057905 ns/op	  401408 B/op	       1 allocs/op
+
+Sorting done using above copy but using stable sort for all but the last order by column.
+BenchmarkDataFrame_Filter-2   	      30	  44818293 ns/op	 7750731 B/op	  300134 allocs/op
+BenchmarkQFrame_Filter-2      	    1000	   2126636 ns/op	  606505 B/op	      29 allocs/op
+BenchmarkDataFrame_Sort-2     	       5	 239796901 ns/op	50547024 B/op	     148 allocs/op
+BenchmarkQFrame_Sort-2        	      10	 119140365 ns/op	  401408 B/op	       1 allocs/op
 */

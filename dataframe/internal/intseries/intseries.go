@@ -60,17 +60,11 @@ func (s IntSeries) Subset(index []uint32) series.Series {
 }
 
 func (s IntSeries) Sort(index []uint32, reverse bool, stable bool) {
-	si := SortIndex{data: s.data, index: index}
+	si := SortIndex{data: s.data, index: index, reverse: reverse}
 	if stable {
 		Stable(si)
 	} else {
 		Sort(si)
-	}
-
-	if reverse {
-		for i, j := 0, len(index)-1; i < j; i, j = i+1, j-1 {
-			index[i], index[j] = index[j], index[i]
-		}
 	}
 }
 
