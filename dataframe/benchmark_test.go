@@ -215,4 +215,11 @@ BenchmarkQFrame_Sort-2         	      10	 206407019 ns/op	  401536 B/op	       3
 BenchmarkQFrame_Sort1Col-2     	      30	  46005496 ns/op	  401472 B/op	       2 allocs/op
 BenchmarkQFrame_SortSorted-2   	      20	  54300644 ns/op	  401536 B/op	       3 allocs/op
 
+// stdlib specific + co-locate data to sort on, ~2x speedup compared to separate index
+BenchmarkDataFrame_Filter-2    	      30	  46678558 ns/op	 7750731 B/op	  300134 allocs/op
+BenchmarkQFrame_Filter-2       	    1000	   2218767 ns/op	  606504 B/op	      29 allocs/op
+BenchmarkDataFrame_Sort-2      	       5	 254261311 ns/op	50547024 B/op	     148 allocs/op
+BenchmarkQFrame_Sort-2         	      20	  68903882 ns/op	 3612672 B/op	       3 allocs/op
+BenchmarkQFrame_Sort1Col-2     	     100	  15970577 ns/op	 2007040 B/op	       2 allocs/op
+BenchmarkQFrame_SortSorted-2   	     100	  14389450 ns/op	 3612672 B/op	       3 allocs/op
 */

@@ -21,18 +21,12 @@ var intFilterFuncs = map[filter.Comparator]func([]uint32, []int, interface{}, []
 
 func (s IntSeries) Filter(index []uint32, c filter.Comparator, comparatee interface{}, bIndex []bool) error {
 	// TODO: Also make it possible to compare to values in other column
-	intComp, ok := comparatee.(int)
-	if !ok {
-		return fmt.Errorf("invalid type for integer comparison")
-	}
-
 	compFunc, ok := intFilterFuncs[c]
 	if !ok {
 		return fmt.Errorf("invalid comparison operator for int, %s", c)
 	}
 
-	compFunc(index, s.data, intComp, bIndex)
-	return nil
+	return compFunc(index, s.data, comparatee, bIndex)
 }
 
 func (s IntSeries) Equals(index []uint32, other series.Series, otherIndex []uint32) bool {
@@ -60,7 +54,7 @@ func (s IntSeries) Subset(index []uint32) series.Series {
 }
 
 func (s IntSeries) Sort(index []uint32, reverse bool, stable bool) {
-	si := SortIndex{data: s.data, index: index, reverse: reverse}
+	si := newSortIndex(index, s.data, reverse)
 
 	// Specific stdlib
 	if stable {
@@ -69,6 +63,7 @@ func (s IntSeries) Sort(index []uint32, reverse bool, stable bool) {
 		Sort(si)
 	}
 
+	si.fillIndex(index)
 }
 
 // TODO: Some kind of code generation for all the below functions for all supported types

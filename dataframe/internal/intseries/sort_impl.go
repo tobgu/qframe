@@ -4,20 +4,20 @@
 
 package intseries
 
-func (si SortIndex) Less(i, j int) bool {
+func (si sortIndex) Less(i, j int) bool {
 	if si.reverse {
-		return si.data[si.index[i]] > si.data[si.index[j]]
+		return si.indexedData[i].data > si.indexedData[j].data
 	}
 
-	return si.data[si.index[i]] < si.data[si.index[j]]
+	return si.indexedData[i].data < si.indexedData[j].data
 }
 
-func (si SortIndex) Swap(i, j int) {
-	si.index[i], si.index[j] = si.index[j], si.index[i]
+func (si sortIndex) Swap(i, j int) {
+	si.indexedData[i], si.indexedData[j] = si.indexedData[j], si.indexedData[i]
 }
 
-func (si SortIndex) Len() int {
-	return len(si.index)
+func (si sortIndex) Len() int {
+	return len(si.indexedData)
 }
 
 // Copyright 2009 The Go Authors. All rights reserved.
@@ -25,7 +25,7 @@ func (si SortIndex) Len() int {
 // license that can be found in the LICENSE file.
 
 // Insertion sort
-func insertionSort(data SortIndex, a, b int) {
+func insertionSort(data sortIndex, a, b int) {
 	for i := a + 1; i < b; i++ {
 		for j := i; j > a && data.Less(j, j-1); j-- {
 			data.Swap(j, j-1)
@@ -35,7 +35,7 @@ func insertionSort(data SortIndex, a, b int) {
 
 // siftDown implements the heap property on data[lo, hi).
 // first is an offset into the array where the root of the heap lies.
-func siftDown(data SortIndex, lo, hi, first int) {
+func siftDown(data sortIndex, lo, hi, first int) {
 	root := lo
 	for {
 		child := 2*root + 1
@@ -53,7 +53,7 @@ func siftDown(data SortIndex, lo, hi, first int) {
 	}
 }
 
-func heapSort(data SortIndex, a, b int) {
+func heapSort(data sortIndex, a, b int) {
 	first := a
 	lo := 0
 	hi := b - a
@@ -74,7 +74,7 @@ func heapSort(data SortIndex, a, b int) {
 // ``Engineering a Sort Function,'' SP&E November 1993.
 
 // medianOfThree moves the median of the three values data[m0], data[m1], data[m2] into data[m1].
-func medianOfThree(data SortIndex, m1, m0, m2 int) {
+func medianOfThree(data sortIndex, m1, m0, m2 int) {
 	// sort 3 elements
 	if data.Less(m1, m0) {
 		data.Swap(m1, m0)
@@ -90,13 +90,13 @@ func medianOfThree(data SortIndex, m1, m0, m2 int) {
 	// now data[m0] <= data[m1] <= data[m2]
 }
 
-func swapRange(data SortIndex, a, b, n int) {
+func swapRange(data sortIndex, a, b, n int) {
 	for i := 0; i < n; i++ {
 		data.Swap(a+i, b+i)
 	}
 }
 
-func doPivot(data SortIndex, lo, hi int) (midlo, midhi int) {
+func doPivot(data sortIndex, lo, hi int) (midlo, midhi int) {
 	m := int(uint(lo+hi) >> 1) // Written like this to avoid integer overflow.
 	if hi-lo > 40 {
 		// Tukey's ``Ninther,'' median of three medians of three.
@@ -183,7 +183,7 @@ func doPivot(data SortIndex, lo, hi int) (midlo, midhi int) {
 	return b - 1, c
 }
 
-func quickSort(data SortIndex, a, b, maxDepth int) {
+func quickSort(data sortIndex, a, b, maxDepth int) {
 	for b-a > 12 { // Use ShellSort for slices <= 12 elements
 		if maxDepth == 0 {
 			heapSort(data, a, b)
@@ -216,7 +216,7 @@ func quickSort(data SortIndex, a, b, maxDepth int) {
 // Sort sorts data.
 // It makes one call to data.Len to determine n, and O(n*log(n)) calls to
 // data.Less and data.Swap. The sort is not guaranteed to be stable.
-func Sort(data SortIndex) {
+func Sort(data sortIndex) {
 	n := data.Len()
 	quickSort(data, 0, n, maxDepth(n))
 }
@@ -231,11 +231,11 @@ func maxDepth(n int) int {
 	return depth * 2
 }
 
-func Stable(data SortIndex) {
+func Stable(data sortIndex) {
 	stable(data, data.Len())
 }
 
-func stable(data SortIndex, n int) {
+func stable(data sortIndex, n int) {
 	blockSize := 20 // must be > 0
 	a, b := 0, blockSize
 	for b <= n {
@@ -259,7 +259,7 @@ func stable(data SortIndex, n int) {
 	}
 }
 
-func symMerge(data SortIndex, a, m, b int) {
+func symMerge(data sortIndex, a, m, b int) {
 	// Avoid unnecessary recursions of symMerge
 	// by direct insertion of data[a] into data[m:b]
 	// if data[a:m] only contains one element.
@@ -345,7 +345,7 @@ func symMerge(data SortIndex, a, m, b int) {
 // Data of the form 'x u v y' is changed to 'x v u y'.
 // Rotate performs at most b-a many calls to data.Swap.
 // Rotate assumes non-degenerate arguments: a < m && m < b.
-func rotate(data SortIndex, a, m, b int) {
+func rotate(data sortIndex, a, m, b int) {
 	i := m - a
 	j := b - m
 
