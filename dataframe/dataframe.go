@@ -103,29 +103,24 @@ func (df DataFrame) Sort(orders ...Order) DataFrame {
 	copy(newIndex, df.index)
 	newDf := DataFrame{series: df.series, index: newIndex}
 
-	start := len(orders) - 1
-	for i := start; i >= 0; i-- {
-		order := orders[i]
-		if s, ok := df.series[order.Column]; ok {
-			// Every column but the last must use stable sorting to keep the sort order promise.
-			// Not using stable sort for the last column is an optimization.
-			stable := i < start
-			s.Sort(newIndex, order.Reverse, stable)
-		} else {
-			newDf.Err = fmt.Errorf("unknown column: %s", order.Column)
-			break
-		}
+	s := make([]series.Comparable, 0, len(orders))
+	for _, o := range orders {
+		s = append(s, df.series[o.Column].Comparable(o.Reverse))
 	}
+
+	sorter := Sorter{index: newIndex, series: s}
+	Sort(sorter)
 
 	return newDf
 }
 
+
 // TODO dataframe:
 // - Error checks and general improvements to error structures
-// - Sorting based on one or multiple columns, ascending and descending
 // - Select/projection
 // - Code generation to support all common operations for all data types
 // - Custom filtering for different types (bitwise, regex, etc)
 // - Read and write CSV and JSON
 // - Grouping
 // - Aggregation functions
+// - Select distinct

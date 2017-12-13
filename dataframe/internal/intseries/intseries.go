@@ -53,17 +53,31 @@ func (s IntSeries) Subset(index []uint32) series.Series {
 	return IntSeries{data: data}
 }
 
-func (s IntSeries) Sort(index []uint32, reverse bool, stable bool) {
-	si := newSortIndex(index, s.data, reverse)
-
-	// Specific stdlib
-	if stable {
-		Stable(si)
-	} else {
-		Sort(si)
+func (s IntSeries) Comparable(reverse bool) series.Comparable {
+	if reverse {
+		return IntComparable{data: s.data, ltValue: series.GreaterThan, gtValue: series.LessThan}
 	}
 
-	si.fillIndex(index)
+	return IntComparable{data: s.data, ltValue: series.LessThan, gtValue: series.GreaterThan}
+}
+
+type IntComparable struct {
+	data []int
+	ltValue series.CompareResult
+	gtValue series.CompareResult
+}
+
+func (c IntComparable) Compare(i, j uint32) series.CompareResult {
+	x, y := c.data[i], c.data[j]
+	if x < y {
+		return c.ltValue
+	}
+
+	if x > y {
+		return c.gtValue
+	}
+
+	return series.Equal
 }
 
 // TODO: Some kind of code generation for all the below functions for all supported types
