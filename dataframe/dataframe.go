@@ -3,13 +3,14 @@ package dataframe
 import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
+	"github.com/tobgu/go-qcache/dataframe/internal/index"
 	"github.com/tobgu/go-qcache/dataframe/internal/intseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
 )
 
 type DataFrame struct {
 	series map[string]series.Series
-	index  []uint32
+	index  index.Int
 	Err    error
 }
 
@@ -35,34 +36,19 @@ func New(d map[string]interface{}) DataFrame {
 		}
 	}
 
-	df.index = make([]uint32, firstLen)
-	for i := range df.index {
-		df.index[i] = uint32(i)
-	}
-
+	df.index = index.NewAscending(firstLen)
 	return df
 }
 
-func applyBoolIndex(ints []uint32, bools []bool) []uint32 {
-	result := make([]uint32, 0)
-	for ix, b := range bools {
-		if b {
-			result = append(result, ints[ix])
-		}
-	}
-	return result
-}
-
 func (df DataFrame) Filter(filters ...filter.Filter) DataFrame {
-	bIndex := make([]bool, len(df.index))
+	bIndex := index.NewBool(df.index.Len())
 	for _, f := range filters {
 		// TODO: Check that Column exists
 		s := df.series[f.Column]
 		s.Filter(df.index, f.Comparator, f.Arg, bIndex)
 	}
 
-	newIndex := applyBoolIndex(df.index, bIndex)
-	return DataFrame{series: df.series, index: newIndex}
+	return DataFrame{series: df.series, index: df.index.Filter(bIndex)}
 }
 
 func (df DataFrame) Equals(other DataFrame) (equal bool, reason string) {
@@ -89,7 +75,7 @@ func (df DataFrame) Equals(other DataFrame) (equal bool, reason string) {
 }
 
 func (df DataFrame) Len() int {
-	return len(df.index)
+	return df.index.Len()
 }
 
 type Order struct {
@@ -99,21 +85,22 @@ type Order struct {
 
 func (df DataFrame) Sort(orders ...Order) DataFrame {
 	// Only copy on sort now, may provide in place later
-	newIndex := make([]uint32, len(df.index))
-	copy(newIndex, df.index)
-	newDf := DataFrame{series: df.series, index: newIndex}
+	newDf := DataFrame{series: df.series, index: df.index.Copy()}
 
 	s := make([]series.Comparable, 0, len(orders))
 	for _, o := range orders {
 		s = append(s, df.series[o.Column].Comparable(o.Reverse))
 	}
 
-	sorter := Sorter{index: newIndex, series: s}
+	sorter := Sorter{index: newDf.index, series: s}
 	Sort(sorter)
 
 	return newDf
 }
 
+func (df DataFrame) Distinct(columns ...string) DataFrame {
+	return DataFrame{}
+}
 
 // TODO dataframe:
 // - Error checks and general improvements to error structures

@@ -146,7 +146,6 @@ func BenchmarkQFrame_SortSorted(b *testing.B) {
 	}
 }
 
-
 /*
 Go 1.7
 

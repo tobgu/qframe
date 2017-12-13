@@ -4,10 +4,13 @@
 
 package dataframe
 
-import "github.com/tobgu/go-qcache/dataframe/internal/series"
+import (
+	"github.com/tobgu/go-qcache/dataframe/internal/index"
+	"github.com/tobgu/go-qcache/dataframe/internal/series"
+)
 
 type Sorter struct {
-	index []uint32
+	index  index.Int
 	series []series.Comparable
 }
 

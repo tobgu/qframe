@@ -1,18 +1,21 @@
 package series
 
-import "github.com/tobgu/go-qcache/dataframe/filter"
+import (
+	"github.com/tobgu/go-qcache/dataframe/filter"
+	"github.com/tobgu/go-qcache/dataframe/internal/index"
+)
 
 type Series interface {
-	Filter(index []uint32, c filter.Comparator, comparatee interface{}, bIndex []bool) error
-	Subset(index []uint32) Series
-	Equals(index []uint32, other Series, otherIndex []uint32) bool
+	Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error
+	Subset(index index.Int) Series
+	Equals(index index.Int, other Series, otherIndex index.Int) bool
 	Comparable(reverse bool) Comparable
 }
 
 type CompareResult int
 
 const (
-	LessThan    CompareResult = iota
+	LessThan CompareResult = iota
 	Equal
 	GreaterThan
 )

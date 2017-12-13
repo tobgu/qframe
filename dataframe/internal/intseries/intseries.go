@@ -3,6 +3,7 @@ package intseries
 import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
+	"github.com/tobgu/go-qcache/dataframe/internal/index"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
 )
 
@@ -14,12 +15,12 @@ func New(d []int) IntSeries {
 	return IntSeries{data: d}
 }
 
-var intFilterFuncs = map[filter.Comparator]func([]uint32, []int, interface{}, []bool) error{
+var intFilterFuncs = map[filter.Comparator]func(index.Int, []int, interface{}, index.Bool) error{
 	filter.Gt: gt,
 	filter.Lt: lt,
 }
 
-func (s IntSeries) Filter(index []uint32, c filter.Comparator, comparatee interface{}, bIndex []bool) error {
+func (s IntSeries) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
 	// TODO: Also make it possible to compare to values in other column
 	compFunc, ok := intFilterFuncs[c]
 	if !ok {
@@ -29,7 +30,7 @@ func (s IntSeries) Filter(index []uint32, c filter.Comparator, comparatee interf
 	return compFunc(index, s.data, comparatee, bIndex)
 }
 
-func (s IntSeries) Equals(index []uint32, other series.Series, otherIndex []uint32) bool {
+func (s IntSeries) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
 	otherI, ok := other.(IntSeries)
 	if !ok {
 		return false
@@ -44,7 +45,7 @@ func (s IntSeries) Equals(index []uint32, other series.Series, otherIndex []uint
 	return true
 }
 
-func (s IntSeries) Subset(index []uint32) series.Series {
+func (s IntSeries) Subset(index index.Int) series.Series {
 	data := make([]int, 0, len(index))
 	for _, ix := range index {
 		data = append(data, s.data[ix])
@@ -62,7 +63,7 @@ func (s IntSeries) Comparable(reverse bool) series.Comparable {
 }
 
 type IntComparable struct {
-	data []int
+	data    []int
 	ltValue series.CompareResult
 	gtValue series.CompareResult
 }
@@ -82,7 +83,7 @@ func (c IntComparable) Compare(i, j uint32) series.CompareResult {
 
 // TODO: Some kind of code generation for all the below functions for all supported types
 
-func gt(index []uint32, column []int, comparatee interface{}, bIndex []bool) error {
+func gt(index index.Int, column []int, comparatee interface{}, bIndex index.Bool) error {
 	comp, ok := comparatee.(int)
 	if !ok {
 		return fmt.Errorf("invalid comparison type")
@@ -95,7 +96,7 @@ func gt(index []uint32, column []int, comparatee interface{}, bIndex []bool) err
 	return nil
 }
 
-func lt(index []uint32, column []int, comparatee interface{}, bIndex []bool) error {
+func lt(index index.Int, column []int, comparatee interface{}, bIndex index.Bool) error {
 	comp, ok := comparatee.(int)
 	if !ok {
 		return fmt.Errorf("invalid comparison type")
