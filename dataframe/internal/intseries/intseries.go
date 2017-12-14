@@ -62,6 +62,10 @@ func (s IntSeries) Comparable(reverse bool) series.Comparable {
 	return IntComparable{data: s.data, ltValue: series.LessThan, gtValue: series.GreaterThan}
 }
 
+func (s IntSeries) String() string {
+	return fmt.Sprintf("%s", s.data)
+}
+
 type IntComparable struct {
 	data    []int
 	ltValue series.CompareResult

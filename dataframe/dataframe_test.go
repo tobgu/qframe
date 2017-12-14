@@ -146,3 +146,40 @@ func TestQCacheFrame_SortStability(t *testing.T) {
 		}
 	}
 }
+
+func TestQCacheFrame_Distinct(t *testing.T) {
+	table := []struct {
+		input    map[string]interface{}
+		expected map[string]interface{}
+		columns  []string
+	}{
+		{
+			input: map[string]interface{}{
+				"COL.1": []int{0, 1, 0, 1},
+				"COL.2": []int{0, 1, 0, 1}},
+			expected: map[string]interface{}{
+				"COL.1": []int{0, 1},
+				"COL.2": []int{0, 1}},
+			columns: []string{"COL.1", "COL.2"},
+		},
+		{
+			input: map[string]interface{}{
+				"COL.1": []int{},
+				"COL.2": []int{}},
+			expected: map[string]interface{}{
+				"COL.1": []int{},
+				"COL.2": []int{}},
+			columns: []string{"COL.1", "COL.2"},
+		},
+	}
+
+	for i, tc := range table {
+		in := qf.New(tc.input)
+		out := in.Distinct()
+		expDf := qf.New(tc.expected)
+		equal, reason := out.Equals(expDf)
+		if !equal {
+			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
+		}
+	}
+}

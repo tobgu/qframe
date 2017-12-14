@@ -99,7 +99,58 @@ func (df DataFrame) Sort(orders ...Order) DataFrame {
 }
 
 func (df DataFrame) Distinct(columns ...string) DataFrame {
-	return DataFrame{}
+	if df.Len() == 0 {
+		return df
+	}
+
+	if len(columns) == 0 {
+		columns = make([]string, 0, len(df.series))
+		for column := range df.series {
+			columns = append(columns, column)
+		}
+	}
+
+	// TODO: Check that columns exist
+	orders := make([]Order, len(columns))
+	for i, column := range columns {
+		orders[i] = Order{Column: column}
+	}
+
+	// Compare the columns in reverse order compared to the sort order
+	// since it's likely to produce differences with fewer comparisons.
+	comparables := make([]series.Comparable, 0, len(columns))
+	for i := len(columns) - 1; i >= 0; i-- {
+		comparables = append(comparables, df.series[orders[i].Column].Comparable(false))
+	}
+
+	// Sort dataframe on the columns that should be distinct. Loop over all rows
+	// comparing the specified columns of each row with the previous rows. If there
+	// is a difference the new row will be added to the new index.
+	sortedDf := df.Sort(orders...)
+	prevPos, currPos := uint32(0), sortedDf.index[0]
+	newIx := make(index.Int, 0)
+	newIx = append(newIx, currPos)
+	for i := 1; i < sortedDf.Len(); i++ {
+		prevPos, currPos = currPos, sortedDf.index[i]
+		for _, c := range comparables {
+			if c.Compare(prevPos, currPos) != series.Equal {
+				newIx = append(newIx, currPos)
+				break
+			}
+		}
+	}
+
+	return DataFrame{series: df.series, index: newIx}
+}
+
+func (df DataFrame) String() string {
+	// TODO: Fix
+	result := ""
+	for name, values := range df.series {
+		result += fmt.Sprintf("%s: %v", name, values)
+	}
+
+	return result
 }
 
 // TODO dataframe:
