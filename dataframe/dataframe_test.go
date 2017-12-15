@@ -183,3 +183,45 @@ func TestQCacheFrame_Distinct(t *testing.T) {
 		}
 	}
 }
+
+func TestQCacheFrame_GroupByAggregate(t *testing.T) {
+	table := []struct {
+		input        map[string]interface{}
+		expected     map[string]interface{}
+		groupColumns []string
+		aggregations []string
+	}{
+		{
+			input: map[string]interface{}{
+				"COL.1": []int{0, 0, 1, 2},
+				"COL.2": []int{0, 0, 1, 1},
+				"COL.3": []int{1, 2, 5, 7}},
+			expected: map[string]interface{}{
+				"COL.1": []int{0, 1, 2},
+				"COL.2": []int{0, 1, 1},
+				"COL.3": []int{3, 5, 7}},
+			groupColumns: []string{"COL.1", "COL.2"},
+			aggregations: []string{"sum", "COL.3"},
+		},
+		{
+			input: map[string]interface{}{
+				"COL.1": []int{},
+				"COL.2": []int{}},
+			expected: map[string]interface{}{
+				"COL.1": []int{},
+				"COL.2": []int{}},
+			groupColumns: []string{"COL.1"},
+			aggregations: []string{"sum", "COL.2"},
+		},
+	}
+
+	for i, tc := range table {
+		in := qf.New(tc.input)
+		out := in.GroupBy(tc.groupColumns...).Aggregate(tc.aggregations...)
+		expDf := qf.New(tc.expected)
+		equal, reason := out.Equals(expDf)
+		if !equal {
+			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
+		}
+	}
+}

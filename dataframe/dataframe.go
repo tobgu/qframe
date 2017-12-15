@@ -98,11 +98,8 @@ func (df DataFrame) Sort(orders ...Order) DataFrame {
 	return newDf
 }
 
-func (df DataFrame) Distinct(columns ...string) DataFrame {
-	if df.Len() == 0 {
-		return df
-	}
-
+func (df DataFrame) columnsOrAll(columns []string) []string {
+	// TODO: Check that columns exist
 	if len(columns) == 0 {
 		columns = make([]string, 0, len(df.series))
 		for column := range df.series {
@@ -110,18 +107,36 @@ func (df DataFrame) Distinct(columns ...string) DataFrame {
 		}
 	}
 
-	// TODO: Check that columns exist
+	return columns
+}
+
+func (df DataFrame) orders(columns []string) []Order {
 	orders := make([]Order, len(columns))
 	for i, column := range columns {
 		orders[i] = Order{Column: column}
 	}
 
+	return orders
+}
+
+func (df DataFrame) reverseComparables(columns []string, orders []Order) []series.Comparable {
 	// Compare the columns in reverse order compared to the sort order
 	// since it's likely to produce differences with fewer comparisons.
 	comparables := make([]series.Comparable, 0, len(columns))
 	for i := len(columns) - 1; i >= 0; i-- {
 		comparables = append(comparables, df.series[orders[i].Column].Comparable(false))
 	}
+	return comparables
+}
+
+func (df DataFrame) Distinct(columns ...string) DataFrame {
+	if df.Len() == 0 {
+		return df
+	}
+
+	columns = df.columnsOrAll(columns)
+	orders := df.orders(columns)
+	comparables := df.reverseComparables(columns, orders)
 
 	// Sort dataframe on the columns that should be distinct. Loop over all rows
 	// comparing the specified columns of each row with the previous rows. If there
@@ -143,8 +158,80 @@ func (df DataFrame) Distinct(columns ...string) DataFrame {
 	return DataFrame{series: df.series, index: newIx}
 }
 
+type Grouper struct {
+	indices        []index.Int
+	groupedColumns []string
+	series         map[string]series.Series
+}
+
+func (df DataFrame) GroupBy(columns ...string) Grouper {
+	columns = df.columnsOrAll(columns)
+	grouper := Grouper{series: df.series, groupedColumns: columns}
+	if df.Len() == 0 {
+		return grouper
+	}
+
+	orders := df.orders(columns)
+	comparables := df.reverseComparables(columns, orders)
+
+	// Sort dataframe on the columns that should be grouped. Loop over all rows
+	// comparing the specified columns of each row with the first in the current group.
+	// If there is a difference create a new group.
+	sortedDf := df.Sort(orders...)
+	groupStart, groupStartPos := 0, sortedDf.index[0]
+	indices := make([]index.Int, 0)
+	for i := 1; i < sortedDf.Len(); i++ {
+		currPos := sortedDf.index[i]
+		for _, c := range comparables {
+			if c.Compare(groupStartPos, currPos) != series.Equal {
+				indices = append(indices, sortedDf.index[groupStart:i])
+				groupStart, groupStartPos = i, sortedDf.index[i]
+				break
+			}
+		}
+	}
+
+	grouper.indices = append(indices, sortedDf.index[groupStart:])
+	return grouper
+}
+
+// fnsAndCols is a list of alternating function names and column names
+func (g Grouper) Aggregate(fnsAndCols ...string) DataFrame {
+	if len(fnsAndCols)%2 != 0 || len(fnsAndCols) == 0 {
+		return DataFrame{Err: fmt.Errorf("aggregation expects even number of arguments, col1, fn1, col2, fn2")}
+	}
+
+	// TODO: Check that columns exist but are not part of groupedColumns
+	firstElementIx := make(index.Int, len(g.indices))
+	for i, ix := range g.indices {
+		firstElementIx[i] = ix[0]
+	}
+
+	s := make(map[string]series.Series, len(g.groupedColumns))
+	for _, col := range g.groupedColumns {
+		s[col] = g.series[col].Subset(firstElementIx)
+	}
+
+	var err error
+	for i := 0; i < len(fnsAndCols); i += 2 {
+		fn := fnsAndCols[i]
+		col := fnsAndCols[i+1]
+		s[col], err = g.series[col].Aggregate(g.indices, fn)
+		if err != nil {
+			// TODO: Wrap up error
+			return DataFrame{Err: err}
+		}
+	}
+
+	return DataFrame{series: s, index: index.NewAscending(len(g.indices))}
+}
+
 func (df DataFrame) String() string {
 	// TODO: Fix
+	if df.Err != nil {
+		return df.Err.Error()
+	}
+
 	result := ""
 	for name, values := range df.series {
 		result += fmt.Sprintf("%s: %v", name, values)

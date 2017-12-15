@@ -45,13 +45,17 @@ func (s IntSeries) Equals(index index.Int, other series.Series, otherIndex index
 	return true
 }
 
-func (s IntSeries) Subset(index index.Int) series.Series {
+func (s IntSeries) subset(index index.Int) IntSeries {
 	data := make([]int, 0, len(index))
 	for _, ix := range index {
 		data = append(data, s.data[ix])
 	}
 
 	return IntSeries{data: data}
+}
+
+func (s IntSeries) Subset(index index.Int) series.Series {
+	return s.subset(index)
 }
 
 func (s IntSeries) Comparable(reverse bool) series.Comparable {
@@ -64,6 +68,34 @@ func (s IntSeries) Comparable(reverse bool) series.Comparable {
 
 func (s IntSeries) String() string {
 	return fmt.Sprintf("%s", s.data)
+}
+
+func sum(values []int) int {
+	result := 0
+	for _, v := range values {
+		result += v
+	}
+	return result
+}
+
+// TODO: Probably need a more general aggregation pattern, int -> float (average for example)
+var intAggregations = map[string]func([]int) int{
+	"sum": sum,
+}
+
+func (s IntSeries) Aggregate(indices []index.Int, fnName string) (series.Series, error) {
+	fn, ok := intAggregations[fnName]
+	if !ok {
+		return nil, fmt.Errorf("aggregation function %s is not defined for in series", fnName)
+	}
+
+	data := make([]int, 0, len(indices))
+	for _, ix := range indices {
+		subS := s.subset(ix)
+		data = append(data, fn(subS.data))
+	}
+
+	return IntSeries{data: data}, nil
 }
 
 type IntComparable struct {

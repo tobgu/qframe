@@ -12,6 +12,7 @@ type Series interface {
 	Subset(index index.Int) Series
 	Equals(index index.Int, other Series, otherIndex index.Int) bool
 	Comparable(reverse bool) Comparable
+	Aggregate(indices []index.Int, fnName string) (Series, error)
 }
 
 type CompareResult int
