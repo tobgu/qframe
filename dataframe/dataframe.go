@@ -16,8 +16,7 @@ type DataFrame struct {
 
 func New(d map[string]interface{}) DataFrame {
 	df := DataFrame{series: make(map[string]series.Series, len(d))}
-	firstLen := -1
-	currentLen := 0
+	firstLen, currentLen := 0, 0
 	for name, column := range d {
 		switch column.(type) {
 		case []int:
@@ -26,7 +25,7 @@ func New(d map[string]interface{}) DataFrame {
 			currentLen = len(c)
 		}
 
-		if firstLen == -1 {
+		if firstLen == 0 {
 			firstLen = currentLen
 		}
 
@@ -158,12 +157,33 @@ func (df DataFrame) Distinct(columns ...string) DataFrame {
 	return DataFrame{series: df.series, index: newIx}
 }
 
+func (df DataFrame) Select(columns ...string) DataFrame {
+	if len(columns) == 0 {
+		return DataFrame{}
+	}
+
+	newSeries := make(map[string]series.Series, len(columns))
+	newDf := DataFrame{series: newSeries, index: df.index}
+	for _, c := range columns {
+		s, ok := df.series[c]
+		if !ok {
+			newDf.Err = fmt.Errorf("column %s does not exist", c)
+			return newDf
+		}
+
+		newSeries[c] = s
+	}
+
+	return newDf
+}
+
 type Grouper struct {
 	indices        []index.Int
 	groupedColumns []string
 	series         map[string]series.Series
 }
 
+// Leaving out columns will group by all columns in the frame.
 func (df DataFrame) GroupBy(columns ...string) Grouper {
 	columns = df.columnsOrAll(columns)
 	grouper := Grouper{series: df.series, groupedColumns: columns}
@@ -246,6 +266,4 @@ func (df DataFrame) String() string {
 // - Code generation to support all common operations for all data types
 // - Custom filtering for different types (bitwise, regex, etc)
 // - Read and write CSV and JSON
-// - Grouping
-// - Aggregation functions
-// - Select distinct
+// - More general structure for aggregation functions
