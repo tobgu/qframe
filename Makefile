@@ -1,10 +1,13 @@
-PACKAGES="./qcache"
 
-test:
-	go test $(PACKAGES)
 
-fmt:
-	go fmt $(PACKAGES)
+generate:
+	go generate dataframe/internal/template/*
 
-vet:
-	go vet $(PACKAGES)
+test: generate
+	go test github.com/tobgu/go-qcache/dataframe
+
+fmt: generate
+	go fmt ./...
+
+vet: generate
+	go vet ./...

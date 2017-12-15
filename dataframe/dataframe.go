@@ -3,9 +3,12 @@ package dataframe
 import (
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
+	"github.com/tobgu/go-qcache/dataframe/internal/bseries"
+	"github.com/tobgu/go-qcache/dataframe/internal/fseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
-	"github.com/tobgu/go-qcache/dataframe/internal/intseries"
+	"github.com/tobgu/go-qcache/dataframe/internal/iseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
+	sseries "github.com/tobgu/go-qcache/dataframe/internal/sseries"
 )
 
 type DataFrame struct {
@@ -21,8 +24,23 @@ func New(d map[string]interface{}) DataFrame {
 		switch column.(type) {
 		case []int:
 			c := column.([]int)
-			df.series[name] = intseries.New(c)
+			df.series[name] = iseries.New(c)
 			currentLen = len(c)
+		case []float64:
+			c := column.([]float64)
+			df.series[name] = fseries.New(c)
+			currentLen = len(c)
+		case []string:
+			c := column.([]string)
+			df.series[name] = sseries.New(c)
+			currentLen = len(c)
+		case []bool:
+			c := column.([]bool)
+			df.series[name] = bseries.New(c)
+			currentLen = len(c)
+		default:
+			df.Err = fmt.Errorf("unknown column format")
+			return df
 		}
 
 		if firstLen == 0 {
