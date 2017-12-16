@@ -228,7 +228,7 @@ func quickSort(data Sorter, a, b, maxDepth int) {
 // Sort sorts data.
 // It makes one call to data.Len to determine n, and O(n*log(n)) calls to
 // data.Less and data.Swap. The sort is not guaranteed to be stable.
-func Sort(data Sorter) {
+func sortDf(data Sorter) {
 	n := data.Len()
 	quickSort(data, 0, n, maxDepth(n))
 }

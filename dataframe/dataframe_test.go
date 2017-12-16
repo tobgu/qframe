@@ -259,3 +259,43 @@ func TestQCacheFrame_Select(t *testing.T) {
 		}
 	}
 }
+
+func TestQCacheFrame_Slice(t *testing.T) {
+	table := []struct {
+		input    map[string]interface{}
+		expected map[string]interface{}
+		start    int
+		end      int
+	}{
+		{
+			input: map[string]interface{}{
+				"COL.1": []float64{0.0, 1.5, 2.5, 3.5},
+				"COL.2": []int{1, 2, 3, 4}},
+			expected: map[string]interface{}{
+				"COL.1": []float64{1.5, 2.5},
+				"COL.2": []int{2, 3}},
+			start: 1,
+			end:   3,
+		},
+		{
+			input: map[string]interface{}{
+				"COL.1": []int{},
+				"COL.2": []int{}},
+			expected: map[string]interface{}{
+				"COL.1": []int{},
+				"COL.2": []int{}},
+			start: 0,
+			end:   0,
+		},
+	}
+
+	for i, tc := range table {
+		in := qf.New(tc.input)
+		out := in.Slice(tc.start, tc.end)
+		expDf := qf.New(tc.expected)
+		equal, reason := out.Equals(expDf)
+		if !equal {
+			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
+		}
+	}
+}

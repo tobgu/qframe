@@ -21,25 +21,21 @@ func New(d map[string]interface{}) DataFrame {
 	df := DataFrame{series: make(map[string]series.Series, len(d))}
 	firstLen, currentLen := 0, 0
 	for name, column := range d {
-		switch column.(type) {
+		switch c := column.(type) {
 		case []int:
-			c := column.([]int)
 			df.series[name] = iseries.New(c)
 			currentLen = len(c)
 		case []float64:
-			c := column.([]float64)
 			df.series[name] = fseries.New(c)
 			currentLen = len(c)
 		case []string:
-			c := column.([]string)
 			df.series[name] = sseries.New(c)
 			currentLen = len(c)
 		case []bool:
-			c := column.([]bool)
 			df.series[name] = bseries.New(c)
 			currentLen = len(c)
 		default:
-			df.Err = fmt.Errorf("unknown column format")
+			df.Err = fmt.Errorf("unknown column format of: %s", c)
 			return df
 		}
 
@@ -110,7 +106,7 @@ func (df DataFrame) Sort(orders ...Order) DataFrame {
 	}
 
 	sorter := Sorter{index: newDf.index, series: s}
-	Sort(sorter)
+	sortDf(sorter)
 
 	return newDf
 }
@@ -278,9 +274,24 @@ func (df DataFrame) String() string {
 	return result
 }
 
+func (df DataFrame) Slice(start, end int) DataFrame {
+	if start < 0 {
+		return DataFrame{Err: fmt.Errorf("start must be non negative")}
+	}
+
+	if start > end {
+		return DataFrame{Err: fmt.Errorf("start must not be greater than end")}
+	}
+
+	if end > df.Len() {
+		return DataFrame{Err: fmt.Errorf("end must not be greater than dataframe length")}
+	}
+
+	return DataFrame{series: df.series, index: df.index[start:end]}
+}
+
 // TODO dataframe:
 // - Error checks and general improvements to error structures
-// - Select/projection
 // - Code generation to support all common operations for all data types
 // - Custom filtering for different types (bitwise, regex, etc)
 // - Read and write CSV and JSON
