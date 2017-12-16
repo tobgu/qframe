@@ -1,6 +1,7 @@
 package dataframe
 
 import (
+	"bitbucket.org/weberc2/fastcsv"
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/bseries"
@@ -8,7 +9,8 @@ import (
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
 	"github.com/tobgu/go-qcache/dataframe/internal/iseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
-	sseries "github.com/tobgu/go-qcache/dataframe/internal/sseries"
+	"github.com/tobgu/go-qcache/dataframe/internal/sseries"
+	"io"
 )
 
 type DataFrame struct {
@@ -16,6 +18,15 @@ type DataFrame struct {
 	index  index.Int
 	Err    error
 }
+
+type ColumnType string
+
+const (
+	Int    ColumnType = "int"
+	Float             = "float"
+	Bool              = "bool"
+	String            = "string"
+)
 
 func New(d map[string]interface{}) DataFrame {
 	df := DataFrame{series: make(map[string]series.Series, len(d))}
@@ -288,6 +299,86 @@ func (df DataFrame) Slice(start, end int) DataFrame {
 	}
 
 	return DataFrame{series: df.series, index: df.index[start:end]}
+}
+
+// Helper type to slice column bytes into individual elements
+type bytePointer struct {
+	start uint32
+	end   uint32
+}
+
+func FromCsv(reader io.Reader, types map[string]ColumnType) DataFrame {
+	r := csv.NewReader(reader)
+	byteHeader, err := r.Read()
+	if err != nil {
+		return DataFrame{Err: err}
+	}
+
+	headers := make([]string, len(byteHeader))
+	colPointers := make([][]bytePointer, len(headers))
+	for i := range headers {
+		headers[i] = string(byteHeader[i])
+		colPointers[i] = []bytePointer{}
+	}
+
+	// All bytes in a column
+	colBytes := make([][]byte, len(headers))
+
+	for r.Next() {
+		// TODO: What happens when the number of columns differ from number of
+		//       headers. When the number of columns is zero?
+		if r.Err() != nil {
+			return DataFrame{Err: r.Err()}
+		}
+
+		for i, col := range r.Fields() {
+			start := len(colBytes[i])
+			colBytes[i] = append(colBytes[i], col...)
+			colPointers[i] = append(colPointers[i], bytePointer{start: uint32(start), end: uint32(len(colBytes[i]))})
+		}
+	}
+
+	// TODO: Perhaps series should be a slice instead with a map indexing into it...
+	dataMap := make(map[string]interface{}, len(headers))
+	for i, header := range headers {
+		data, err := columnToData(colBytes[i], colPointers[i])
+		if err != nil {
+			return DataFrame{Err: err}
+		}
+
+		dataMap[header] = data
+	}
+
+	return New(dataMap)
+}
+
+func columnToData(bytes []byte, pointers []bytePointer) (interface{}, error) {
+	// TODO: Convert each column according to type...
+	data := make([]int, 0, len(pointers))
+	for _, p := range pointers {
+		x, err := parseInt(bytes[p.start:p.end])
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, int(x))
+	}
+
+	return data, nil
+}
+
+func FromJson(reader io.Reader, orient string) DataFrame {
+	// TODO
+	return DataFrame{}
+}
+
+func (df DataFrame) ToCsv(writer io.Writer) error {
+	// TODO
+	return nil
+}
+
+func (df DataFrame) ToJson(writer io.Writer, orient string) error {
+	// TODO
+	return nil
 }
 
 // TODO dataframe:

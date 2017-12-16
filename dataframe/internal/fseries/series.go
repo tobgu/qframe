@@ -12,3 +12,5 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []float64, interface{}, 
 	filter.Gt: gt,
 	filter.Lt: lt,
 }
+
+// TODO: Handle NaN in comparisons, etc.

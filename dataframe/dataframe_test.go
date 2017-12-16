@@ -1,11 +1,13 @@
 package dataframe_test
 
 import (
+	"fmt"
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -292,6 +294,33 @@ func TestQCacheFrame_Slice(t *testing.T) {
 	for i, tc := range table {
 		in := qf.New(tc.input)
 		out := in.Slice(tc.start, tc.end)
+		expDf := qf.New(tc.expected)
+		equal, reason := out.Equals(expDf)
+		if !equal {
+			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
+		}
+	}
+}
+
+func TestQCacheFrame_ReadCsv(t *testing.T) {
+	table := []struct {
+		input    string
+		expected map[string]interface{}
+	}{
+		{
+			input: "foo,bar\n1,2\n3,4\n",
+			expected: map[string]interface{}{
+				"foo": []int{1, 3},
+				"bar": []int{2, 4}},
+		},
+	}
+
+	for i, tc := range table {
+		out := qf.FromCsv(strings.NewReader(tc.input), map[string]qf.ColumnType{})
+		if out.Err != nil {
+			fmt.Errorf("error in FromCsv: %s", out.Err.Error())
+		}
+
 		expDf := qf.New(tc.expected)
 		equal, reason := out.Equals(expDf)
 		if !equal {

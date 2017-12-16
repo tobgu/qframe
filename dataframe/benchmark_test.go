@@ -1,10 +1,13 @@
 package dataframe_test
 
 import (
+	"bytes"
+	"encoding/csv"
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
 	"github.com/tobgu/go-qcache/dataframe/filter"
+	"io/ioutil"
 	"math/rand"
 	"testing"
 )
@@ -146,6 +149,62 @@ func BenchmarkQFrame_SortSorted(b *testing.B) {
 	}
 }
 
+func BenchmarkQFrame_IntFromCsv(b *testing.B) {
+	size := 100000
+	buf := new(bytes.Buffer)
+	writer := csv.NewWriter(buf)
+	writer.Write([]string{"COL.1", "COL.2", "COL.3", "COL.4"})
+	for i := 0; i < size; i++ {
+		writer.Write([]string{"123", "1234567", "5", "5435"})
+	}
+	writer.Flush()
+
+	csvBytes, _ := ioutil.ReadAll(buf)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r := bytes.NewReader(csvBytes)
+		df := qf.FromCsv(r, nil)
+		if df.Err != nil {
+			b.Errorf("Unexpected CSV error: %s", df.Err)
+		}
+
+		if df.Len() != size {
+			b.Errorf("Unexpected size: %d", df.Len())
+		}
+	}
+}
+
+func BenchmarkDataFrame_IntFromCsv(b *testing.B) {
+	size := 100000
+	buf := new(bytes.Buffer)
+	writer := csv.NewWriter(buf)
+	writer.Write([]string{"COL.1", "COL.2", "COL.3", "COL.4"})
+	for i := 0; i < size; i++ {
+		writer.Write([]string{"123", "1234567", "5", "5435"})
+	}
+	writer.Flush()
+
+	csvBytes, _ := ioutil.ReadAll(buf)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r := bytes.NewReader(csvBytes)
+		df := dataframe.ReadCSV(r)
+		if df.Err != nil {
+			b.Errorf("Unexpected CSV error: %s", df.Err)
+		}
+
+		if df.Nrow() != size {
+			b.Errorf("Unexpected size: %d", df.Nrow())
+		}
+	}
+}
+
 /*
 Go 1.7
 
@@ -227,5 +286,9 @@ BenchmarkQFrame_SortSorted-2   	     100	  14389450 ns/op	 3612672 B/op	       3
 BenchmarkQFrame_Sort-2         	      30	  47600788 ns/op	  401626 B/op	       4 allocs/op
 BenchmarkQFrame_Sort1Col-2     	      30	  43807643 ns/op	  401472 B/op	       3 allocs/op
 BenchmarkQFrame_SortSorted-2   	      50	  24775838 ns/op	  401536 B/op	       4 allocs/op
+
+// Initial CSV implementation for int, 4 x 100000.
+BenchmarkQFrame_IntFromCsv-2      	      20	  55921060 ns/op	30167012 B/op	     261 allocs/op
+BenchmarkDataFrame_IntFromCsv-2   	       5	 243541282 ns/op	41848809 B/op	  900067 allocs/op
 
 */
