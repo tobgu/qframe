@@ -410,6 +410,22 @@ func columnToData(bytes []byte, pointers []bytePointer) (interface{}, error) {
 		stringData = append(stringData, string(bytes[p.start:p.end]))
 	}
 
+	// TODO: Might want some sort of categorial like here for low cardinality strings,
+	//       could be achieved with a map caching strings.
+	/*
+		stringData := make([]string, 0, len(pointers))
+		strings := map[string]string{}
+		for _, p := range pointers {
+			b := bytes[p.start:p.end]
+			s, ok := strings[string(b)]
+			if !ok {
+				s = string(b)
+				strings[s] = s
+			}
+			stringData = append(stringData, s)
+		}
+	*/
+
 	return stringData, nil
 }
 
