@@ -149,57 +149,53 @@ func BenchmarkQFrame_SortSorted(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_IntFromCsv(b *testing.B) {
-	size := 100000
+func csvBytes(rowCount int) []byte {
 	buf := new(bytes.Buffer)
 	writer := csv.NewWriter(buf)
-	writer.Write([]string{"COL.1", "COL.2", "COL.3", "COL.4"})
-	for i := 0; i < size; i++ {
-		writer.Write([]string{"123", "1234567", "5", "5435"})
+	writer.Write([]string{"INT1", "INT2", "FLOAT1", "FLOAT2", "BOOL1", "STRING1", "STRING2"})
+	for i := 0; i < rowCount; i++ {
+		writer.Write([]string{"123", "1234567", "5.2534", "9834543.25", "true", "Foo bar baz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"})
 	}
 	writer.Flush()
 
 	csvBytes, _ := ioutil.ReadAll(buf)
+	return csvBytes
+}
+
+func BenchmarkQFrame_IntFromCsv(b *testing.B) {
+	rowCount := 100000
+	input := csvBytes(rowCount)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		r := bytes.NewReader(csvBytes)
+		r := bytes.NewReader(input)
 		df := qf.FromCsv(r, nil)
 		if df.Err != nil {
 			b.Errorf("Unexpected CSV error: %s", df.Err)
 		}
 
-		if df.Len() != size {
+		if df.Len() != rowCount {
 			b.Errorf("Unexpected size: %d", df.Len())
 		}
 	}
 }
 
 func BenchmarkDataFrame_IntFromCsv(b *testing.B) {
-	size := 100000
-	buf := new(bytes.Buffer)
-	writer := csv.NewWriter(buf)
-	writer.Write([]string{"COL.1", "COL.2", "COL.3", "COL.4"})
-	for i := 0; i < size; i++ {
-		writer.Write([]string{"123", "1234567", "5", "5435"})
-	}
-	writer.Flush()
-
-	csvBytes, _ := ioutil.ReadAll(buf)
-
+	rowCount := 100000
+	input := csvBytes(rowCount)
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		r := bytes.NewReader(csvBytes)
+		r := bytes.NewReader(input)
 		df := dataframe.ReadCSV(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected CSV error: %s", df.Err)
 		}
 
-		if df.Nrow() != size {
+		if df.Nrow() != rowCount {
 			b.Errorf("Unexpected size: %d", df.Nrow())
 		}
 	}
@@ -290,5 +286,8 @@ BenchmarkQFrame_SortSorted-2   	      50	  24775838 ns/op	  401536 B/op	       4
 // Initial CSV implementation for int, 4 x 100000.
 BenchmarkQFrame_IntFromCsv-2      	      20	  55921060 ns/op	30167012 B/op	     261 allocs/op
 BenchmarkDataFrame_IntFromCsv-2   	       5	 243541282 ns/op	41848809 B/op	  900067 allocs/op
+
+// Type detecting CSV implementation, 100000 x "123", "1234567", "5.2534", "9834543.25", "true", "Foo bar baz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+BenchmarkQFrame_IntFromCsv-2   	      10	 101362864 ns/op	87707785 B/op	  200491 allocs/op
 
 */

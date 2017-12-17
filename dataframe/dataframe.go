@@ -352,18 +352,65 @@ func FromCsv(reader io.Reader, types map[string]ColumnType) DataFrame {
 	return New(dataMap)
 }
 
+// Convert bytes to data columns, try, in turn int, float, bool and last string.
 func columnToData(bytes []byte, pointers []bytePointer) (interface{}, error) {
-	// TODO: Convert each column according to type...
-	data := make([]int, 0, len(pointers))
+	// TODO: Take type hint and err if type cannot be applied
+
+	// Int
+	intData := make([]int, 0, len(pointers))
+	var err error
 	for _, p := range pointers {
-		x, err := parseInt(bytes[p.start:p.end])
-		if err != nil {
-			return nil, err
+		x, intErr := parseInt(bytes[p.start:p.end])
+		if intErr != nil {
+			err = intErr
+			break
 		}
-		data = append(data, int(x))
+		intData = append(intData, int(x))
 	}
 
-	return data, nil
+	if err == nil {
+		return intData, nil
+	}
+
+	// Float
+	err = nil
+	floatData := make([]float64, 0, len(pointers))
+	for _, p := range pointers {
+		x, floatErr := parseFloat(bytes[p.start:p.end])
+		if floatErr != nil {
+			err = floatErr
+			break
+		}
+		floatData = append(floatData, x)
+	}
+
+	if err == nil {
+		return floatData, nil
+	}
+
+	// Bool
+	err = nil
+	boolData := make([]bool, 0, len(pointers))
+	for _, p := range pointers {
+		x, boolErr := parseBool(bytes[p.start:p.end])
+		if boolErr != nil {
+			err = boolErr
+			break
+		}
+		boolData = append(boolData, x)
+	}
+
+	if err == nil {
+		return boolData, nil
+	}
+
+	// String
+	stringData := make([]string, 0, len(pointers))
+	for _, p := range pointers {
+		stringData = append(stringData, string(bytes[p.start:p.end]))
+	}
+
+	return stringData, nil
 }
 
 func FromJson(reader io.Reader, orient string) DataFrame {

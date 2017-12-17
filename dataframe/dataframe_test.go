@@ -1,7 +1,6 @@
 package dataframe_test
 
 import (
-	"fmt"
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
@@ -313,12 +312,20 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				"foo": []int{1, 3},
 				"bar": []int{2, 4}},
 		},
+		{
+			input: "int,float,bool,string\n1,2.5,true,hello\n10,20.5,false,\"bye, bye\"",
+			expected: map[string]interface{}{
+				"int":    []int{1, 10},
+				"float":  []float64{2.5, 20.5},
+				"bool":   []bool{true, false},
+				"string": []string{"hello", "bye, bye"}},
+		},
 	}
 
 	for i, tc := range table {
 		out := qf.FromCsv(strings.NewReader(tc.input), map[string]qf.ColumnType{})
 		if out.Err != nil {
-			fmt.Errorf("error in FromCsv: %s", out.Err.Error())
+			t.Errorf("error in FromCsv: %s", out.Err.Error())
 		}
 
 		expDf := qf.New(tc.expected)
