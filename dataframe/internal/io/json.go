@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-//go:generate easyjson -in=$GOFILE -output_filename json_gen.go
+//go:generate easyjson $GOFILE
 
 type JsonRecords []map[string]interface{}
 
@@ -137,6 +137,10 @@ type JsonBool []bool
 //easyjson:json
 type JsonString []string
 
+// UnmarshalJson transforms JSON containing data records or columns into a map of columns
+// that can be used to create a dataframe.
+// If the JSON string starts with a "[" records are assumed, if it starts with '{' columns
+// are assumed. Reading columns is currently 4x - 5x faster than reading records.
 func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
 	br := bufio.NewReader(r)
 	bytes, err := br.Peek(1)
@@ -154,27 +158,27 @@ func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
 
 		result := make(map[string]interface{}, len(series))
 		for colName, rawValue := range series {
-			intDest := []int{}
-			if err = json.Unmarshal(rawValue, &intDest); err == nil {
-				result[colName] = intDest
+			intDest := &JsonInt{}
+			if err = intDest.UnmarshalJSON(rawValue); err == nil {
+				result[colName] = []int(*intDest)
 				continue
 			}
 
-			floatDest := []float64{}
-			if err = json.Unmarshal(rawValue, &floatDest); err == nil {
-				result[colName] = floatDest
+			floatDest := &JsonFloat{}
+			if err = floatDest.UnmarshalJSON(rawValue); err == nil {
+				result[colName] = []float64(*floatDest)
 				continue
 			}
 
-			boolDest := []bool{}
-			if err = json.Unmarshal(rawValue, &boolDest); err == nil {
-				result[colName] = boolDest
+			boolDest := &JsonBool{}
+			if err = boolDest.UnmarshalJSON(rawValue); err == nil {
+				result[colName] = []bool(*boolDest)
 				continue
 			}
 
-			strDest := []string{}
-			if err = json.Unmarshal(rawValue, &strDest); err == nil {
-				result[colName] = strDest
+			strDest := &JsonString{}
+			if err = strDest.UnmarshalJSON(rawValue); err == nil {
+				result[colName] = []string(*strDest)
 				continue
 			}
 

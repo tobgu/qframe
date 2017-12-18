@@ -1,7 +1,7 @@
 
 
 generate:
-	go generate dataframe/internal/template/*
+	go generate github.com/tobgu/go-qcache/dataframe/...
 
 test: generate
 	go test github.com/tobgu/go-qcache/dataframe

@@ -3,6 +3,7 @@ package dataframe_test
 import (
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
@@ -162,7 +163,7 @@ func csvBytes(rowCount int) []byte {
 	return csvBytes
 }
 
-func BenchmarkQFrame_IntFromCsv(b *testing.B) {
+func BenchmarkQFrame_FromCsv(b *testing.B) {
 	rowCount := 100000
 	input := csvBytes(rowCount)
 
@@ -182,7 +183,7 @@ func BenchmarkQFrame_IntFromCsv(b *testing.B) {
 	}
 }
 
-func BenchmarkDataFrame_IntFromCsv(b *testing.B) {
+func BenchmarkDataFrame_ReadCSV(b *testing.B) {
 	rowCount := 100000
 	input := csvBytes(rowCount)
 	b.ReportAllocs()
@@ -197,6 +198,137 @@ func BenchmarkDataFrame_IntFromCsv(b *testing.B) {
 
 		if df.Nrow() != rowCount {
 			b.Errorf("Unexpected size: %d", df.Nrow())
+		}
+	}
+}
+
+func jsonRecords(rowCount int) []byte {
+	record := map[string]interface{}{
+		"INT1":    123,
+		"INT2":    1234567,
+		"FLOAT1":  5.2534,
+		"FLOAT2":  9834543.25,
+		"BOOL1":   true,
+		"STRING1": "Foo bar baz",
+		"STRING2": "ABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+	records := make([]map[string]interface{}, rowCount)
+	for i := range records {
+		records[i] = record
+	}
+
+	result, err := json.Marshal(records)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+func intSlice(value, size int) []int {
+	result := make([]int, size)
+	for i := range result {
+		result[i] = value
+	}
+
+	return result
+}
+
+func floatSlice(value float64, size int) []float64 {
+	result := make([]float64, size)
+	for i := range result {
+		result[i] = value
+	}
+
+	return result
+}
+
+func boolSlice(value bool, size int) []bool {
+	result := make([]bool, size)
+	for i := range result {
+		result[i] = value
+	}
+
+	return result
+}
+
+func stringSlice(value string, size int) []string {
+	result := make([]string, size)
+	for i := range result {
+		result[i] = value
+	}
+
+	return result
+}
+
+func jsonColumns(rowCount int) []byte {
+	record := map[string]interface{}{
+		"INT1":    intSlice(123, rowCount),
+		"INT2":    intSlice(1234567, rowCount),
+		"FLOAT1":  floatSlice(5.2534, rowCount),
+		"FLOAT2":  floatSlice(9834543.25, rowCount),
+		"BOOL1":   boolSlice(false, rowCount),
+		"STRING1": stringSlice("Foo bar baz", rowCount),
+		"STRING2": stringSlice("ABCDEFGHIJKLMNOPQRSTUVWXYZ", rowCount)}
+
+	result, err := json.Marshal(record)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+func BenchmarkDataFrame_ReadJSON(b *testing.B) {
+	rowCount := 10000
+	input := jsonRecords(rowCount)
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r := bytes.NewReader(input)
+		df := dataframe.ReadJSON(r)
+		if df.Err != nil {
+			b.Errorf("Unexpected JSON error: %s", df.Err)
+		}
+
+		if df.Nrow() != rowCount {
+			b.Errorf("Unexpected size: %d", df.Nrow())
+		}
+	}
+}
+
+func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
+	rowCount := 10000
+	input := jsonRecords(rowCount)
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r := bytes.NewReader(input)
+		df := qf.FromJson(r)
+		if df.Err != nil {
+			b.Errorf("Unexpected JSON error: %s", df.Err)
+		}
+
+		if df.Len() != rowCount {
+			b.Errorf("Unexpected size: %d", df.Len())
+		}
+	}
+}
+
+func BenchmarkQFrame_FromJSONColumns(b *testing.B) {
+	rowCount := 10000
+	input := jsonColumns(rowCount)
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		r := bytes.NewReader(input)
+		df := qf.FromJson(r)
+		if df.Err != nil {
+			b.Errorf("Unexpected JSON error: %s", df.Err)
+		}
+
+		if df.Len() != rowCount {
+			b.Errorf("Unexpected size: %d", df.Len())
 		}
 	}
 }
@@ -290,4 +422,11 @@ BenchmarkDataFrame_IntFromCsv-2   	       5	 243541282 ns/op	41848809 B/op	  900
 // Type detecting CSV implementation, 100000 x "123", "1234567", "5.2534", "9834543.25", "true", "Foo bar baz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 BenchmarkQFrame_IntFromCsv-2   	      10	 101362864 ns/op	87707785 B/op	  200491 allocs/op
 
+// JSON, 10000 rows
+BenchmarkDataFrame_ReadJSON-2          	      10	 176107262 ns/op	24503045 B/op	  670112 allocs/op
+BenchmarkQFrame_FromJSONRecords-2   	      10	 117408651 ns/op	15132420 B/op	  430089 allocs/op
+BenchmarkQFrame_FromJSONColumns-2   	      10	 104641079 ns/op	15342302 B/op	  220842 allocs/op
+
+// JSON with easyjson generated unmarshal
+BenchmarkQFrame_FromJSONColumns-2   	      50	  24764232 ns/op	 6730738 B/op	   20282 allocs/op
 */
