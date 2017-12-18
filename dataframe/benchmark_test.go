@@ -172,7 +172,7 @@ func BenchmarkQFrame_FromCsv(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.FromCsv(r, nil)
+		df := qf.FromCsv(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected CSV error: %s", df.Err)
 		}

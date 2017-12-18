@@ -323,7 +323,7 @@ func TestQCacheFrame_FromCsv(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		out := qf.FromCsv(strings.NewReader(tc.input), map[string]qf.ColumnType{})
+		out := qf.FromCsv(strings.NewReader(tc.input))
 		if out.Err != nil {
 			t.Errorf("error in FromCsv: %s", out.Err.Error())
 		}
