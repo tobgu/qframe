@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/go-qcache/dataframe/internal/bseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/fseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
+	dfio "github.com/tobgu/go-qcache/dataframe/internal/io"
 	"github.com/tobgu/go-qcache/dataframe/internal/iseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
 	"github.com/tobgu/go-qcache/dataframe/internal/sseries"
@@ -46,7 +47,7 @@ func New(d map[string]interface{}) DataFrame {
 			df.series[name] = bseries.New(c)
 			currentLen = len(c)
 		default:
-			df.Err = fmt.Errorf("unknown column format of: %s", c)
+			df.Err = fmt.Errorf("unknown column format of: %v", c)
 			return df
 		}
 
@@ -429,9 +430,13 @@ func columnToData(bytes []byte, pointers []bytePointer) (interface{}, error) {
 	return stringData, nil
 }
 
-func FromJson(reader io.Reader, orient string) DataFrame {
-	// TODO
-	return DataFrame{}
+func FromJson(reader io.Reader) DataFrame {
+	data, err := dfio.UnmarshalJson(reader)
+	if err != nil {
+		return DataFrame{Err: err}
+	}
+
+	return New(data)
 }
 
 func (df DataFrame) ToCsv(writer io.Writer) error {

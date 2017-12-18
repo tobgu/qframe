@@ -301,7 +301,7 @@ func TestQCacheFrame_Slice(t *testing.T) {
 	}
 }
 
-func TestQCacheFrame_ReadCsv(t *testing.T) {
+func TestQCacheFrame_FromCsv(t *testing.T) {
 	table := []struct {
 		input    string
 		expected map[string]interface{}
@@ -326,6 +326,36 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 		out := qf.FromCsv(strings.NewReader(tc.input), map[string]qf.ColumnType{})
 		if out.Err != nil {
 			t.Errorf("error in FromCsv: %s", out.Err.Error())
+		}
+
+		expDf := qf.New(tc.expected)
+		equal, reason := out.Equals(expDf)
+		if !equal {
+			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
+		}
+	}
+}
+
+func TestQCacheFrame_FromJsonRecords(t *testing.T) {
+
+}
+
+func TestQCacheFrame_FromJsonSeries(t *testing.T) {
+	table := []struct {
+		input    string
+		expected map[string]interface{}
+	}{
+		{
+			input: `{"STRING1": ["a", "b"], "INT1": [1, 2], "FLOAT1": [1.5, 2.5], "BOOL1": [true, false]}`,
+			expected: map[string]interface{}{
+				"STRING1": []string{"a", "b"}, "INT1": []int{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
+		},
+	}
+
+	for i, tc := range table {
+		out := qf.FromJson(strings.NewReader(tc.input))
+		if out.Err != nil {
+			t.Errorf("error in FromJson: %s", out.Err.Error())
 		}
 
 		expDf := qf.New(tc.expected)
