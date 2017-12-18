@@ -350,6 +350,14 @@ func TestQCacheFrame_FromJsonSeries(t *testing.T) {
 			expected: map[string]interface{}{
 				"STRING1": []string{"a", "b"}, "INT1": []int{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
 		},
+		{
+			input: `[
+				{"STRING1": "a", "INT1": 1, "FLOAT1": 1.5, "BOOL1": true},
+				{"STRING1": "b", "INT1": 2, "FLOAT1": 2.5, "BOOL1": false}]`,
+			expected: map[string]interface{}{
+				// NOTE: The integers become floats if not explicitly typed
+				"STRING1": []string{"a", "b"}, "INT1": []float64{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
+		},
 	}
 
 	for i, tc := range table {
@@ -361,7 +369,7 @@ func TestQCacheFrame_FromJsonSeries(t *testing.T) {
 		expDf := qf.New(tc.expected)
 		equal, reason := out.Equals(expDf)
 		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
+			t.Errorf("TC %d: Dataframes not equal, %s, %s, ||| %s", i, reason, out, expDf)
 		}
 	}
 }
