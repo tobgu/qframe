@@ -12,3 +12,7 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []string, interface{}, i
 	filter.Gt: gt,
 	filter.Lt: lt,
 }
+
+func (s Series) StringAt(i int) string {
+	return s.data[i]
+}

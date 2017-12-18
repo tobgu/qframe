@@ -259,8 +259,8 @@ func stringSlice(value string, size int) []string {
 	return result
 }
 
-func jsonColumns(rowCount int) []byte {
-	record := map[string]interface{}{
+func exampleData(rowCount int) map[string]interface{} {
+	return map[string]interface{}{
 		"INT1":    intSlice(123, rowCount),
 		"INT2":    intSlice(1234567, rowCount),
 		"FLOAT1":  floatSlice(5.2534, rowCount),
@@ -268,7 +268,10 @@ func jsonColumns(rowCount int) []byte {
 		"BOOL1":   boolSlice(false, rowCount),
 		"STRING1": stringSlice("Foo bar baz", rowCount),
 		"STRING2": stringSlice("ABCDEFGHIJKLMNOPQRSTUVWXYZ", rowCount)}
+}
 
+func jsonColumns(rowCount int) []byte {
+	record := exampleData(rowCount)
 	result, err := json.Marshal(record)
 	if err != nil {
 		panic(err)
@@ -329,6 +332,26 @@ func BenchmarkQFrame_FromJSONColumns(b *testing.B) {
 
 		if df.Len() != rowCount {
 			b.Errorf("Unexpected size: %d", df.Len())
+		}
+	}
+}
+
+func BenchmarkQFrame_ToCsv(b *testing.B) {
+	rowCount := 100000
+	input := exampleData(rowCount)
+	df := qf.New(input)
+	if df.Err != nil {
+		b.Errorf("Unexpected New error: %s", df.Err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		buf := new(bytes.Buffer)
+		err := df.ToCsv(buf)
+		if err != nil {
+			b.Errorf("Unexpected ToCsv error: %s", err)
 		}
 	}
 }
@@ -429,4 +452,7 @@ BenchmarkQFrame_FromJSONColumns-2   	      10	 104641079 ns/op	15342302 B/op	  2
 
 // JSON with easyjson generated unmarshal
 BenchmarkQFrame_FromJSONColumns-2   	      50	  24764232 ns/op	 6730738 B/op	   20282 allocs/op
+
+// ToCsv, vanilla implementation based on stdlib csv, 100000 records
+BenchmarkQFrame_ToCsv-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allocs/op
 */

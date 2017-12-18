@@ -1,6 +1,7 @@
 package dataframe
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/bseries"
@@ -11,6 +12,7 @@ import (
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
 	"github.com/tobgu/go-qcache/dataframe/internal/sseries"
 	"io"
+	"sort"
 )
 
 type DataFrame struct {
@@ -310,8 +312,36 @@ func FromJson(reader io.Reader) DataFrame {
 	return New(data)
 }
 
+// This is currently fairly slow. Could probably be alot speedier with
+// a custom written CSV writer that handles quoting etc. differently.
 func (df DataFrame) ToCsv(writer io.Writer) error {
-	// TODO
+	// TODO: Column index
+	row := make([]string, 0, len(df.series))
+	for name := range df.series {
+		row = append(row, name)
+	}
+	sort.Strings(row)
+
+	columns := make([]series.Series, 0, len(df.series))
+	for _, name := range row {
+		columns = append(columns, df.series[name])
+	}
+
+	w := csv.NewWriter(writer)
+	err := w.Write(row)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < df.Len(); i++ {
+		row = row[:0]
+		for _, c := range columns {
+			row = append(row, c.StringAt(int(df.index[i])))
+		}
+		w.Write(row)
+	}
+
+	w.Flush()
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package dataframe_test
 
 import (
+	"bytes"
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/go-qcache/dataframe"
@@ -336,11 +337,7 @@ func TestQCacheFrame_FromCsv(t *testing.T) {
 	}
 }
 
-func TestQCacheFrame_FromJsonRecords(t *testing.T) {
-
-}
-
-func TestQCacheFrame_FromJsonSeries(t *testing.T) {
+func TestQCacheFrame_FromJSON(t *testing.T) {
 	table := []struct {
 		input    string
 		expected map[string]interface{}
@@ -370,6 +367,40 @@ func TestQCacheFrame_FromJsonSeries(t *testing.T) {
 		equal, reason := out.Equals(expDf)
 		if !equal {
 			t.Errorf("TC %d: Dataframes not equal, %s, %s, ||| %s", i, reason, out, expDf)
+		}
+	}
+}
+
+func TestQCacheFrame_ToCsv(t *testing.T) {
+	table := []struct {
+		input    map[string]interface{}
+		expected string
+	}{
+		{
+			input: map[string]interface{}{
+				"STRING1": []string{"a", "b,c"}, "INT1": []int{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
+			expected: `BOOL1,FLOAT1,INT1,STRING1
+true,1.5,1,a
+false,2.5,2,"b,c"
+`,
+		},
+	}
+
+	for i, tc := range table {
+		in := qf.New(tc.input)
+		if in.Err != nil {
+			t.Errorf("error in New: %s", in.Err.Error())
+		}
+
+		buf := new(bytes.Buffer)
+		err := in.ToCsv(buf)
+		if err != nil {
+			t.Errorf("error in ToCsv: %s", err)
+		}
+
+		result := buf.String()
+		if result != tc.expected {
+			t.Errorf("TC %d: CSV not equal, %s ||| %s", i, result, tc.expected)
 		}
 	}
 }

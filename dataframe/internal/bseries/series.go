@@ -4,6 +4,7 @@ import (
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
+	"strconv"
 )
 
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
@@ -22,4 +23,8 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	}
 
 	return c.ltValue
+}
+
+func (s Series) StringAt(i int) string {
+	return strconv.FormatBool(s.data[i])
 }
