@@ -1,8 +1,10 @@
 package bseries
 
 import (
+	"encoding/json"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
+	"github.com/tobgu/go-qcache/dataframe/internal/io"
 	"github.com/tobgu/go-qcache/dataframe/internal/series"
 	"strconv"
 )
@@ -27,4 +29,8 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 
 func (s Series) StringAt(i int) string {
 	return strconv.FormatBool(s.data[i])
+}
+
+func (s Series) Marshaler(index index.Int) json.Marshaler {
+	return io.JsonBool(s.subset(index).data)
 }

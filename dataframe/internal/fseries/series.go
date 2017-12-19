@@ -1,8 +1,10 @@
 package fseries
 
 import (
+	"encoding/json"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
+	"github.com/tobgu/go-qcache/dataframe/internal/io"
 	"strconv"
 )
 
@@ -16,6 +18,10 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []float64, interface{}, 
 
 func (s Series) StringAt(i int) string {
 	return strconv.FormatFloat(s.data[i], 'f', -1, 64)
+}
+
+func (s Series) Marshaler(index index.Int) json.Marshaler {
+	return io.JsonFloat64(s.subset(index).data)
 }
 
 // TODO: Handle NaN in comparisons, etc.

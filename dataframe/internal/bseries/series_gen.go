@@ -87,6 +87,12 @@ func (s Series) Aggregate(indices []index.Int, fnName string) (series.Series, er
 	return Series{data: data}, nil
 }
 
+func (s Series) FillRecords(records []map[string]interface{}, index index.Int, colName string) {
+	for i, ix := range index {
+		records[i][colName] = s.data[ix]
+	}
+}
+
 type Comparable struct {
 	data    []bool
 	ltValue series.CompareResult

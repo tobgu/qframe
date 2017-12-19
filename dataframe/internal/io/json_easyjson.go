@@ -149,7 +149,7 @@ func (v *JsonInt) UnmarshalJSON(data []byte) error {
 func (v *JsonInt) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo1(l, v)
 }
-func easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo2(in *jlexer.Lexer, out *JsonFloat) {
+func easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo2(in *jlexer.Lexer, out *JsonFloat64) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		in.Skip()
@@ -158,9 +158,9 @@ func easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo2(in *jlexer
 		in.Delim('[')
 		if *out == nil {
 			if !in.IsDelim(']') {
-				*out = make(JsonFloat, 0, 8)
+				*out = make(JsonFloat64, 0, 8)
 			} else {
-				*out = JsonFloat{}
+				*out = JsonFloat64{}
 			}
 		} else {
 			*out = (*out)[:0]
@@ -177,7 +177,7 @@ func easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo2(in *jlexer
 		in.Consumed()
 	}
 }
-func easyjson42239ddeEncodeGithubComTobguGoQcacheDataframeInternalIo2(out *jwriter.Writer, in JsonFloat) {
+func easyjson42239ddeEncodeGithubComTobguGoQcacheDataframeInternalIo2(out *jwriter.Writer, in JsonFloat64) {
 	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 		out.RawString("null")
 	} else {
@@ -193,26 +193,26 @@ func easyjson42239ddeEncodeGithubComTobguGoQcacheDataframeInternalIo2(out *jwrit
 }
 
 // MarshalJSON supports json.Marshaler interface
-func (v JsonFloat) MarshalJSON() ([]byte, error) {
+func (v JsonFloat64) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
 	easyjson42239ddeEncodeGithubComTobguGoQcacheDataframeInternalIo2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
-func (v JsonFloat) MarshalEasyJSON(w *jwriter.Writer) {
+func (v JsonFloat64) MarshalEasyJSON(w *jwriter.Writer) {
 	easyjson42239ddeEncodeGithubComTobguGoQcacheDataframeInternalIo2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
-func (v *JsonFloat) UnmarshalJSON(data []byte) error {
+func (v *JsonFloat64) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
 	easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *JsonFloat) UnmarshalEasyJSON(l *jlexer.Lexer) {
+func (v *JsonFloat64) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo2(l, v)
 }
 func easyjson42239ddeDecodeGithubComTobguGoQcacheDataframeInternalIo3(in *jlexer.Lexer, out *JsonBool) {

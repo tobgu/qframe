@@ -356,6 +356,35 @@ func BenchmarkQFrame_ToCsv(b *testing.B) {
 	}
 }
 
+func toJson(b *testing.B, orient string) {
+	rowCount := 100000
+	input := exampleData(rowCount)
+	df := qf.New(input)
+	if df.Err != nil {
+		b.Errorf("Unexpected New error: %s", df.Err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		buf := new(bytes.Buffer)
+		err := df.ToJson(buf, orient)
+		if err != nil {
+			b.Errorf("Unexpected ToCsv error: %s", err)
+		}
+	}
+
+}
+
+func BenchmarkQFrame_ToJsonRecords(b *testing.B) {
+	toJson(b, "records")
+}
+
+func BenchmarkQFrame_ToJsonColumns(b *testing.B) {
+	toJson(b, "columns")
+}
+
 /*
 Go 1.7
 
@@ -455,4 +484,8 @@ BenchmarkQFrame_FromJSONColumns-2   	      50	  24764232 ns/op	 6730738 B/op	   
 
 // ToCsv, vanilla implementation based on stdlib csv, 100000 records
 BenchmarkQFrame_ToCsv-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allocs/op
+
+// ToJson, performance is not super impressive... 100000 records
+BenchmarkQFrame_ToJsonRecords-2   	       2	 849280921 ns/op	181573400 B/op	 3400028 allocs/op
+BenchmarkQFrame_ToJsonColumns-2   	       5	 224702680 ns/op	33782697 B/op	     513 allocs/op
 */

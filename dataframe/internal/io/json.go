@@ -129,7 +129,7 @@ func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
 type JsonInt []int
 
 //easyjson:json
-type JsonFloat []float64
+type JsonFloat64 []float64
 
 //easyjson:json
 type JsonBool []bool
@@ -164,7 +164,7 @@ func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
 				continue
 			}
 
-			floatDest := &JsonFloat{}
+			floatDest := &JsonFloat64{}
 			if err = floatDest.UnmarshalJSON(rawValue); err == nil {
 				result[colName] = []float64(*floatDest)
 				continue

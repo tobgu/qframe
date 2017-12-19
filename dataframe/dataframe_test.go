@@ -404,3 +404,33 @@ false,2.5,2,"b,c"
 		}
 	}
 }
+
+func TestQCacheFrame_ToFromJSON(t *testing.T) {
+	table := []struct {
+		orientation string
+	}{
+		{orientation: "records"},
+		{orientation: "columns"},
+	}
+
+	for i, tc := range table {
+		buf := new(bytes.Buffer)
+		data := map[string]interface{}{
+			"STRING1": []string{"a", "b"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}}
+		originalDf := qf.New(data)
+		err := originalDf.ToJson(buf, tc.orientation)
+		if err != nil {
+			t.Errorf("error in ToJson: %s", err)
+		}
+
+		jsonDf := qf.FromJson(buf)
+		if jsonDf.Err != nil {
+			t.Errorf("error in FromJson: %s", jsonDf.Err)
+		}
+
+		equal, reason := jsonDf.Equals(originalDf)
+		if !equal {
+			t.Errorf("TC %d: Dataframes not equal, %s, %s, ||| %s", i, reason, originalDf, originalDf)
+		}
+	}
+}

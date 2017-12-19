@@ -1,8 +1,10 @@
 package sseries
 
 import (
+	"encoding/json"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
+	"github.com/tobgu/go-qcache/dataframe/internal/io"
 )
 
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
@@ -15,4 +17,8 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []string, interface{}, i
 
 func (s Series) StringAt(i int) string {
 	return s.data[i]
+}
+
+func (s Series) Marshaler(index index.Int) json.Marshaler {
+	return io.JsonString(s.subset(index).data)
 }

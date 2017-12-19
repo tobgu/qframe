@@ -1,8 +1,10 @@
 package iseries
 
 import (
+	"encoding/json"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
+	"github.com/tobgu/go-qcache/dataframe/internal/io"
 	"strconv"
 )
 
@@ -26,4 +28,8 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []int, interface{}, inde
 
 func (s Series) StringAt(i int) string {
 	return strconv.FormatInt(int64(s.data[i]), 10)
+}
+
+func (s Series) Marshaler(index index.Int) json.Marshaler {
+	return io.JsonInt(s.subset(index).data)
 }

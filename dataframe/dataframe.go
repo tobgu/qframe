@@ -2,6 +2,7 @@ package dataframe
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/bseries"
@@ -312,7 +313,7 @@ func FromJson(reader io.Reader) DataFrame {
 	return New(data)
 }
 
-// This is currently fairly slow. Could probably be alot speedier with
+// This is currently fairly slow. Could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
 func (df DataFrame) ToCsv(writer io.Writer) error {
 	// TODO: Column index
@@ -346,8 +347,26 @@ func (df DataFrame) ToCsv(writer io.Writer) error {
 }
 
 func (df DataFrame) ToJson(writer io.Writer, orient string) error {
-	// TODO
-	return nil
+	encoder := json.NewEncoder(writer)
+	if orient == "records" {
+		records := make([]map[string]interface{}, len(df.index))
+		for i := range records {
+			records[i] = make(map[string]interface{}, len(df.series))
+		}
+
+		for name, s := range df.series {
+			s.FillRecords(records, df.index, name)
+		}
+
+		return encoder.Encode(records)
+	}
+
+	columns := make(map[string]json.Marshaler, len(df.series))
+	for name, s := range df.series {
+		columns[name] = s.Marshaler(df.index)
+	}
+
+	return encoder.Encode(columns)
 }
 
 // TODO dataframe:
@@ -357,3 +376,4 @@ func (df DataFrame) ToJson(writer io.Writer, orient string) error {
 // - Read and write CSV and JSON
 // - Type hints for read and write operations
 // - More general structure for aggregation functions
+// - Possibility create new dfs with series added (for standins for example)

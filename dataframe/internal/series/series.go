@@ -1,6 +1,7 @@
 package series
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"
@@ -14,6 +15,8 @@ type Series interface {
 	Comparable(reverse bool) Comparable
 	Aggregate(indices []index.Int, fnName string) (Series, error)
 	StringAt(i int) string
+	Marshaler(index index.Int) json.Marshaler
+	FillRecords(records []map[string]interface{}, index index.Int, colName string)
 }
 
 type CompareResult int
