@@ -31,6 +31,10 @@ func (s Series) StringAt(i int) string {
 	return strconv.FormatBool(s.data[i])
 }
 
+func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
+	return strconv.AppendBool(buf, s.data[i])
+}
+
 func (s Series) Marshaler(index index.Int) json.Marshaler {
 	return io.JsonBool(s.subset(index).data)
 }

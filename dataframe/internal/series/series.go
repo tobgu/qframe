@@ -15,6 +15,7 @@ type Series interface {
 	Comparable(reverse bool) Comparable
 	Aggregate(indices []index.Int, fnName string) (Series, error)
 	StringAt(i int) string
+	AppendByteStringAt(buf []byte, i int) []byte
 	Marshaler(index index.Int) json.Marshaler
 	FillRecords(records []map[string]interface{}, index index.Int, colName string)
 }

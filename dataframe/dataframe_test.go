@@ -416,7 +416,7 @@ func TestQCacheFrame_ToFromJSON(t *testing.T) {
 	for i, tc := range table {
 		buf := new(bytes.Buffer)
 		data := map[string]interface{}{
-			"STRING1": []string{"a", "b"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}}
+			"STRING1": []string{"añ", "bö☺"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}}
 		originalDf := qf.New(data)
 		err := originalDf.ToJson(buf, tc.orientation)
 		if err != nil {

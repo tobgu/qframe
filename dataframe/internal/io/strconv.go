@@ -29,3 +29,10 @@ func unsafeBytesToString(in []byte) string {
 	s := *(*string)(unsafe.Pointer(&dst))
 	return s
 }
+
+func QuotedBytes(s string) []byte {
+	result := make([]byte, 0, len(s)+2)
+	result = append(result, byte('"'))
+	result = append(result, []byte(s)...)
+	return append(result, byte('"'))
+}

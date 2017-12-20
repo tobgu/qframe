@@ -502,5 +502,6 @@ BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     
 >>> t0 = time.time(); j = ujson.dumps(x); time.time() - t0
 0.17484211921691895
 
-// Perhaps it's worth writing an own record encoder...
+// Custom encoder for JSON records, now we're talking
+BenchmarkQFrame_ToJsonRecords-2   	      20	  83949023 ns/op	53639616 B/op	      38 allocs/op
 */

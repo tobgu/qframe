@@ -19,6 +19,13 @@ func (s Series) StringAt(i int) string {
 	return s.data[i]
 }
 
+func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
+	buf = append(buf, '"')
+	buf = append(buf, s.data[i]...)
+	buf = append(buf, '"')
+	return buf
+}
+
 func (s Series) Marshaler(index index.Int) json.Marshaler {
 	return io.JsonString(s.subset(index).data)
 }

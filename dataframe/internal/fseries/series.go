@@ -20,6 +20,10 @@ func (s Series) StringAt(i int) string {
 	return strconv.FormatFloat(s.data[i], 'f', -1, 64)
 }
 
+func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
+	return strconv.AppendFloat(buf, s.data[i], 'f', -1, 64)
+}
+
 func (s Series) Marshaler(index index.Int) json.Marshaler {
 	return io.JsonFloat64(s.subset(index).data)
 }

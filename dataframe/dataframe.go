@@ -348,23 +348,55 @@ func (df DataFrame) ToCsv(writer io.Writer) error {
 
 func (df DataFrame) ToJson(writer io.Writer, orient string) error {
 	if orient == "records" {
-		records := make([]map[string]interface{}, len(df.index))
-		for i := range records {
-			records[i] = make(map[string]interface{}, len(df.series))
+		// Custom JSON generator for records due to performance reasons
+		colNames := make([]string, 0, len(df.series))
+		colByteNames := make([][]byte, len(colNames))
+		columns := make([]series.Series, 0, len(df.series))
+		for name, column := range df.series {
+			colNames = append(colNames, name)
+			columns = append(columns, column)
+			colByteName := dfio.QuotedBytes(name)
+			colByteNames = append(colByteNames, colByteName)
 		}
 
-		for name, s := range df.series {
-			s.FillRecords(records, df.index, name)
-		}
-
-		b, err := jsoniter.Marshal(records)
+		jsonBuf := []byte{'['}
+		_, err := writer.Write(jsonBuf)
 		if err != nil {
 			return err
 		}
-		writer.Write(b)
-		return nil
+
+		for i, ix := range df.index {
+			jsonBuf = jsonBuf[:0]
+			if i > 0 {
+				jsonBuf = append(jsonBuf, byte(','))
+			}
+
+			jsonBuf = append(jsonBuf, byte('{'))
+
+			for j, c := range columns {
+				jsonBuf = append(jsonBuf, colByteNames[j]...)
+				jsonBuf = append(jsonBuf, byte(':'))
+				jsonBuf = c.AppendByteStringAt(jsonBuf, int(ix))
+				jsonBuf = append(jsonBuf, byte(','))
+			}
+
+			if jsonBuf[len(jsonBuf)-1] == ',' {
+				jsonBuf = jsonBuf[:len(jsonBuf)-1]
+			}
+
+			jsonBuf = append(jsonBuf, byte('}'))
+
+			_, err = writer.Write(jsonBuf)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = writer.Write([]byte{']'})
+		return err
 	}
 
+	// Series/column orientation
 	columns := make(map[string]interface{}, len(df.series))
 	for name, s := range df.series {
 		columns[name] = s.Marshaler(df.index)
