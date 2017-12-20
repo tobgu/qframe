@@ -2,8 +2,8 @@ package dataframe
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
+	"github.com/json-iterator/go"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/bseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/fseries"
@@ -347,7 +347,6 @@ func (df DataFrame) ToCsv(writer io.Writer) error {
 }
 
 func (df DataFrame) ToJson(writer io.Writer, orient string) error {
-	encoder := json.NewEncoder(writer)
 	if orient == "records" {
 		records := make([]map[string]interface{}, len(df.index))
 		for i := range records {
@@ -358,15 +357,25 @@ func (df DataFrame) ToJson(writer io.Writer, orient string) error {
 			s.FillRecords(records, df.index, name)
 		}
 
-		return encoder.Encode(records)
+		b, err := jsoniter.Marshal(records)
+		if err != nil {
+			return err
+		}
+		writer.Write(b)
+		return nil
 	}
 
-	columns := make(map[string]json.Marshaler, len(df.series))
+	columns := make(map[string]interface{}, len(df.series))
 	for name, s := range df.series {
 		columns[name] = s.Marshaler(df.index)
 	}
 
-	return encoder.Encode(columns)
+	b, err := jsoniter.Marshal(columns)
+	if err != nil {
+		return err
+	}
+	writer.Write(b)
+	return nil
 }
 
 // TODO dataframe:

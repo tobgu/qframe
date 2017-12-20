@@ -4,6 +4,7 @@ package template
 
 import (
 	"fmt"
+	"github.com/json-iterator/go"
 	"github.com/tobgu/genny/generic"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/index"

@@ -430,7 +430,7 @@ func TestQCacheFrame_ToFromJSON(t *testing.T) {
 
 		equal, reason := jsonDf.Equals(originalDf)
 		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s, ||| %s", i, reason, originalDf, originalDf)
+			t.Errorf("TC %d: Dataframes not equal, %s, %s, ||| %s", i, reason, originalDf, jsonDf)
 		}
 	}
 }

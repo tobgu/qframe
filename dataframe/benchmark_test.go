@@ -488,4 +488,19 @@ BenchmarkQFrame_ToCsv-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allo
 // ToJson, performance is not super impressive... 100000 records
 BenchmarkQFrame_ToJsonRecords-2   	       2	 849280921 ns/op	181573400 B/op	 3400028 allocs/op
 BenchmarkQFrame_ToJsonColumns-2   	       5	 224702680 ns/op	33782697 B/op	     513 allocs/op
+
+// Testing jsoniter with some success
+BenchmarkQFrame_ToJsonRecords-2   	       2	 646738504 ns/op	137916264 B/op	 3600006 allocs/op
+BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     490 allocs/op
+
+// Python, as a comparison, with corresponding list of dictionaries:
+>>> import json
+>>> import time
+>>> t0 = time.time(); j = json.dumps(x); time.time() - t0
+0.33017611503601074
+>>> import ujson
+>>> t0 = time.time(); j = ujson.dumps(x); time.time() - t0
+0.17484211921691895
+
+// Perhaps it's worth writing an own record encoder...
 */
