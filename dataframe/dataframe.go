@@ -3,7 +3,6 @@ package dataframe
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/json-iterator/go"
 	"github.com/tobgu/go-qcache/dataframe/filter"
 	"github.com/tobgu/go-qcache/dataframe/internal/bseries"
 	"github.com/tobgu/go-qcache/dataframe/internal/fseries"
@@ -347,18 +346,15 @@ func (df DataFrame) ToCsv(writer io.Writer) error {
 }
 
 func (df DataFrame) ToJson(writer io.Writer, orient string) error {
+	colByteNames := make([][]byte, 0, len(df.series))
+	columns := make([]series.Series, 0, len(df.series))
+	for name, column := range df.series {
+		columns = append(columns, column)
+		colByteNames = append(colByteNames, dfio.QuotedBytes(name))
+	}
+
 	if orient == "records" {
 		// Custom JSON generator for records due to performance reasons
-		colNames := make([]string, 0, len(df.series))
-		colByteNames := make([][]byte, len(colNames))
-		columns := make([]series.Series, 0, len(df.series))
-		for name, column := range df.series {
-			colNames = append(colNames, name)
-			columns = append(columns, column)
-			colByteName := dfio.QuotedBytes(name)
-			colByteNames = append(colByteNames, colByteName)
-		}
-
 		jsonBuf := []byte{'['}
 		_, err := writer.Write(jsonBuf)
 		if err != nil {
@@ -397,17 +393,38 @@ func (df DataFrame) ToJson(writer io.Writer, orient string) error {
 	}
 
 	// Series/column orientation
-	columns := make(map[string]interface{}, len(df.series))
-	for name, s := range df.series {
-		columns[name] = s.Marshaler(df.index)
-	}
-
-	b, err := jsoniter.Marshal(columns)
+	jsonBuf := []byte{'{'}
+	_, err := writer.Write(jsonBuf)
 	if err != nil {
 		return err
 	}
-	writer.Write(b)
-	return nil
+
+	for i, column := range columns {
+		jsonBuf = jsonBuf[:0]
+		if i > 0 {
+			jsonBuf = append(jsonBuf, ',')
+		}
+
+		jsonBuf = append(jsonBuf, colByteNames[i]...)
+		jsonBuf = append(jsonBuf, ':')
+		_, err = writer.Write(jsonBuf)
+		if err != nil {
+			return err
+		}
+
+		m := column.Marshaler(df.index)
+		b, err := m.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(b)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = writer.Write([]byte{'}'})
+	return err
 }
 
 // TODO dataframe:

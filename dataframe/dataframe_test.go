@@ -423,6 +423,8 @@ func TestQCacheFrame_ToFromJSON(t *testing.T) {
 			t.Errorf("error in ToJson: %s", err)
 		}
 
+		println(buf.String())
+
 		jsonDf := qf.FromJson(buf)
 		if jsonDf.Err != nil {
 			t.Errorf("error in FromJson: %s", jsonDf.Err)
