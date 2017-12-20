@@ -427,11 +427,29 @@ func (df DataFrame) ToJson(writer io.Writer, orient string) error {
 	return err
 }
 
-// TODO dataframe:
+// TODO:
+// - Split repo, QCache and QFrame?
+
+// TODO QFrame:
 // - Error checks and general improvements to error structures
-// - Code generation to support all common operations for all data types
-// - Custom filtering for different types (bitwise, regex, etc)
-// - Read and write CSV and JSON
-// - Type hints for read and write operations
-// - More general structure for aggregation functions
-// - Possibility create new dfs with series added (for standins for example)
+// - More and better tests, use sub tests for table driven tests!
+// - Optional typing when reading CSV
+// - Nice table printing in String function
+// - Column index to support access by x, y (to support GoNum matrix interface)
+// - Implement query language.
+// - Implement de Morgan transformations to handle "not".
+// - Common filter functions
+// - Bitwise filters for int
+// - Regex filters for strings
+// - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
+// - Handle null values for strings
+// - Handle NaN for floats (sorting, filtering, etc.
+// - Add support to add columns to DF (in addition to project). Should produce a new df, no mutation!
+//   To be used with standin columns.
+// - Possibility to run operations on two or more columns that result in a new column (addition for example).
+//   Lower priority.
+// - Benchmarks comparing performance with NumPy
+
+// TODO QCache:
+// - HTTP(S) interface
+// - Caching
