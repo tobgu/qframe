@@ -503,6 +503,6 @@ BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     
 0.17484211921691895
 
 // Custom encoder for JSON records, now we're talking
-BenchmarkQFrame_ToJsonRecords-2   	      20	  83949023 ns/op	53639616 B/op	      38 allocs/op
+BenchmarkQFrame_ToJsonRecords-2   	      20	  87437635 ns/op	53638858 B/op	      35 allocs/op
 BenchmarkQFrame_ToJsonColumns-2   	      10	 102566155 ns/op	37746546 B/op	     547 allocs/op
 */
