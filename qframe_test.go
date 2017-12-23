@@ -60,7 +60,7 @@ func TestQCacheFrame_Filter(t *testing.T) {
 
 	table := []struct {
 		filters []filter.Filter
-		expDf   qf.DataFrame
+		expDf   qf.QFrame
 	}{
 		{
 			[]filter.Filter{{Column: "COL.1", Comparator: ">", Arg: 3}},
@@ -91,7 +91,7 @@ func TestQCacheFrame_Sort(t *testing.T) {
 
 	table := []struct {
 		orders []qf.Order
-		expDf  qf.DataFrame
+		expDf  qf.QFrame
 	}{
 		{
 			[]qf.Order{{Column: "COL.1"}},
@@ -130,7 +130,7 @@ func TestQCacheFrame_SortStability(t *testing.T) {
 
 	table := []struct {
 		orders []qf.Order
-		expDf  qf.DataFrame
+		expDf  qf.QFrame
 	}{
 		{
 			[]qf.Order{{Column: "COL.2", Reverse: true}, {Column: "COL.1"}},
@@ -422,7 +422,7 @@ func TestQCacheFrame_ToFromJSON(t *testing.T) {
 		if err != nil {
 			t.Errorf("error in ToJson: %s", err)
 		}
-		
+
 		jsonDf := qf.FromJson(buf)
 		if jsonDf.Err != nil {
 			t.Errorf("error in FromJson: %s", jsonDf.Err)

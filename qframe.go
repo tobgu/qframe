@@ -15,14 +15,14 @@ import (
 	"sort"
 )
 
-type DataFrame struct {
+type QFrame struct {
 	series map[string]series.Series
 	index  index.Int
 	Err    error
 }
 
-func New(d map[string]interface{}) DataFrame {
-	df := DataFrame{series: make(map[string]series.Series, len(d))}
+func New(d map[string]interface{}) QFrame {
+	df := QFrame{series: make(map[string]series.Series, len(d))}
 	firstLen, currentLen := 0, 0
 	for name, column := range d {
 		switch c := column.(type) {
@@ -57,7 +57,7 @@ func New(d map[string]interface{}) DataFrame {
 	return df
 }
 
-func (df DataFrame) Filter(filters ...filter.Filter) DataFrame {
+func (df QFrame) Filter(filters ...filter.Filter) QFrame {
 	bIndex := index.NewBool(df.index.Len())
 	for _, f := range filters {
 		// TODO: Check that Column exists
@@ -65,10 +65,10 @@ func (df DataFrame) Filter(filters ...filter.Filter) DataFrame {
 		s.Filter(df.index, f.Comparator, f.Arg, bIndex)
 	}
 
-	return DataFrame{series: df.series, index: df.index.Filter(bIndex)}
+	return QFrame{series: df.series, index: df.index.Filter(bIndex)}
 }
 
-func (df DataFrame) Equals(other DataFrame) (equal bool, reason string) {
+func (df QFrame) Equals(other QFrame) (equal bool, reason string) {
 	if len(df.index) != len(other.index) {
 		return false, "Different length"
 	}
@@ -91,7 +91,7 @@ func (df DataFrame) Equals(other DataFrame) (equal bool, reason string) {
 	return true, ""
 }
 
-func (df DataFrame) Len() int {
+func (df QFrame) Len() int {
 	return df.index.Len()
 }
 
@@ -100,9 +100,9 @@ type Order struct {
 	Reverse bool
 }
 
-func (df DataFrame) Sort(orders ...Order) DataFrame {
+func (df QFrame) Sort(orders ...Order) QFrame {
 	// Only copy on sort now, may provide in place later
-	newDf := DataFrame{series: df.series, index: df.index.Copy()}
+	newDf := QFrame{series: df.series, index: df.index.Copy()}
 
 	s := make([]series.Comparable, 0, len(orders))
 	for _, o := range orders {
@@ -115,7 +115,7 @@ func (df DataFrame) Sort(orders ...Order) DataFrame {
 	return newDf
 }
 
-func (df DataFrame) columnsOrAll(columns []string) []string {
+func (df QFrame) columnsOrAll(columns []string) []string {
 	// TODO: Check that columns exist
 	if len(columns) == 0 {
 		columns = make([]string, 0, len(df.series))
@@ -127,7 +127,7 @@ func (df DataFrame) columnsOrAll(columns []string) []string {
 	return columns
 }
 
-func (df DataFrame) orders(columns []string) []Order {
+func (df QFrame) orders(columns []string) []Order {
 	orders := make([]Order, len(columns))
 	for i, column := range columns {
 		orders[i] = Order{Column: column}
@@ -136,7 +136,7 @@ func (df DataFrame) orders(columns []string) []Order {
 	return orders
 }
 
-func (df DataFrame) reverseComparables(columns []string, orders []Order) []series.Comparable {
+func (df QFrame) reverseComparables(columns []string, orders []Order) []series.Comparable {
 	// Compare the columns in reverse order compared to the sort order
 	// since it's likely to produce differences with fewer comparisons.
 	comparables := make([]series.Comparable, 0, len(columns))
@@ -146,7 +146,7 @@ func (df DataFrame) reverseComparables(columns []string, orders []Order) []serie
 	return comparables
 }
 
-func (df DataFrame) Distinct(columns ...string) DataFrame {
+func (df QFrame) Distinct(columns ...string) QFrame {
 	if df.Len() == 0 {
 		return df
 	}
@@ -172,16 +172,16 @@ func (df DataFrame) Distinct(columns ...string) DataFrame {
 		}
 	}
 
-	return DataFrame{series: df.series, index: newIx}
+	return QFrame{series: df.series, index: newIx}
 }
 
-func (df DataFrame) Select(columns ...string) DataFrame {
+func (df QFrame) Select(columns ...string) QFrame {
 	if len(columns) == 0 {
-		return DataFrame{}
+		return QFrame{}
 	}
 
 	newSeries := make(map[string]series.Series, len(columns))
-	newDf := DataFrame{series: newSeries, index: df.index}
+	newDf := QFrame{series: newSeries, index: df.index}
 	for _, c := range columns {
 		s, ok := df.series[c]
 		if !ok {
@@ -202,7 +202,7 @@ type Grouper struct {
 }
 
 // Leaving out columns will group by all columns in the frame.
-func (df DataFrame) GroupBy(columns ...string) Grouper {
+func (df QFrame) GroupBy(columns ...string) Grouper {
 	columns = df.columnsOrAll(columns)
 	grouper := Grouper{series: df.series, groupedColumns: columns}
 	if df.Len() == 0 {
@@ -234,9 +234,9 @@ func (df DataFrame) GroupBy(columns ...string) Grouper {
 }
 
 // fnsAndCols is a list of alternating function names and column names
-func (g Grouper) Aggregate(fnsAndCols ...string) DataFrame {
+func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
 	if len(fnsAndCols)%2 != 0 || len(fnsAndCols) == 0 {
-		return DataFrame{Err: fmt.Errorf("aggregation expects even number of arguments, col1, fn1, col2, fn2")}
+		return QFrame{Err: fmt.Errorf("aggregation expects even number of arguments, col1, fn1, col2, fn2")}
 	}
 
 	// TODO: Check that columns exist but are not part of groupedColumns
@@ -257,14 +257,14 @@ func (g Grouper) Aggregate(fnsAndCols ...string) DataFrame {
 		s[col], err = g.series[col].Aggregate(g.indices, fn)
 		if err != nil {
 			// TODO: Wrap up error
-			return DataFrame{Err: err}
+			return QFrame{Err: err}
 		}
 	}
 
-	return DataFrame{series: s, index: index.NewAscending(len(g.indices))}
+	return QFrame{series: s, index: index.NewAscending(len(g.indices))}
 }
 
-func (df DataFrame) String() string {
+func (df QFrame) String() string {
 	// TODO: Fix
 	if df.Err != nil {
 		return df.Err.Error()
@@ -278,35 +278,35 @@ func (df DataFrame) String() string {
 	return result
 }
 
-func (df DataFrame) Slice(start, end int) DataFrame {
+func (df QFrame) Slice(start, end int) QFrame {
 	if start < 0 {
-		return DataFrame{Err: fmt.Errorf("start must be non negative")}
+		return QFrame{Err: fmt.Errorf("start must be non negative")}
 	}
 
 	if start > end {
-		return DataFrame{Err: fmt.Errorf("start must not be greater than end")}
+		return QFrame{Err: fmt.Errorf("start must not be greater than end")}
 	}
 
 	if end > df.Len() {
-		return DataFrame{Err: fmt.Errorf("end must not be greater than dataframe length")}
+		return QFrame{Err: fmt.Errorf("end must not be greater than dataframe length")}
 	}
 
-	return DataFrame{series: df.series, index: df.index[start:end]}
+	return QFrame{series: df.series, index: df.index[start:end]}
 }
 
-func FromCsv(reader io.Reader) DataFrame {
+func FromCsv(reader io.Reader) QFrame {
 	data, err := dfio.FromCsv(reader)
 	if err != nil {
-		return DataFrame{Err: err}
+		return QFrame{Err: err}
 	}
 
 	return New(data)
 }
 
-func FromJson(reader io.Reader) DataFrame {
+func FromJson(reader io.Reader) QFrame {
 	data, err := dfio.UnmarshalJson(reader)
 	if err != nil {
-		return DataFrame{Err: err}
+		return QFrame{Err: err}
 	}
 
 	return New(data)
@@ -314,7 +314,7 @@ func FromJson(reader io.Reader) DataFrame {
 
 // This is currently fairly slow. Could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
-func (df DataFrame) ToCsv(writer io.Writer) error {
+func (df QFrame) ToCsv(writer io.Writer) error {
 	// TODO: Column index
 	row := make([]string, 0, len(df.series))
 	for name := range df.series {
@@ -345,7 +345,7 @@ func (df DataFrame) ToCsv(writer io.Writer) error {
 	return nil
 }
 
-func (df DataFrame) ToJson(writer io.Writer, orient string) error {
+func (df QFrame) ToJson(writer io.Writer, orient string) error {
 	colByteNames := make([][]byte, 0, len(df.series))
 	columns := make([]series.Series, 0, len(df.series))
 	for name, column := range df.series {
@@ -428,9 +428,6 @@ func (df DataFrame) ToJson(writer io.Writer, orient string) error {
 }
 
 // TODO:
-// - Split repo, QCache and QFrame?
-
-// TODO QFrame:
 // - Error checks and general improvements to error structures
 // - More and better tests, use sub tests for table driven tests!
 // - Optional typing when reading CSV
@@ -449,7 +446,3 @@ func (df DataFrame) ToJson(writer io.Writer, orient string) error {
 // - Possibility to run operations on two or more columns that result in a new column (addition for example).
 //   Lower priority.
 // - Benchmarks comparing performance with NumPy
-
-// TODO QCache:
-// - HTTP(S) interface
-// - Caching
