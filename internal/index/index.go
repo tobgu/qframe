@@ -8,7 +8,7 @@ func NewBool(size int) Bool {
 	return make(Bool, size)
 }
 
-func NewAscending(size int) Int {
+func NewAscending(size uint32) Int {
 	newIndex := make(Int, size)
 	for i := range newIndex {
 		newIndex[i] = uint32(i)
