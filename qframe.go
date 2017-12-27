@@ -579,3 +579,4 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 //   Lower priority.
 // - Benchmarks comparing performance with Pandas
 // - Documentation
+// - Use https://goreportcard.com

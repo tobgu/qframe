@@ -2,154 +2,122 @@ package qframe_test
 
 import (
 	"bytes"
-	"github.com/kniren/gota/dataframe"
-	"github.com/kniren/gota/series"
-	qf "github.com/tobgu/qframe"
+	"fmt"
+	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/filter"
-	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestDataGotaFrame_Filter(t *testing.T) {
-	a := dataframe.New(
-		series.New([]string{"b", "a", "b", "c", "d"}, series.String, "COL.1"),
-		series.New([]int{1, 2, 4, 5, 4}, series.Int, "COL.2"),
-		series.New([]float64{3.0, 4.0, 5.3, 3.2, 1.2}, series.Float, "COL.3"),
-	)
-	table := []struct {
-		filters []dataframe.F
-		expDf   dataframe.DataFrame
-	}{
-		{
-			[]dataframe.F{{"COL.2", series.GreaterEq, 4}},
-			dataframe.New(
-				series.New([]string{"b", "c", "d"}, series.String, "COL.1"),
-				series.New([]int{4, 5, 4}, series.Int, "COL.2"),
-				series.New([]float64{5.3, 3.2, 1.2}, series.Float, "COL.3"),
-			),
-		},
-	}
-
-	for i, tc := range table {
-		b := a.Filter(tc.filters...)
-
-		if b.Err != nil {
-			t.Errorf("Test: %d\nError:%v", i, b.Err)
-		}
-
-		// Check that the types are the same between both DataFrames
-		if !reflect.DeepEqual(tc.expDf.Types(), b.Types()) {
-			t.Errorf("Test: %d\nDifferent types:\nA:%v\nB:%v", i, tc.expDf.Types(), b.Types())
-		}
-		// Check that the colnames are the same between both DataFrames
-		if !reflect.DeepEqual(tc.expDf.Names(), b.Names()) {
-			t.Errorf("Test: %d\nDifferent colnames:\nA:%v\nB:%v", i, tc.expDf.Names(), b.Names())
-		}
-		// Check that the values are the same between both DataFrames
-		if !reflect.DeepEqual(tc.expDf.Records(), b.Records()) {
-			t.Errorf("Test: %d\nDifferent values:\nA:%v\nB:%v", i, tc.expDf.Records(), b.Records())
-		}
+func assertEquals(t *testing.T, expected, actual qframe.QFrame) {
+	t.Helper()
+	equal, reason := expected.Equals(actual)
+	if !equal {
+		t.Errorf("QFrames not equal, %s.\nexpected=%s\nactual=%s", reason, expected, actual)
 	}
 }
 
-func TestQCacheFrame_Filter(t *testing.T) {
-	a := qf.New(map[string]interface{}{
+func assertNotErr(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Errorf("Unexpected error: %s", err)
+	}
+}
+
+func TestQFrame_Filter(t *testing.T) {
+	a := qframe.New(map[string]interface{}{
 		"COL.1": []int{1, 2, 3, 4, 5},
 	})
 
 	table := []struct {
-		filters []filter.Filter
-		expDf   qf.QFrame
+		filters  []filter.Filter
+		expected qframe.QFrame
 	}{
 		{
 			[]filter.Filter{{Column: "COL.1", Comparator: ">", Arg: 3}},
-			qf.New(map[string]interface{}{"COL.1": []int{4, 5}}),
+			qframe.New(map[string]interface{}{"COL.1": []int{4, 5}}),
 		},
 		{
 			[]filter.Filter{
 				{Column: "COL.1", Comparator: ">", Arg: 4},
 				{Column: "COL.1", Comparator: "<", Arg: 2}},
-			qf.New(map[string]interface{}{"COL.1": []int{1, 5}}),
+			qframe.New(map[string]interface{}{"COL.1": []int{1, 5}}),
 		},
 	}
 
 	for i, tc := range table {
-		b := a.Filter(tc.filters...)
-		equal, reason := tc.expDf.Equals(b)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s", i, reason)
-		}
+		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
+			b := a.Filter(tc.filters...)
+			assertEquals(t, tc.expected, b)
+		})
 	}
 }
 
-func TestQCacheFrame_Sort(t *testing.T) {
-	a := qf.New(map[string]interface{}{
+func TestQFrame_Sort(t *testing.T) {
+	a := qframe.New(map[string]interface{}{
 		"COL.1": []int{0, 1, 3, 2},
 		"COL.2": []int{3, 2, 1, 1},
 	})
 
 	table := []struct {
-		orders []qf.Order
-		expDf  qf.QFrame
+		orders   []qframe.Order
+		expected qframe.QFrame
 	}{
 		{
-			[]qf.Order{{Column: "COL.1"}},
-			qf.New(map[string]interface{}{
+			[]qframe.Order{{Column: "COL.1"}},
+			qframe.New(map[string]interface{}{
 				"COL.1": []int{0, 1, 2, 3},
 				"COL.2": []int{3, 2, 1, 1}}),
 		},
 		{
-			[]qf.Order{{Column: "COL.1", Reverse: true}},
-			qf.New(map[string]interface{}{
+			[]qframe.Order{{Column: "COL.1", Reverse: true}},
+			qframe.New(map[string]interface{}{
 				"COL.1": []int{3, 2, 1, 0},
 				"COL.2": []int{1, 1, 2, 3}}),
 		},
 		{
-			[]qf.Order{{Column: "COL.2"}, {Column: "COL.1"}},
-			qf.New(map[string]interface{}{
+			[]qframe.Order{{Column: "COL.2"}, {Column: "COL.1"}},
+			qframe.New(map[string]interface{}{
 				"COL.1": []int{2, 3, 1, 0},
 				"COL.2": []int{1, 1, 2, 3}}),
 		},
 	}
 
 	for i, tc := range table {
-		b := a.Sort(tc.orders...)
-		equal, reason := tc.expDf.Equals(b)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s", i, reason)
-		}
+		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
+			b := a.Sort(tc.orders...)
+			assertEquals(t, tc.expected, b)
+		})
 	}
 }
 
-func TestQCacheFrame_SortStability(t *testing.T) {
-	a := qf.New(map[string]interface{}{
+func TestQFrame_SortStability(t *testing.T) {
+	a := qframe.New(map[string]interface{}{
 		"COL.1": []int{0, 1, 3, 2},
 		"COL.2": []int{1, 1, 1, 1},
 	})
 
 	table := []struct {
-		orders []qf.Order
-		expDf  qf.QFrame
+		orders   []qframe.Order
+		expected qframe.QFrame
 	}{
 		{
-			[]qf.Order{{Column: "COL.2", Reverse: true}, {Column: "COL.1"}},
-			qf.New(map[string]interface{}{
+			[]qframe.Order{{Column: "COL.2", Reverse: true}, {Column: "COL.1"}},
+			qframe.New(map[string]interface{}{
 				"COL.1": []int{0, 1, 2, 3},
 				"COL.2": []int{1, 1, 1, 1}}),
 		},
 	}
 
 	for i, tc := range table {
-		b := a.Sort(tc.orders...)
-		equal, reason := tc.expDf.Equals(b)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s", i, reason)
-		}
+		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
+			b := a.Sort(tc.orders...)
+			assertEquals(t, tc.expected, b)
+		})
 	}
 }
 
-func TestQCacheFrame_Distinct(t *testing.T) {
+func TestQFrame_Distinct(t *testing.T) {
 	table := []struct {
 		input    map[string]interface{}
 		expected map[string]interface{}
@@ -176,17 +144,15 @@ func TestQCacheFrame_Distinct(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		in := qf.New(tc.input)
-		out := in.Distinct()
-		expDf := qf.New(tc.expected)
-		equal, reason := out.Equals(expDf)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
-		}
+		t.Run(fmt.Sprintf("Distinct %d", i), func(t *testing.T) {
+			in := qframe.New(tc.input)
+			out := in.Distinct()
+			assertEquals(t, qframe.New(tc.expected), out)
+		})
 	}
 }
 
-func TestQCacheFrame_GroupByAggregate(t *testing.T) {
+func TestQFrame_GroupByAggregate(t *testing.T) {
 	table := []struct {
 		input        map[string]interface{}
 		expected     map[string]interface{}
@@ -218,17 +184,15 @@ func TestQCacheFrame_GroupByAggregate(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		in := qf.New(tc.input)
-		out := in.GroupBy(tc.groupColumns...).Aggregate(tc.aggregations...)
-		expDf := qf.New(tc.expected)
-		equal, reason := out.Equals(expDf)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
-		}
+		t.Run(fmt.Sprintf("GroupByAggregate %d", i), func(t *testing.T) {
+			in := qframe.New(tc.input)
+			out := in.GroupBy(tc.groupColumns...).Aggregate(tc.aggregations...)
+			assertEquals(t, qframe.New(tc.expected), out)
+		})
 	}
 }
 
-func TestQCacheFrame_Select(t *testing.T) {
+func TestQFrame_Select(t *testing.T) {
 	table := []struct {
 		input      map[string]interface{}
 		expected   map[string]interface{}
@@ -252,17 +216,15 @@ func TestQCacheFrame_Select(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		in := qf.New(tc.input)
-		out := in.Select(tc.selectCols...)
-		expDf := qf.New(tc.expected)
-		equal, reason := out.Equals(expDf)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
-		}
+		t.Run(fmt.Sprintf("Select %d", i), func(t *testing.T) {
+			in := qframe.New(tc.input)
+			out := in.Select(tc.selectCols...)
+			assertEquals(t, qframe.New(tc.expected), out)
+		})
 	}
 }
 
-func TestQCacheFrame_Slice(t *testing.T) {
+func TestQFrame_Slice(t *testing.T) {
 	table := []struct {
 		input    map[string]interface{}
 		expected map[string]interface{}
@@ -292,13 +254,11 @@ func TestQCacheFrame_Slice(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		in := qf.New(tc.input)
-		out := in.Slice(tc.start, tc.end)
-		expDf := qf.New(tc.expected)
-		equal, reason := out.Equals(expDf)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
-		}
+		t.Run(fmt.Sprintf("Slice %d", i), func(t *testing.T) {
+			in := qframe.New(tc.input)
+			out := in.Slice(tc.start, tc.end)
+			assertEquals(t, qframe.New(tc.expected), out)
+		})
 	}
 }
 
@@ -324,20 +284,15 @@ func TestQCacheFrame_FromCsv(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		out := qf.FromCsv(strings.NewReader(tc.input))
-		if out.Err != nil {
-			t.Errorf("error in FromCsv: %s", out.Err.Error())
-		}
-
-		expDf := qf.New(tc.expected)
-		equal, reason := out.Equals(expDf)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s", i, reason, out)
-		}
+		t.Run(fmt.Sprintf("FromCsv %d", i), func(t *testing.T) {
+			out := qframe.FromCsv(strings.NewReader(tc.input))
+			assertNotErr(t, out.Err)
+			assertEquals(t, qframe.New(tc.expected), out)
+		})
 	}
 }
 
-func TestQCacheFrame_FromJSON(t *testing.T) {
+func TestQFrame_FromJSON(t *testing.T) {
 	table := []struct {
 		input    string
 		expected map[string]interface{}
@@ -358,20 +313,15 @@ func TestQCacheFrame_FromJSON(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		out := qf.FromJson(strings.NewReader(tc.input))
-		if out.Err != nil {
-			t.Errorf("error in FromJson: %s", out.Err.Error())
-		}
-
-		expDf := qf.New(tc.expected)
-		equal, reason := out.Equals(expDf)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s, ||| %s", i, reason, out, expDf)
-		}
+		t.Run(fmt.Sprintf("FromJSON %d", i), func(t *testing.T) {
+			out := qframe.FromJson(strings.NewReader(tc.input))
+			assertNotErr(t, out.Err)
+			assertEquals(t, qframe.New(tc.expected), out)
+		})
 	}
 }
 
-func TestQCacheFrame_ToCsv(t *testing.T) {
+func TestQFrame_ToCsv(t *testing.T) {
 	table := []struct {
 		input    map[string]interface{}
 		expected string
@@ -387,21 +337,19 @@ false,2.5,2,"b,c"
 	}
 
 	for i, tc := range table {
-		in := qf.New(tc.input)
-		if in.Err != nil {
-			t.Errorf("error in New: %s", in.Err.Error())
-		}
+		t.Run(fmt.Sprintf("ToCsv %d", i), func(t *testing.T) {
+			in := qframe.New(tc.input)
+			assertNotErr(t, in.Err)
 
-		buf := new(bytes.Buffer)
-		err := in.ToCsv(buf)
-		if err != nil {
-			t.Errorf("error in ToCsv: %s", err)
-		}
+			buf := new(bytes.Buffer)
+			err := in.ToCsv(buf)
+			assertNotErr(t, err)
 
-		result := buf.String()
-		if result != tc.expected {
-			t.Errorf("TC %d: CSV not equal, %s ||| %s", i, result, tc.expected)
-		}
+			result := buf.String()
+			if result != tc.expected {
+				t.Errorf("QFrames not equal, %s ||| %s", result, tc.expected)
+			}
+		})
 	}
 }
 
@@ -414,23 +362,17 @@ func TestQCacheFrame_ToFromJSON(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		buf := new(bytes.Buffer)
-		data := map[string]interface{}{
-			"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}}
-		originalDf := qf.New(data)
-		err := originalDf.ToJson(buf, tc.orientation)
-		if err != nil {
-			t.Errorf("error in ToJson: %s", err)
-		}
+		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			data := map[string]interface{}{
+				"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}}
+			originalDf := qframe.New(data)
+			err := originalDf.ToJson(buf, tc.orientation)
+			assertNotErr(t, err)
 
-		jsonDf := qf.FromJson(buf)
-		if jsonDf.Err != nil {
-			t.Errorf("error in FromJson: %s", jsonDf.Err)
-		}
-
-		equal, reason := jsonDf.Equals(originalDf)
-		if !equal {
-			t.Errorf("TC %d: Dataframes not equal, %s, %s, ||| %s", i, reason, originalDf, jsonDf)
-		}
+			jsonDf := qframe.FromJson(buf)
+			assertNotErr(t, jsonDf.Err)
+			assertEquals(t, originalDf, jsonDf)
+		})
 	}
 }
