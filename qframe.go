@@ -113,6 +113,10 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 }
 
 func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	bIndex := index.NewBool(qf.index.Len())
 	for _, f := range filters {
 		s, ok := qf.seriesByName[f.Column]
@@ -149,6 +153,10 @@ func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 }
 
 func (qf QFrame) Len() int {
+	if qf.Err != nil {
+		return -1
+	}
+
 	return qf.index.Len()
 }
 
@@ -158,6 +166,10 @@ type Order struct {
 }
 
 func (qf QFrame) Sort(orders ...Order) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	comparables := make([]series.Comparable, 0, len(orders))
 	for _, o := range orders {
 		s, ok := qf.seriesByName[o.Column]
@@ -212,6 +224,10 @@ func (qf QFrame) reverseComparables(columns []string, orders []Order) []series.C
 }
 
 func (qf QFrame) Distinct(columns ...string) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	if qf.Len() == 0 {
 		return qf
 	}
@@ -257,6 +273,10 @@ func (qf QFrame) checkColumns(operation string, columns []string) error {
 }
 
 func (qf QFrame) Select(columns ...string) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	if err := qf.checkColumns("Select", columns); err != nil {
 		return qf.withErr(err)
 	}
@@ -324,6 +344,10 @@ func (qf QFrame) GroupBy(columns ...string) Grouper {
 
 // fnsAndCols is a list of alternating function names and column names
 func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
+	if g.Err != nil {
+		return QFrame{Err: g.Err}
+	}
+
 	if len(fnsAndCols)%2 != 0 || len(fnsAndCols) == 0 {
 		return QFrame{Err: errors.New("Aggregate", "aggregation expects even number of arguments, col1, fn1, col2, fn2")}
 	}
@@ -376,6 +400,10 @@ func (qf QFrame) String() string {
 }
 
 func (qf QFrame) Slice(start, end int) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	if start < 0 {
 		return qf.withErr(errors.New("Slice", "start must be non negative"))
 	}
@@ -413,6 +441,10 @@ func FromJson(reader io.Reader) QFrame {
 // This is currently fairly slow. Could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
 func (qf QFrame) ToCsv(writer io.Writer) error {
+	if qf.Err != nil {
+		return errors.Propagate("ToCsv", qf.Err)
+	}
+
 	row := make([]string, 0, len(qf.series))
 	for _, s := range qf.series {
 		row = append(row, s.name)
@@ -442,6 +474,10 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 }
 
 func (qf QFrame) ToJson(writer io.Writer, orient string) error {
+	if qf.Err != nil {
+		return errors.Propagate("ToJson", qf.Err)
+	}
+
 	colByteNames := make([][]byte, 0, len(qf.series))
 	columns := make([]series.Series, 0, len(qf.series))
 	for name, column := range qf.seriesByName {
@@ -542,3 +578,4 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - Possibility to run operations on two or more columns that result in a new column (addition for example).
 //   Lower priority.
 // - Benchmarks comparing performance with Pandas
+// - Documentation
