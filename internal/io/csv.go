@@ -12,11 +12,11 @@ type bytePointer struct {
 }
 
 // TODO: Take type map
-func FromCsv(reader io.Reader) (map[string]interface{}, error) {
+func ReadCsv(reader io.Reader) (map[string]interface{}, []string, error) {
 	r := csv.NewReader(reader)
 	byteHeader, err := r.Read()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	headers := make([]string, len(byteHeader))
@@ -33,7 +33,7 @@ func FromCsv(reader io.Reader) (map[string]interface{}, error) {
 		// TODO: What happens when the number of columns differ from number of
 		//       headers. When the number of columns is zero?
 		if r.Err() != nil {
-			return nil, r.Err()
+			return nil, nil, r.Err()
 		}
 
 		for i, col := range r.Fields() {
@@ -48,13 +48,13 @@ func FromCsv(reader io.Reader) (map[string]interface{}, error) {
 	for i, header := range headers {
 		data, err := columnToData(colBytes[i], colPointers[i])
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		dataMap[header] = data
 	}
 
-	return dataMap, nil
+	return dataMap, headers, nil
 }
 
 // Convert bytes to data columns, try, in turn int, float, bool and last string.

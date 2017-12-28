@@ -262,19 +262,33 @@ func TestQFrame_Slice(t *testing.T) {
 	}
 }
 
-func TestQCacheFrame_FromCsv(t *testing.T) {
+func TestQCacheFrame_ReadCsv(t *testing.T) {
+	/*
+		Pandas reference
+		>>> data = """
+		... foo,bar,baz,qux
+		... ccc,,,www
+		... aaa,3.25,7,"""
+		>>> pd.read_csv(StringIO(data))
+		   foo   bar  baz  qux
+		0  ccc   NaN  NaN  www
+		1  aaa  3.25  7.0  NaN
+	*/
 	table := []struct {
-		input    string
-		expected map[string]interface{}
+		inputHeaders []string
+		inputData    string
+		expected     map[string]interface{}
 	}{
 		{
-			input: "foo,bar\n1,2\n3,4\n",
+			inputHeaders: []string{"foo", "bar"},
+			inputData:    "1,2\n3,4\n",
 			expected: map[string]interface{}{
 				"foo": []int{1, 3},
 				"bar": []int{2, 4}},
 		},
 		{
-			input: "int,float,bool,string\n1,2.5,true,hello\n10,20.5,false,\"bye, bye\"",
+			inputHeaders: []string{"int", "float", "bool", "string"},
+			inputData:    "1,2.5,true,hello\n10,20.5,false,\"bye, bye\"",
 			expected: map[string]interface{}{
 				"int":    []int{1, 10},
 				"float":  []float64{2.5, 20.5},
@@ -284,15 +298,42 @@ func TestQCacheFrame_FromCsv(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		t.Run(fmt.Sprintf("FromCsv %d", i), func(t *testing.T) {
-			out := qframe.FromCsv(strings.NewReader(tc.input))
+		t.Run(fmt.Sprintf("ReadCsv %d", i), func(t *testing.T) {
+			input := strings.Join(tc.inputHeaders, ",") + "\n" + tc.inputData
+			out := qframe.ReadCsv(strings.NewReader(input))
 			assertNotErr(t, out.Err)
-			assertEquals(t, qframe.New(tc.expected), out)
+			assertEquals(t, qframe.New(tc.expected, qframe.ColumnOrder(tc.inputHeaders...)), out)
 		})
 	}
 }
 
-func TestQFrame_FromJSON(t *testing.T) {
+func TestQFrame_ReadJson(t *testing.T) {
+	/*
+		>>> pd.DataFrame.from_records([dict(a=1.5), dict(a=None)])
+			 a
+		0  1.5
+		1  NaN
+		>>> pd.DataFrame.from_records([dict(a=1), dict(a=None)])
+			 a
+		0  1.0
+		1  NaN
+		>>> pd.DataFrame.from_records([dict(a=1), dict(a=2)])
+		   a
+		0  1
+		1  2
+		>>> pd.DataFrame.from_records([dict(a='foo'), dict(a=None)])
+			  a
+		0   foo
+		1  None
+		>>> pd.DataFrame.from_records([dict(a=1.5), dict(a='N/A')])
+			 a
+		0  1.5
+		1  N/A
+		>>> x = pd.DataFrame.from_records([dict(a=1.5), dict(a='N/A')])
+		>>> x.ix[0]
+		a    1.5
+		Name: 0, dtype: object
+	*/
 	table := []struct {
 		input    string
 		expected map[string]interface{}
@@ -314,7 +355,7 @@ func TestQFrame_FromJSON(t *testing.T) {
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("FromJSON %d", i), func(t *testing.T) {
-			out := qframe.FromJson(strings.NewReader(tc.input))
+			out := qframe.ReadJson(strings.NewReader(tc.input))
 			assertNotErr(t, out.Err)
 			assertEquals(t, qframe.New(tc.expected), out)
 		})
@@ -370,7 +411,7 @@ func TestQCacheFrame_ToFromJSON(t *testing.T) {
 			err := originalDf.ToJson(buf, tc.orientation)
 			assertNotErr(t, err)
 
-			jsonDf := qframe.FromJson(buf)
+			jsonDf := qframe.ReadJson(buf)
 			assertNotErr(t, jsonDf.Err)
 			assertEquals(t, originalDf, jsonDf)
 		})

@@ -172,7 +172,7 @@ func BenchmarkQFrame_FromCsv(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.FromCsv(r)
+		df := qf.ReadCsv(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected CSV error: %s", df.Err)
 		}
@@ -306,7 +306,7 @@ func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.FromJson(r)
+		df := qf.ReadJson(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected JSON error: %s", df.Err)
 		}
@@ -325,7 +325,7 @@ func BenchmarkQFrame_FromJSONColumns(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.FromJson(r)
+		df := qf.ReadJson(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected JSON error: %s", df.Err)
 		}

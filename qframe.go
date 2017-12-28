@@ -419,17 +419,17 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	return qf.withIndex(qf.index[start:end])
 }
 
-func FromCsv(reader io.Reader) QFrame {
+func ReadCsv(reader io.Reader) QFrame {
 	// TODO: Column order
-	data, err := dfio.FromCsv(reader)
+	data, columns, err := dfio.ReadCsv(reader)
 	if err != nil {
 		return QFrame{Err: err}
 	}
 
-	return New(data)
+	return New(data, ColumnOrder(columns...))
 }
 
-func FromJson(reader io.Reader) QFrame {
+func ReadJson(reader io.Reader) QFrame {
 	data, err := dfio.UnmarshalJson(reader)
 	if err != nil {
 		return QFrame{Err: err}
