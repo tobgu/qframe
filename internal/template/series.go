@@ -15,7 +15,7 @@ type dataType generic.Number
 //go:generate genny -in=$GOFILE -out=../iseries/series_gen.go -pkg=iseries gen "dataType=int"
 //go:generate genny -in=$GOFILE -out=../fseries/series_gen.go -pkg=fseries gen "dataType=float64"
 //go:generate genny -in=$GOFILE -out=../bseries/series_gen.go -pkg=bseries gen "dataType=bool"
-//go:generate genny -in=$GOFILE -out=../sseries/series_gen.go -pkg=sseries gen "dataType=string"
+//go:generate genny -in=$GOFILE -out=../sseries/series_gen.go -pkg=sseries gen "dataType=*string"
 
 type Series struct {
 	data []dataType
@@ -33,21 +33,6 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 	}
 
 	return compFunc(index, s.data, comparatee, bIndex)
-}
-
-func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
-	otherI, ok := other.(Series)
-	if !ok {
-		return false
-	}
-
-	for ix, x := range index {
-		if s.data[x] != otherI.data[otherIndex[ix]] {
-			return false
-		}
-	}
-
-	return true
 }
 
 func (s Series) subset(index index.Int) Series {

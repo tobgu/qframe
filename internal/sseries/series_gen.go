@@ -15,10 +15,10 @@ import (
 // Code generated from template/series.go DO NOT EDIT
 
 type Series struct {
-	data []string
+	data []*string
 }
 
-func New(d []string) Series {
+func New(d []*string) Series {
 	return Series{data: d}
 }
 
@@ -26,29 +26,14 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 	// TODO: Also make it possible to compare to values in other column
 	compFunc, ok := filterFuncs[c]
 	if !ok {
-		return fmt.Errorf("invalid comparison operator for string, %v", c)
+		return fmt.Errorf("invalid comparison operator for *string, %v", c)
 	}
 
 	return compFunc(index, s.data, comparatee, bIndex)
 }
 
-func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
-	otherI, ok := other.(Series)
-	if !ok {
-		return false
-	}
-
-	for ix, x := range index {
-		if s.data[x] != otherI.data[otherIndex[ix]] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func (s Series) subset(index index.Int) Series {
-	data := make([]string, 0, len(index))
+	data := make([]*string, 0, len(index))
 	for _, ix := range index {
 		data = append(data, s.data[ix])
 	}
@@ -78,7 +63,7 @@ func (s Series) Aggregate(indices []index.Int, fnName string) (series.Series, er
 		return nil, fmt.Errorf("aggregation function %s is not defined for in series", fnName)
 	}
 
-	data := make([]string, 0, len(indices))
+	data := make([]*string, 0, len(indices))
 	for _, ix := range indices {
 		subS := s.subset(ix)
 		data = append(data, fn(subS.data))
@@ -94,7 +79,7 @@ func (s Series) FillRecords(records []map[string]interface{}, index index.Int, c
 }
 
 type Comparable struct {
-	data    []string
+	data    []*string
 	ltValue series.CompareResult
 	gtValue series.CompareResult
 }

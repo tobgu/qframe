@@ -32,21 +32,6 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 	return compFunc(index, s.data, comparatee, bIndex)
 }
 
-func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
-	otherI, ok := other.(Series)
-	if !ok {
-		return false
-	}
-
-	for ix, x := range index {
-		if s.data[x] != otherI.data[otherIndex[ix]] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func (s Series) subset(index index.Int) Series {
 	data := make([]int, 0, len(index))
 	for _, ix := range index {

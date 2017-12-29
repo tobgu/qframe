@@ -12,7 +12,7 @@ type bytePointer struct {
 }
 
 // TODO: Take type map
-func ReadCsv(reader io.Reader) (map[string]interface{}, []string, error) {
+func ReadCsv(reader io.Reader, emptyNull bool) (map[string]interface{}, []string, error) {
 	r := csv.NewReader(reader)
 	byteHeader, err := r.Read()
 	if err != nil {
@@ -46,7 +46,7 @@ func ReadCsv(reader io.Reader) (map[string]interface{}, []string, error) {
 	// TODO: Perhaps series should be a slice instead with a map indexing into it...
 	dataMap := make(map[string]interface{}, len(headers))
 	for i, header := range headers {
-		data, err := columnToData(colBytes[i], colPointers[i])
+		data, err := columnToData(colBytes[i], colPointers[i], emptyNull)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -58,7 +58,7 @@ func ReadCsv(reader io.Reader) (map[string]interface{}, []string, error) {
 }
 
 // Convert bytes to data columns, try, in turn int, float, bool and last string.
-func columnToData(bytes []byte, pointers []bytePointer) (interface{}, error) {
+func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool) (interface{}, error) {
 	// TODO: Take type hint and err if type cannot be applied
 
 	// Int
@@ -110,9 +110,14 @@ func columnToData(bytes []byte, pointers []bytePointer) (interface{}, error) {
 	}
 
 	// String
-	stringData := make([]string, 0, len(pointers))
+	stringData := make([]*string, 0, len(pointers))
 	for _, p := range pointers {
-		stringData = append(stringData, string(bytes[p.start:p.end]))
+		if p.start == p.end && emptyNull {
+			stringData = append(stringData, nil)
+		} else {
+			s := string(bytes[p.start:p.end])
+			stringData = append(stringData, &s)
+		}
 	}
 
 	// TODO: Might want some sort of categorial like here for low cardinality strings,

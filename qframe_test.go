@@ -91,6 +91,39 @@ func TestQFrame_Sort(t *testing.T) {
 	}
 }
 
+func TestQFrame_SortNilString(t *testing.T) {
+	a, b, c := "a", "b", "c"
+	in := qframe.New(map[string]interface{}{
+		"COL.1": []*string{&b, nil, &a, nil, &c, &a, nil},
+	})
+
+	table := []struct {
+		orders   []qframe.Order
+		expected map[string]interface{}
+	}{
+		{
+			[]qframe.Order{{Column: "COL.1"}},
+			map[string]interface{}{
+				"COL.1": []*string{&a, &a, &b, &c, nil, nil, nil},
+			},
+		},
+		{
+			[]qframe.Order{{Column: "COL.1", Reverse: true}},
+			map[string]interface{}{
+				"COL.1": []*string{nil, nil, nil, &c, &b, &a, &a},
+			},
+		},
+	}
+
+	for i, tc := range table {
+		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
+			out := in.Sort(tc.orders...)
+			assertNotErr(t, out.Err)
+			assertEquals(t, qframe.New(tc.expected), out)
+		})
+	}
+}
+
 func TestQFrame_SortStability(t *testing.T) {
 	a := qframe.New(map[string]interface{}{
 		"COL.1": []int{0, 1, 3, 2},
@@ -274,9 +307,11 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 		0  ccc   NaN  NaN  www
 		1  aaa  3.25  7.0  NaN
 	*/
+	a, b, c, empty := "a", "b", "c", ""
 	table := []struct {
 		inputHeaders []string
 		inputData    string
+		emptyNull    bool
 		expected     map[string]interface{}
 	}{
 		{
@@ -295,12 +330,28 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				"bool":   []bool{true, false},
 				"string": []string{"hello", "bye, bye"}},
 		},
+		{
+			inputHeaders: []string{"foo", "bar"},
+			inputData:    "a,b\n,c",
+			emptyNull:    true,
+			expected: map[string]interface{}{
+				"foo": []*string{&a, nil},
+				"bar": []*string{&b, &c}},
+		},
+		{
+			inputHeaders: []string{"foo", "bar"},
+			inputData:    "a,b\n,c",
+			emptyNull:    false,
+			expected: map[string]interface{}{
+				"foo": []*string{&a, &empty},
+				"bar": []*string{&b, &c}},
+		},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("ReadCsv %d", i), func(t *testing.T) {
 			input := strings.Join(tc.inputHeaders, ",") + "\n" + tc.inputData
-			out := qframe.ReadCsv(strings.NewReader(input))
+			out := qframe.ReadCsv(strings.NewReader(input), qframe.EmptyNull(tc.emptyNull))
 			assertNotErr(t, out.Err)
 			assertEquals(t, qframe.New(tc.expected, qframe.ColumnOrder(tc.inputHeaders...)), out)
 		})
@@ -334,6 +385,7 @@ func TestQFrame_ReadJson(t *testing.T) {
 		a    1.5
 		Name: 0, dtype: object
 	*/
+	testString := "FOO"
 	table := []struct {
 		input    string
 		expected map[string]interface{}
@@ -344,12 +396,21 @@ func TestQFrame_ReadJson(t *testing.T) {
 				"STRING1": []string{"a", "b"}, "INT1": []int{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
 		},
 		{
+			input:    `{"STRING1": ["FOO", null]}`,
+			expected: map[string]interface{}{"STRING1": []*string{&testString, nil}},
+		},
+		{
 			input: `[
 				{"STRING1": "a", "INT1": 1, "FLOAT1": 1.5, "BOOL1": true},
 				{"STRING1": "b", "INT1": 2, "FLOAT1": 2.5, "BOOL1": false}]`,
 			expected: map[string]interface{}{
 				// NOTE: The integers become floats if not explicitly typed
 				"STRING1": []string{"a", "b"}, "INT1": []float64{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
+		},
+		{
+			input: `[{"STRING1": "FOO"}, {"STRING1": null}]`,
+			expected: map[string]interface{}{
+				"STRING1": []*string{&testString, nil}},
 		},
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/tobgu/qframe/internal/sseries"
 	"io"
 	"sort"
+	"strings"
 )
 
 type namedSeries struct {
@@ -88,6 +89,14 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 			localS = fseries.New(c)
 			currentLen = len(c)
 		case []string:
+			// Convenience conversion
+			sp := make([]*string, len(c))
+			for i := range c {
+				sp[i] = &c[i]
+			}
+			localS = sseries.New(sp)
+			currentLen = len(c)
+		case []*string:
 			localS = sseries.New(c)
 			currentLen = len(c)
 		case []bool:
@@ -392,8 +401,14 @@ func (qf QFrame) String() string {
 	}
 
 	result := ""
+	s := make([]string, 0, len(qf.index))
 	for name, values := range qf.seriesByName {
-		result += fmt.Sprintf("%s: %v", name, values)
+		s = s[:0]
+		for _, ix := range qf.index {
+			s = append(s, values.StringAt(int(ix)))
+		}
+
+		result += fmt.Sprintf("%s: [%s] ", name, strings.Join(s, ", "))
 	}
 
 	return result
@@ -419,9 +434,25 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	return qf.withIndex(qf.index[start:end])
 }
 
-func ReadCsv(reader io.Reader) QFrame {
-	// TODO: Column order
-	data, columns, err := dfio.ReadCsv(reader)
+type LoadConfig struct {
+	emptyNull bool
+}
+
+type LoadConfigFunc func(*LoadConfig)
+
+func EmptyNull(emptyNull bool) LoadConfigFunc {
+	return func(c *LoadConfig) {
+		c.emptyNull = emptyNull
+	}
+}
+
+func ReadCsv(reader io.Reader, confFuncs ...LoadConfigFunc) QFrame {
+	conf := &LoadConfig{}
+	for _, f := range confFuncs {
+		f(conf)
+	}
+
+	data, columns, err := dfio.ReadCsv(reader, conf.emptyNull)
 	if err != nil {
 		return QFrame{Err: err}
 	}
@@ -560,8 +591,6 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 }
 
 // TODO:
-// - Early return if qf.Err != nil in a lot of functions
-// - More and better tests, use sub tests for table driven tests!
 // - Optional typing when reading CSV
 // - Nice table printing in String function
 // - Support access by x, y (to support GoNum matrix interface)
@@ -571,7 +600,6 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - Bitwise filters for int
 // - Regex filters for strings
 // - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
-// - Handle null values for strings
 // - Handle NaN for floats (sorting, filtering, etc.
 // - Add support to add columns to DF (in addition to project). Should produce a new df, no mutation!
 //   To be used with standin columns.

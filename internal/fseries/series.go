@@ -5,6 +5,7 @@ import (
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
+	"github.com/tobgu/qframe/internal/series"
 	"strconv"
 )
 
@@ -26,6 +27,21 @@ func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
 
 func (s Series) Marshaler(index index.Int) json.Marshaler {
 	return io.JsonFloat64(s.subset(index).data)
+}
+
+func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
+	otherI, ok := other.(Series)
+	if !ok {
+		return false
+	}
+
+	for ix, x := range index {
+		if s.data[x] != otherI.data[otherIndex[ix]] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // TODO: Handle NaN in comparisons, etc.

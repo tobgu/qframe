@@ -10,7 +10,6 @@ import (
 
 //go:generate genny -in=$GOFILE -out=../iseries/comparable_gen.go -pkg=iseries gen "dataType=int"
 //go:generate genny -in=$GOFILE -out=../fseries/comparable_gen.go -pkg=fseries gen "dataType=float64"
-//go:generate genny -in=$GOFILE -out=../sseries/comparable_gen.go -pkg=sseries gen "dataType=string"
 
 func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	x, y := c.data[i], c.data[j]

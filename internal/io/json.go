@@ -67,7 +67,7 @@ func fillBools(col []bool, records JsonRecords, colName string) error {
 	return nil
 }
 
-func fillStrings(col []string, records JsonRecords, colName string) error {
+func fillStrings(col []*string, records JsonRecords, colName string) error {
 	for i := range col {
 		record := records[i]
 		value, ok := record[colName]
@@ -75,11 +75,14 @@ func fillStrings(col []string, records JsonRecords, colName string) error {
 			return fmt.Errorf("wrong type for column %s, row %d", colName, i)
 		}
 
-		stringValue, ok := value.(string)
-		if !ok {
+		switch t := value.(type) {
+		case string:
+			col[i] = &t
+		case nil:
+			col[i] = nil
+		default:
 			return fmt.Errorf("wrong type for column %s, row %d, expected int", colName, i)
 		}
-		col[i] = stringValue
 	}
 
 	return nil
@@ -95,6 +98,7 @@ func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
 	for colName, value := range r0 {
 		switch t := value.(type) {
 		case int:
+			println("T", t)
 			col := make([]int, len(records))
 			if err := fillInts(col, records, colName); err != nil {
 				return nil, err
@@ -112,14 +116,14 @@ func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
 				return nil, err
 			}
 			result[colName] = col
-		case string:
-			col := make([]string, len(records))
+		case nil, string:
+			col := make([]*string, len(records))
 			if err := fillStrings(col, records, colName); err != nil {
 				return nil, err
 			}
 			result[colName] = col
 		default:
-			return nil, fmt.Errorf("unknown type of %s!", t)
+			return nil, fmt.Errorf("unknown type of %s", t)
 		}
 	}
 	return result, nil
@@ -135,7 +139,7 @@ type JsonFloat64 []float64
 type JsonBool []bool
 
 //easyjson:json
-type JsonString []string
+type JsonString []*string
 
 // UnmarshalJson transforms JSON containing data records or columns into a map of columns
 // that can be used to create a dataframe.
@@ -178,7 +182,7 @@ func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
 
 			strDest := &JsonString{}
 			if err = strDest.UnmarshalJSON(rawValue); err == nil {
-				result[colName] = []string(*strDest)
+				result[colName] = []*string(*strDest)
 				continue
 			}
 

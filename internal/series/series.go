@@ -20,6 +20,7 @@ type Series interface {
 	FillRecords(records []map[string]interface{}, index index.Int, colName string)
 }
 
+// TODO: Change to byte
 type CompareResult int
 
 const (

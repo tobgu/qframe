@@ -26,7 +26,7 @@ func easyjson42239ddeDecodeGithubComTobguQframeInternalIo(in *jlexer.Lexer, out 
 		in.Delim('[')
 		if *out == nil {
 			if !in.IsDelim(']') {
-				*out = make(JsonString, 0, 4)
+				*out = make(JsonString, 0, 8)
 			} else {
 				*out = JsonString{}
 			}
@@ -34,8 +34,16 @@ func easyjson42239ddeDecodeGithubComTobguQframeInternalIo(in *jlexer.Lexer, out 
 			*out = (*out)[:0]
 		}
 		for !in.IsDelim(']') {
-			var v1 string
-			v1 = string(in.String())
+			var v1 *string
+			if in.IsNull() {
+				in.Skip()
+				v1 = nil
+			} else {
+				if v1 == nil {
+					v1 = new(string)
+				}
+				*v1 = string(in.String())
+			}
 			*out = append(*out, v1)
 			in.WantComma()
 		}
@@ -54,7 +62,11 @@ func easyjson42239ddeEncodeGithubComTobguQframeInternalIo(out *jwriter.Writer, i
 			if v2 > 0 {
 				out.RawByte(',')
 			}
-			out.String(string(v3))
+			if v3 == nil {
+				out.RawString("null")
+			} else {
+				out.String(string(*v3))
+			}
 		}
 		out.RawByte(']')
 	}
