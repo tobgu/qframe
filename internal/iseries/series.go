@@ -2,6 +2,7 @@ package iseries
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
@@ -27,7 +28,7 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []int, interface{}, inde
 	filter.Lt: lt,
 }
 
-func (s Series) StringAt(i int) string {
+func (s Series) StringAt(i int, _ string) string {
 	return strconv.FormatInt(int64(s.data[i]), 10)
 }
 
@@ -52,4 +53,45 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	}
 
 	return true
+}
+
+func (c Comparable) Compare(i, j uint32) series.CompareResult {
+	x, y := c.data[i], c.data[j]
+	if x < y {
+		return c.ltValue
+	}
+
+	if x > y {
+		return c.gtValue
+	}
+
+	return series.Equal
+}
+
+// TODO: Some kind of code generation for all the below functions for all supported types
+
+func gt(index index.Int, column []int, comparatee interface{}, bIndex index.Bool) error {
+	comp, ok := comparatee.(int)
+	if !ok {
+		return fmt.Errorf("invalid comparison type")
+	}
+
+	for i, x := range bIndex {
+		bIndex[i] = x || column[index[i]] > comp
+	}
+
+	return nil
+}
+
+func lt(index index.Int, column []int, comparatee interface{}, bIndex index.Bool) error {
+	comp, ok := comparatee.(int)
+	if !ok {
+		return fmt.Errorf("invalid comparison type")
+	}
+
+	for i, x := range bIndex {
+		bIndex[i] = x || column[index[i]] < comp
+	}
+
+	return nil
 }

@@ -27,7 +27,7 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return c.ltValue
 }
 
-func (s Series) StringAt(i int) string {
+func (s Series) StringAt(i int, _ string) string {
 	return strconv.FormatBool(s.data[i])
 }
 

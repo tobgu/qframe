@@ -3,6 +3,7 @@ package io
 import (
 	"bitbucket.org/weberc2/fastcsv"
 	"io"
+	"math"
 )
 
 // Helper type to slice column bytes into individual elements
@@ -43,7 +44,6 @@ func ReadCsv(reader io.Reader, emptyNull bool) (map[string]interface{}, []string
 		}
 	}
 
-	// TODO: Perhaps series should be a slice instead with a map indexing into it...
 	dataMap := make(map[string]interface{}, len(headers))
 	for i, header := range headers {
 		data, err := columnToData(colBytes[i], colPointers[i], emptyNull)
@@ -81,6 +81,11 @@ func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool) (interfa
 	err = nil
 	floatData := make([]float64, 0, len(pointers))
 	for _, p := range pointers {
+		if p.start == p.end {
+			floatData = append(floatData, math.NaN())
+			continue
+		}
+
 		x, floatErr := parseFloat(bytes[p.start:p.end])
 		if floatErr != nil {
 			err = floatErr

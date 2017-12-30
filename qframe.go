@@ -405,7 +405,7 @@ func (qf QFrame) String() string {
 	for name, values := range qf.seriesByName {
 		s = s[:0]
 		for _, ix := range qf.index {
-			s = append(s, values.StringAt(int(ix)))
+			s = append(s, values.StringAt(int(ix), "NaN"))
 		}
 
 		result += fmt.Sprintf("%s: [%s] ", name, strings.Join(s, ", "))
@@ -495,7 +495,7 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 	for i := 0; i < qf.Len(); i++ {
 		row = row[:0]
 		for _, c := range columns {
-			row = append(row, c.StringAt(int(qf.index[i])))
+			row = append(row, c.StringAt(int(qf.index[i]), ""))
 		}
 		w.Write(row)
 	}
@@ -600,7 +600,8 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - Bitwise filters for int
 // - Regex filters for strings
 // - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
-// - Handle NaN for floats (sorting, filtering, etc.
+// - Handle string nil in filtering
+// - Handle float NaN in filtering
 // - Add support to add columns to DF (in addition to project). Should produce a new df, no mutation!
 //   To be used with standin columns.
 // - Possibility to run operations on two or more columns that result in a new column (addition for example).

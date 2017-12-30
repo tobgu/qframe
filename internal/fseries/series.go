@@ -2,10 +2,12 @@ package fseries
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
+	"math"
 	"strconv"
 )
 
@@ -17,7 +19,11 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []float64, interface{}, 
 	filter.Lt: lt,
 }
 
-func (s Series) StringAt(i int) string {
+func (s Series) StringAt(i int, naRep string) string {
+	value := s.data[i]
+	if math.IsNaN(value) {
+		return naRep
+	}
 	return strconv.FormatFloat(s.data[i], 'f', -1, 64)
 }
 
@@ -36,12 +42,70 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	}
 
 	for ix, x := range index {
-		if s.data[x] != otherI.data[otherIndex[ix]] {
-			return false
+		v1, v2 := s.data[x], otherI.data[otherIndex[ix]]
+		if v1 != v2 {
+			// NaN != NaN but for our purposes they are the same
+			if !(math.IsNaN(v1) && math.IsNaN(v2)) {
+				return false
+			}
 		}
 	}
 
 	return true
+}
+
+func (c Comparable) Compare(i, j uint32) series.CompareResult {
+	x, y := c.data[i], c.data[j]
+	if x < y {
+		return c.ltValue
+	}
+
+	if x > y {
+		return c.gtValue
+	}
+
+	if math.IsNaN(x) || math.IsNaN(y) {
+		if math.IsNaN(x) {
+			return c.ltValue
+		}
+
+		if math.IsNaN(y) {
+			return c.gtValue
+		}
+
+		// Consider NaN == NaN, this means that we can group
+		// by null values for example (this differs from Pandas)
+	}
+
+	return series.Equal
+}
+
+// TODO: Some kind of code generation for all the below functions for all supported types
+
+func gt(index index.Int, column []float64, comparatee interface{}, bIndex index.Bool) error {
+	comp, ok := comparatee.(float64)
+	if !ok {
+		return fmt.Errorf("invalid comparison type")
+	}
+
+	for i, x := range bIndex {
+		bIndex[i] = x || column[index[i]] > comp
+	}
+
+	return nil
+}
+
+func lt(index index.Int, column []float64, comparatee interface{}, bIndex index.Bool) error {
+	comp, ok := comparatee.(float64)
+	if !ok {
+		return fmt.Errorf("invalid comparison type")
+	}
+
+	for i, x := range bIndex {
+		bIndex[i] = x || column[index[i]] < comp
+	}
+
+	return nil
 }
 
 // TODO: Handle NaN in comparisons, etc.

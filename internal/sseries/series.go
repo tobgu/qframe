@@ -18,10 +18,10 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []*string, interface{}, 
 	filter.Lt: lt,
 }
 
-func (s Series) StringAt(i int) string {
+func (s Series) StringAt(i int, naRep string) string {
 	p := s.data[i]
 	if p == nil {
-		return "nil"
+		return naRep
 	}
 
 	return *p
@@ -134,13 +134,15 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	x, y := c.data[i], c.data[j]
 	if x == nil || y == nil {
 		if x != nil {
-			return c.ltValue
-		}
-
-		if y != nil {
 			return c.gtValue
 		}
 
+		if y != nil {
+			return c.ltValue
+		}
+
+		// Consider nil == nil, this means that we can group
+		// by null values for example (this differs from Pandas)
 		return series.Equal
 	}
 

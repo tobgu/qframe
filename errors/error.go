@@ -9,7 +9,16 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	return e.reason
+	result := e.operation
+	if e.reason != "" {
+		result += ": " + e.reason
+	}
+
+	if e.source != nil {
+		result += fmt.Sprintf(" (%s)", e.source)
+	}
+
+	return result
 }
 
 func New(operation, reason string, params ...interface{}) Error {

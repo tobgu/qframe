@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/filter"
+	"math"
 	"strings"
 	"testing"
 )
@@ -91,32 +92,54 @@ func TestQFrame_Sort(t *testing.T) {
 	}
 }
 
-func TestQFrame_SortNilString(t *testing.T) {
+func TestQFrame_SortNull(t *testing.T) {
 	a, b, c := "a", "b", "c"
-	in := qframe.New(map[string]interface{}{
+	stringIn := map[string]interface{}{
 		"COL.1": []*string{&b, nil, &a, nil, &c, &a, nil},
-	})
+	}
+
+	floatIn := map[string]interface{}{
+		"COL.1": []float64{1.0, math.NaN(), -1.0, math.NaN()},
+	}
 
 	table := []struct {
+		in       map[string]interface{}
 		orders   []qframe.Order
 		expected map[string]interface{}
 	}{
 		{
+			stringIn,
 			[]qframe.Order{{Column: "COL.1"}},
 			map[string]interface{}{
-				"COL.1": []*string{&a, &a, &b, &c, nil, nil, nil},
+				"COL.1": []*string{nil, nil, nil, &a, &a, &b, &c},
 			},
 		},
 		{
+			stringIn,
 			[]qframe.Order{{Column: "COL.1", Reverse: true}},
 			map[string]interface{}{
-				"COL.1": []*string{nil, nil, nil, &c, &b, &a, &a},
+				"COL.1": []*string{&c, &b, &a, &a, nil, nil, nil},
+			},
+		},
+		{
+			floatIn,
+			[]qframe.Order{{Column: "COL.1"}},
+			map[string]interface{}{
+				"COL.1": []float64{math.NaN(), math.NaN(), -1.0, 1.0},
+			},
+		},
+		{
+			floatIn,
+			[]qframe.Order{{Column: "COL.1", Reverse: true}},
+			map[string]interface{}{
+				"COL.1": []float64{1.0, -1.0, math.NaN(), math.NaN()},
 			},
 		},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
+			in := qframe.New(tc.in)
 			out := in.Sort(tc.orders...)
 			assertNotErr(t, out.Err)
 			assertEquals(t, qframe.New(tc.expected), out)
@@ -346,6 +369,13 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				"foo": []*string{&a, &empty},
 				"bar": []*string{&b, &c}},
 		},
+		{
+			inputHeaders: []string{"foo", "bar"},
+			inputData:    "1.5,3.0\n,2.0",
+			expected: map[string]interface{}{
+				"foo": []float64{1.5, math.NaN()},
+				"bar": []float64{3.0, 2.0}},
+		},
 	}
 
 	for i, tc := range table {
@@ -455,7 +485,7 @@ false,2.5,2,"b,c"
 	}
 }
 
-func TestQCacheFrame_ToFromJSON(t *testing.T) {
+func TestQFrame_ToFromJSON(t *testing.T) {
 	table := []struct {
 		orientation string
 	}{
@@ -464,17 +494,47 @@ func TestQCacheFrame_ToFromJSON(t *testing.T) {
 	}
 
 	for i, tc := range table {
-		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ToFromJSON %d", i), func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			data := map[string]interface{}{
 				"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}}
 			originalDf := qframe.New(data)
+			assertNotErr(t, originalDf.Err)
+
 			err := originalDf.ToJson(buf, tc.orientation)
 			assertNotErr(t, err)
 
 			jsonDf := qframe.ReadJson(buf)
 			assertNotErr(t, jsonDf.Err)
 			assertEquals(t, originalDf, jsonDf)
+		})
+	}
+}
+
+func TestQFrame_ToJSONNaN(t *testing.T) {
+	table := []struct {
+		orientation string
+		expected    string
+	}{
+		{orientation: "records", expected: `[{"FLOAT1":1.5},{"FLOAT1":NaN}]`},
+		{orientation: "columns", expected: `{"FLOAT1":[1.5,NaN]}`},
+	}
+
+	for i, tc := range table {
+		t.Run(fmt.Sprintf("ToFromJSON %d", i), func(t *testing.T) {
+			buf := new(bytes.Buffer)
+
+			// Test the special case NaN, this can currently be encoded but not
+			// decoded by the JSON parsers.
+			data := map[string]interface{}{"FLOAT1": []float64{1.5, math.NaN()}}
+			originalDf := qframe.New(data)
+			assertNotErr(t, originalDf.Err)
+
+			err := originalDf.ToJson(buf, tc.orientation)
+			assertNotErr(t, err)
+			if buf.String() != tc.expected {
+				t.Errorf("Not equal: %s ||| %s", buf.String(), tc.expected)
+			}
 		})
 	}
 }
