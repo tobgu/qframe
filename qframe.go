@@ -591,6 +591,11 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 }
 
 // TODO:
+// - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
+//   null could be interpreted as NaN. Should not be impossible using the generated easyjson code
+//   as starting point for column based format and by refining type detection for the record based
+//   read. That would also allow proper parsing of integers for record format rather than making them
+//   floats.
 // - Optional typing when reading CSV
 // - Nice table printing in String function
 // - Support access by x, y (to support GoNum matrix interface)
