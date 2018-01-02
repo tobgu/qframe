@@ -12,6 +12,7 @@ import (
 	"github.com/tobgu/qframe/internal/iseries"
 	"github.com/tobgu/qframe/internal/series"
 	"github.com/tobgu/qframe/internal/sseries"
+	"github.com/tobgu/qframe/types"
 	"io"
 	"sort"
 	"strings"
@@ -436,6 +437,7 @@ func (qf QFrame) Slice(start, end int) QFrame {
 
 type LoadConfig struct {
 	emptyNull bool
+	types     map[string]types.DataType
 }
 
 type LoadConfigFunc func(*LoadConfig)
@@ -446,13 +448,22 @@ func EmptyNull(emptyNull bool) LoadConfigFunc {
 	}
 }
 
+func Types(typs map[string]string) LoadConfigFunc {
+	return func(c *LoadConfig) {
+		c.types = make(map[string]types.DataType, len(typs))
+		for k, v := range typs {
+			c.types[k] = types.DataType(v)
+		}
+	}
+}
+
 func ReadCsv(reader io.Reader, confFuncs ...LoadConfigFunc) QFrame {
 	conf := &LoadConfig{}
 	for _, f := range confFuncs {
 		f(conf)
 	}
 
-	data, columns, err := dfio.ReadCsv(reader, conf.emptyNull)
+	data, columns, err := dfio.ReadCsv(reader, conf.emptyNull, conf.types)
 	if err != nil {
 		return QFrame{Err: err}
 	}

@@ -25,6 +25,18 @@ func assertNotErr(t *testing.T, err error) {
 	}
 }
 
+func assertErr(t *testing.T, err error, expectedErr string) {
+	t.Helper()
+	if err == nil {
+		t.Errorf("Expected error, was nil")
+		return
+	}
+
+	if !strings.Contains(err.Error(), expectedErr) {
+		t.Errorf("Expected error to contain: %s, was: %s", expectedErr, err.Error())
+	}
+}
+
 func TestQFrame_Filter(t *testing.T) {
 	a := qframe.New(map[string]interface{}{
 		"COL.1": []int{1, 2, 3, 4, 5},
@@ -332,12 +344,16 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 	*/
 	a, b, c, empty := "a", "b", "c", ""
 	table := []struct {
+		name         string
 		inputHeaders []string
 		inputData    string
 		emptyNull    bool
 		expected     map[string]interface{}
+		types        map[string]string
+		expectedErr  string
 	}{
 		{
+			name:         "base",
 			inputHeaders: []string{"foo", "bar"},
 			inputData:    "1,2\n3,4\n",
 			expected: map[string]interface{}{
@@ -345,6 +361,7 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				"bar": []int{2, 4}},
 		},
 		{
+			name:         "mixed",
 			inputHeaders: []string{"int", "float", "bool", "string"},
 			inputData:    "1,2.5,true,hello\n10,20.5,false,\"bye, bye\"",
 			expected: map[string]interface{}{
@@ -354,6 +371,7 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				"string": []string{"hello", "bye, bye"}},
 		},
 		{
+			name:         "null string",
 			inputHeaders: []string{"foo", "bar"},
 			inputData:    "a,b\n,c",
 			emptyNull:    true,
@@ -362,6 +380,7 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				"bar": []*string{&b, &c}},
 		},
 		{
+			name:         "empty string",
 			inputHeaders: []string{"foo", "bar"},
 			inputData:    "a,b\n,c",
 			emptyNull:    false,
@@ -370,20 +389,67 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				"bar": []*string{&b, &c}},
 		},
 		{
+			name:         "NaN float",
 			inputHeaders: []string{"foo", "bar"},
 			inputData:    "1.5,3.0\n,2.0",
 			expected: map[string]interface{}{
 				"foo": []float64{1.5, math.NaN()},
 				"bar": []float64{3.0, 2.0}},
 		},
+		{
+			name:         "Int to float type success",
+			inputHeaders: []string{"foo"},
+			inputData:    "3\n2",
+			expected:     map[string]interface{}{"foo": []float64{3.0, 2.0}},
+			types:        map[string]string{"foo": "float"},
+		},
+		{
+			name:         "Bool to string success",
+			inputHeaders: []string{"foo"},
+			inputData:    "true\nfalse",
+			expected:     map[string]interface{}{"foo": []string{"true", "false"}},
+			types:        map[string]string{"foo": "string"},
+		},
+		{
+			name:         "Int to string success",
+			inputHeaders: []string{"foo"},
+			inputData:    "123\n456",
+			expected:     map[string]interface{}{"foo": []string{"123", "456"}},
+			types:        map[string]string{"foo": "string"},
+		},
+		{
+			name:         "Float to int failure",
+			inputHeaders: []string{"foo"},
+			inputData:    "1.23\n4.56",
+			expectedErr:  "int",
+			types:        map[string]string{"foo": "int"},
+		},
+		{
+			name:         "String to bool failure",
+			inputHeaders: []string{"foo"},
+			inputData:    "abc\ndef",
+			expectedErr:  "bool",
+			types:        map[string]string{"foo": "bool"},
+		},
+		{
+			name:         "String to float failure",
+			inputHeaders: []string{"foo"},
+			inputData:    "abc\ndef",
+			expectedErr:  "float",
+			types:        map[string]string{"foo": "float"},
+		},
 	}
 
-	for i, tc := range table {
-		t.Run(fmt.Sprintf("ReadCsv %d", i), func(t *testing.T) {
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("ReadCsv %s", tc.name), func(t *testing.T) {
 			input := strings.Join(tc.inputHeaders, ",") + "\n" + tc.inputData
-			out := qframe.ReadCsv(strings.NewReader(input), qframe.EmptyNull(tc.emptyNull))
-			assertNotErr(t, out.Err)
-			assertEquals(t, qframe.New(tc.expected, qframe.ColumnOrder(tc.inputHeaders...)), out)
+			out := qframe.ReadCsv(strings.NewReader(input), qframe.EmptyNull(tc.emptyNull), qframe.Types(tc.types))
+			if tc.expectedErr != "" {
+				assertErr(t, out.Err, tc.expectedErr)
+			} else {
+				assertNotErr(t, out.Err)
+				assertEquals(t, qframe.New(tc.expected, qframe.ColumnOrder(tc.inputHeaders...)), out)
+			}
 		})
 	}
 }

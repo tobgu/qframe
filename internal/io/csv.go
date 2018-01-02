@@ -2,6 +2,8 @@ package io
 
 import (
 	"bitbucket.org/weberc2/fastcsv"
+	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/types"
 	"io"
 	"math"
 )
@@ -13,7 +15,7 @@ type bytePointer struct {
 }
 
 // TODO: Take type map
-func ReadCsv(reader io.Reader, emptyNull bool) (map[string]interface{}, []string, error) {
+func ReadCsv(reader io.Reader, emptyNull bool, types map[string]types.DataType) (map[string]interface{}, []string, error) {
 	r := csv.NewReader(reader)
 	byteHeader, err := r.Read()
 	if err != nil {
@@ -46,7 +48,7 @@ func ReadCsv(reader io.Reader, emptyNull bool) (map[string]interface{}, []string
 
 	dataMap := make(map[string]interface{}, len(headers))
 	for i, header := range headers {
-		data, err := columnToData(colBytes[i], colPointers[i], emptyNull)
+		data, err := columnToData(colBytes[i], colPointers[i], emptyNull, types[header])
 		if err != nil {
 			return nil, nil, err
 		}
@@ -58,71 +60,88 @@ func ReadCsv(reader io.Reader, emptyNull bool) (map[string]interface{}, []string
 }
 
 // Convert bytes to data columns, try, in turn int, float, bool and last string.
-func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool) (interface{}, error) {
-	// TODO: Take type hint and err if type cannot be applied
-
-	// Int
-	intData := make([]int, 0, len(pointers))
+func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool, dataType types.DataType) (interface{}, error) {
 	var err error
-	for _, p := range pointers {
-		x, intErr := parseInt(bytes[p.start:p.end])
-		if intErr != nil {
-			err = intErr
-			break
-		}
-		intData = append(intData, int(x))
-	}
 
-	if err == nil {
-		return intData, nil
-	}
-
-	// Float
-	err = nil
-	floatData := make([]float64, 0, len(pointers))
-	for _, p := range pointers {
-		if p.start == p.end {
-			floatData = append(floatData, math.NaN())
-			continue
+	if dataType == types.Int || dataType == types.None {
+		intData := make([]int, 0, len(pointers))
+		for _, p := range pointers {
+			x, intErr := parseInt(bytes[p.start:p.end])
+			if intErr != nil {
+				err = intErr
+				break
+			}
+			intData = append(intData, int(x))
 		}
 
-		x, floatErr := parseFloat(bytes[p.start:p.end])
-		if floatErr != nil {
-			err = floatErr
-			break
+		if err == nil {
+			return intData, nil
 		}
-		floatData = append(floatData, x)
-	}
 
-	if err == nil {
-		return floatData, nil
-	}
-
-	// Bool
-	err = nil
-	boolData := make([]bool, 0, len(pointers))
-	for _, p := range pointers {
-		x, boolErr := parseBool(bytes[p.start:p.end])
-		if boolErr != nil {
-			err = boolErr
-			break
+		if dataType == types.Int {
+			return nil, errors.Propagate("Create int column", err)
 		}
-		boolData = append(boolData, x)
 	}
 
-	if err == nil {
-		return boolData, nil
-	}
+	if dataType == types.Float || dataType == types.None {
+		err = nil
+		floatData := make([]float64, 0, len(pointers))
+		for _, p := range pointers {
+			if p.start == p.end {
+				floatData = append(floatData, math.NaN())
+				continue
+			}
 
-	// String
-	stringData := make([]*string, 0, len(pointers))
-	for _, p := range pointers {
-		if p.start == p.end && emptyNull {
-			stringData = append(stringData, nil)
-		} else {
-			s := string(bytes[p.start:p.end])
-			stringData = append(stringData, &s)
+			x, floatErr := parseFloat(bytes[p.start:p.end])
+			if floatErr != nil {
+				err = floatErr
+				break
+			}
+			floatData = append(floatData, x)
 		}
+
+		if err == nil {
+			return floatData, nil
+		}
+
+		if dataType == types.Float {
+			return nil, errors.Propagate("Create float column", err)
+		}
+	}
+
+	if dataType == types.Bool || dataType == types.None {
+		err = nil
+		boolData := make([]bool, 0, len(pointers))
+		for _, p := range pointers {
+			x, boolErr := parseBool(bytes[p.start:p.end])
+			if boolErr != nil {
+				err = boolErr
+				break
+			}
+			boolData = append(boolData, x)
+		}
+
+		if err == nil {
+			return boolData, nil
+		}
+
+		if dataType == types.Bool {
+			return nil, errors.Propagate("Create bool column", err)
+		}
+	}
+
+	if dataType == types.String || dataType == types.None {
+		stringData := make([]*string, 0, len(pointers))
+		for _, p := range pointers {
+			if p.start == p.end && emptyNull {
+				stringData = append(stringData, nil)
+			} else {
+				s := string(bytes[p.start:p.end])
+				stringData = append(stringData, &s)
+			}
+		}
+
+		return stringData, nil
 	}
 
 	// TODO: Might want some sort of categorial like here for low cardinality strings,
@@ -140,6 +159,5 @@ func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool) (interfa
 			stringData = append(stringData, s)
 		}
 	*/
-
-	return stringData, nil
+	return nil, errors.New("Create column", "unknown data type: %s", dataType)
 }
