@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"github.com/kniren/gota/dataframe"
 	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/qframe"
@@ -155,7 +156,7 @@ func csvBytes(rowCount int) []byte {
 	writer := csv.NewWriter(buf)
 	writer.Write([]string{"INT1", "INT2", "FLOAT1", "FLOAT2", "BOOL1", "STRING1", "STRING2"})
 	for i := 0; i < rowCount; i++ {
-		writer.Write([]string{"123", "1234567", "5.2534", "9834543.25", "true", "Foo bar baz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"})
+		writer.Write([]string{"123", "1234567", "5.2534", "9834543.25", "true", fmt.Sprintf("Foo bar baz %d", i%10000), "ABCDEFGHIJKLMNOPQRSTUVWXYZ"})
 	}
 	writer.Flush()
 
@@ -505,4 +506,11 @@ BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     
 // Custom encoder for JSON records, now we're talking
 BenchmarkQFrame_ToJsonRecords-2   	      20	  87437635 ns/op	53638858 B/op	      35 allocs/op
 BenchmarkQFrame_ToJsonColumns-2   	      10	 102566155 ns/op	37746546 B/op	     547 allocs/op
+
+// Reuse string pointers when reading CSV
+Before:
+BenchmarkQFrame_FromCsv-2   	      10	 119385221 ns/op	92728576 B/op	  400500 allocs/op
+
+After:
+BenchmarkQFrame_FromCsv-2   	      10	 108917111 ns/op	86024686 B/op	   20790 allocs/op
 */

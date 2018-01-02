@@ -131,33 +131,29 @@ func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool, dataType
 	}
 
 	if dataType == types.String || dataType == types.None {
+		stringMap := make(map[string]*string)
 		stringData := make([]*string, 0, len(pointers))
 		for _, p := range pointers {
 			if p.start == p.end && emptyNull {
 				stringData = append(stringData, nil)
 			} else {
-				s := string(bytes[p.start:p.end])
-				stringData = append(stringData, &s)
+				// Reuse pointers to strings that have already occurred, good
+				// way to save some memory and allocations for columns with
+				// recurring strings. Less good for high cardinality columns.
+				// If this is a problem the decision of whether to use it or
+				// not could probably be made dynamic.
+				if sp, ok := stringMap[string(bytes[p.start:p.end])]; ok {
+					stringData = append(stringData, sp)
+				} else {
+					s := string(bytes[p.start:p.end])
+					stringMap[s] = &s
+					stringData = append(stringData, &s)
+				}
 			}
 		}
 
 		return stringData, nil
 	}
 
-	// TODO: Might want some sort of categorial like here for low cardinality strings,
-	//       could be achieved with a map caching strings.
-	/*
-		stringData := make([]string, 0, len(pointers))
-		strings := map[string]string{}
-		for _, p := range pointers {
-			b := bytes[p.start:p.end]
-			s, ok := strings[string(b)]
-			if !ok {
-				s = string(b)
-				strings[s] = s
-			}
-			stringData = append(stringData, s)
-		}
-	*/
 	return nil, errors.New("Create column", "unknown data type: %s", dataType)
 }
