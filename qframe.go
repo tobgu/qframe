@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bseries"
+	"github.com/tobgu/qframe/internal/eseries"
 	"github.com/tobgu/qframe/internal/fseries"
 	"github.com/tobgu/qframe/internal/index"
 	dfio "github.com/tobgu/qframe/internal/io"
@@ -103,6 +104,9 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 		case []bool:
 			localS = bseries.New(c)
 			currentLen = len(c)
+		case eseries.Series:
+			localS = c
+			currentLen = c.Len()
 		default:
 			return QFrame{Err: errors.New("New", "unknown column format of: %v", c)}
 		}
@@ -601,6 +605,13 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	return err
 }
 
+// TODO enums:
+// - Split series into series and factory
+// - Strict mode with defined values (including order)
+// - Tests
+// - Filtering, sorting, etc
+// - Support for other import types than CSV
+
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
 //   null could be interpreted as NaN. Should not be impossible using the generated easyjson code
@@ -618,7 +629,7 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
 // - Handle string nil in filtering
 // - Handle float NaN in filtering
-// - Add support to add columns to DF (in addition to project). Should produce a new df, no mutation!
+// - AppendBytesString support to add columns to DF (in addition to project). Should produce a new df, no mutation!
 //   To be used with standin columns.
 // - Possibility to run operations on two or more columns that result in a new column (addition for example).
 //   Lower priority.

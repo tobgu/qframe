@@ -438,6 +438,12 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 			expectedErr:  "float",
 			types:        map[string]string{"foo": "float"},
 		},
+		{
+			name:         "Enum base case",
+			inputHeaders: []string{"foo"},
+			inputData:    "abc\ndef",
+			types:        map[string]string{"foo": "enum"},
+		},
 	}
 
 	for _, tc := range table {

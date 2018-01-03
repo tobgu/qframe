@@ -8,4 +8,5 @@ const (
 	String          = "string"
 	Float           = "float"
 	Bool            = "bool"
+	Enum            = "enum"
 )

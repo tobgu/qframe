@@ -3,6 +3,7 @@ package io
 import (
 	"bitbucket.org/weberc2/fastcsv"
 	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/internal/eseries"
 	"github.com/tobgu/qframe/types"
 	"io"
 	"math"
@@ -153,6 +154,26 @@ func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool, dataType
 		}
 
 		return stringData, nil
+	}
+
+	if dataType == types.Enum {
+		enums, err := eseries.New(nil, len(pointers))
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range pointers {
+			if p.start == p.end && emptyNull {
+				enums.AppendNil()
+			} else {
+				err := enums.AppendByteString(bytes[p.start:p.end])
+				if err != nil {
+					return nil, errors.Propagate("Create column", err)
+				}
+			}
+		}
+
+		return enums, nil
 	}
 
 	return nil, errors.New("Create column", "unknown data type: %s", dataType)

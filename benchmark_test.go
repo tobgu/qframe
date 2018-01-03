@@ -164,7 +164,22 @@ func csvBytes(rowCount int) []byte {
 	return csvBytes
 }
 
-func BenchmarkQFrame_FromCsv(b *testing.B) {
+func csvEnumBytes(rowCount, cardinality int) []byte {
+	buf := new(bytes.Buffer)
+	writer := csv.NewWriter(buf)
+	writer.Write([]string{"COL.1", "COL.2"})
+	for i := 0; i < rowCount; i++ {
+		writer.Write([]string{
+			fmt.Sprintf("Foo bar baz %d", i%cardinality),
+			fmt.Sprintf("AB%d", i%cardinality)})
+	}
+	writer.Flush()
+
+	csvBytes, _ := ioutil.ReadAll(buf)
+	return csvBytes
+}
+
+func BenchmarkQFrame_ReadCsv(b *testing.B) {
 	rowCount := 100000
 	input := csvBytes(rowCount)
 
@@ -181,6 +196,30 @@ func BenchmarkQFrame_FromCsv(b *testing.B) {
 		if df.Len() != rowCount {
 			b.Errorf("Unexpected size: %d", df.Len())
 		}
+	}
+}
+
+func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
+	rowCount := 100000
+	cardinality := 20
+	input := csvEnumBytes(rowCount, cardinality)
+
+	for _, t := range []string{"enum"} {
+		b.Run(fmt.Sprintf("Type %s", t), func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				r := bytes.NewReader(input)
+				df := qf.ReadCsv(r, qf.Types(map[string]string{"COL.1": t, "COL.2": t}))
+				if df.Err != nil {
+					b.Errorf("Unexpected CSV error: %s", df.Err)
+				}
+
+				if df.Len() != rowCount {
+					b.Errorf("Unexpected size: %d", df.Len())
+				}
+			}
+		})
 	}
 }
 
@@ -509,8 +548,14 @@ BenchmarkQFrame_ToJsonColumns-2   	      10	 102566155 ns/op	37746546 B/op	     
 
 // Reuse string pointers when reading CSV
 Before:
-BenchmarkQFrame_FromCsv-2   	      10	 119385221 ns/op	92728576 B/op	  400500 allocs/op
+BenchmarkQFrame_ReadCsv-2   	      10	 119385221 ns/op	92728576 B/op	  400500 allocs/op
 
 After:
-BenchmarkQFrame_FromCsv-2   	      10	 108917111 ns/op	86024686 B/op	   20790 allocs/op
+BenchmarkQFrame_ReadCsv-2   	      10	 108917111 ns/op	86024686 B/op	   20790 allocs/op
+
+// Initial CSV read Enum, 2 x 100000 cells with cardinality 20
+BenchmarkQFrame_ReadCsvEnum/Type_enum-2         	      50	  28081769 ns/op	19135232 B/op	     213 allocs/op
+BenchmarkQFrame_ReadCsvEnum/Type_string-2       	      50	  28563580 ns/op	20526743 B/op	     238 allocs/op
+
+Total saving 1,4 Mb in line with what was expected given that one byte is used per entry instead of eight
 */
