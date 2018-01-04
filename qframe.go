@@ -34,6 +34,7 @@ type QFrame struct {
 
 type Config struct {
 	columnOrder []string
+	enumColumns map[string][]string
 }
 
 type ConfigFunc func(c *Config)
@@ -42,6 +43,19 @@ func ColumnOrder(columns ...string) ConfigFunc {
 	return func(c *Config) {
 		c.columnOrder = make([]string, len(columns))
 		copy(c.columnOrder, columns)
+	}
+}
+
+// If columns should be considered enums. The map key specifies the
+// column name, the value if there is a fixed set of values and their
+// internal ordering. If value is nil or empty list the values will be
+// derived from the column content and the ordering unspecified.
+func Enums(columns map[string][]string) ConfigFunc {
+	return func(c *Config) {
+		c.enumColumns = make(map[string][]string)
+		for k, v := range columns {
+			c.enumColumns[k] = v
+		}
 	}
 }
 
@@ -54,24 +68,24 @@ func (qf QFrame) withIndex(ix index.Int) QFrame {
 }
 
 func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
-	c := &Config{}
+	config := &Config{}
 	for _, fn := range fns {
-		fn(c)
+		fn(config)
 	}
 
-	if len(c.columnOrder) == 0 {
-		c.columnOrder = make([]string, 0, len(data))
+	if len(config.columnOrder) == 0 {
+		config.columnOrder = make([]string, 0, len(data))
 		for name := range data {
-			c.columnOrder = append(c.columnOrder, name)
-			sort.Strings(c.columnOrder)
+			config.columnOrder = append(config.columnOrder, name)
+			sort.Strings(config.columnOrder)
 		}
 	}
 
-	if len(c.columnOrder) != len(data) {
+	if len(config.columnOrder) != len(data) {
 		return QFrame{Err: errors.New("New", "columns and column order length do not match")}
 	}
 
-	for _, name := range c.columnOrder {
+	for _, name := range config.columnOrder {
 		if _, ok := data[name]; !ok {
 			return QFrame{Err: errors.New("New", `key "%s" does not exist in supplied data`, name)}
 		}
@@ -80,9 +94,20 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	s := make([]namedSeries, len(data))
 	sByName := make(map[string]namedSeries, len(data))
 	firstLen, currentLen := 0, 0
-	for i, name := range c.columnOrder {
+	for i, name := range config.columnOrder {
 		var localS series.Series
 		column := data[name]
+		if sc, ok := column.([]string); ok {
+			// Convenience conversion to support string slices in addition
+			// to string pointer slices.
+			sp := make([]*string, len(sc))
+			for i := range sc {
+				sp[i] = &sc[i]
+			}
+			column = sp
+		}
+
+		var err error
 		switch c := column.(type) {
 		case []int:
 			localS = iseries.New(c)
@@ -90,16 +115,17 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 		case []float64:
 			localS = fseries.New(c)
 			currentLen = len(c)
-		case []string:
-			// Convenience conversion
-			sp := make([]*string, len(c))
-			for i := range c {
-				sp[i] = &c[i]
-			}
-			localS = sseries.New(sp)
-			currentLen = len(c)
 		case []*string:
-			localS = sseries.New(c)
+			if values, ok := config.enumColumns[name]; ok {
+				localS, err = eseries.New(c, values)
+				if err != nil {
+					return QFrame{Err: errors.Propagate(fmt.Sprintf("New column %s", name), err)}
+				}
+				// Book keeping
+				delete(config.enumColumns, name)
+			} else {
+				localS = sseries.New(c)
+			}
 			currentLen = len(c)
 		case []bool:
 			localS = bseries.New(c)
@@ -121,6 +147,15 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 		if firstLen != currentLen {
 			return QFrame{Err: errors.New("New", "different lengths on columns not allowed")}
 		}
+	}
+
+	if len(config.enumColumns) > 0 {
+		colNames := make([]string, 0)
+		for k := range config.enumColumns {
+			colNames = append(colNames, k)
+		}
+
+		return QFrame{Err: errors.New("New", "unknown enum columns: %v", colNames)}
 	}
 
 	return QFrame{series: s, seriesByName: sByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
@@ -439,21 +474,21 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	return qf.withIndex(qf.index[start:end])
 }
 
-type LoadConfig struct {
+type CsvConfig struct {
 	emptyNull bool
 	types     map[string]types.DataType
 }
 
-type LoadConfigFunc func(*LoadConfig)
+type CsvConfigFunc func(*CsvConfig)
 
-func EmptyNull(emptyNull bool) LoadConfigFunc {
-	return func(c *LoadConfig) {
+func EmptyNull(emptyNull bool) CsvConfigFunc {
+	return func(c *CsvConfig) {
 		c.emptyNull = emptyNull
 	}
 }
 
-func Types(typs map[string]string) LoadConfigFunc {
-	return func(c *LoadConfig) {
+func Types(typs map[string]string) CsvConfigFunc {
+	return func(c *CsvConfig) {
 		c.types = make(map[string]types.DataType, len(typs))
 		for k, v := range typs {
 			c.types[k] = types.DataType(v)
@@ -461,8 +496,8 @@ func Types(typs map[string]string) LoadConfigFunc {
 	}
 }
 
-func ReadCsv(reader io.Reader, confFuncs ...LoadConfigFunc) QFrame {
-	conf := &LoadConfig{}
+func ReadCsv(reader io.Reader, confFuncs ...CsvConfigFunc) QFrame {
+	conf := &CsvConfig{}
 	for _, f := range confFuncs {
 		f(conf)
 	}
@@ -475,13 +510,13 @@ func ReadCsv(reader io.Reader, confFuncs ...LoadConfigFunc) QFrame {
 	return New(data, ColumnOrder(columns...))
 }
 
-func ReadJson(reader io.Reader) QFrame {
+func ReadJson(reader io.Reader, fns ...ConfigFunc) QFrame {
 	data, err := dfio.UnmarshalJson(reader)
 	if err != nil {
 		return QFrame{Err: err}
 	}
 
-	return New(data)
+	return New(data, fns...)
 }
 
 // This is currently fairly slow. Could probably be a lot speedier with
@@ -606,11 +641,9 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 }
 
 // TODO enums:
-// - Split series into series and factory
 // - Strict mode with defined values (including order)
 // - Tests
 // - Filtering, sorting, etc
-// - Support for other import types than CSV
 
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if

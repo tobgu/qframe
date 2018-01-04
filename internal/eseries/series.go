@@ -28,7 +28,25 @@ type Factory struct {
 	s         Series
 	valToEnum map[string]enumVal
 	strict    bool
-	hasBuilt  bool
+}
+
+func New(data []*string, values []string) (Series, error) {
+	f, err := NewFactory(values, len(data))
+	if err != nil {
+		return Series{}, err
+	}
+
+	for _, d := range data {
+		if d != nil {
+			if err := f.AppendString(*d); err != nil {
+				return Series{}, err
+			}
+		} else {
+			f.AppendNil()
+		}
+	}
+
+	return f.ToSeries(), nil
 }
 
 func NewFactory(values []string, sizeHint int) (*Factory, error) {
@@ -50,12 +68,6 @@ func NewFactory(values []string, sizeHint int) (*Factory, error) {
 		strict:    len(values) > 0}, nil
 }
 
-func (f *Factory) assertNotHasBuilt() {
-	if f.hasBuilt {
-		panic("Factory may not be used once a series has been build")
-	}
-}
-
 func (f *Factory) AppendNil() {
 	f.s.data = append(f.s.data, nullValue)
 }
@@ -70,15 +82,6 @@ func (f *Factory) AppendByteString(str []byte) error {
 	return f.appendString(v)
 }
 
-func (f *Factory) AddStrings(strs ...string) error {
-	for _, str := range strs {
-		if err := f.AppendString(str); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (f *Factory) AppendString(str string) error {
 	if e, ok := f.valToEnum[str]; ok {
 		f.s.data = append(f.s.data, e)
@@ -90,11 +93,11 @@ func (f *Factory) AppendString(str string) error {
 
 func (f *Factory) appendString(str string) error {
 	if f.strict {
-		return errors.New("AppendBytesString enum val", `unknown enum value "%f" using strict enum`, str)
+		return errors.New("append enum val", `unknown enum value "%f" using strict enum`, str)
 	}
 
 	if len(f.s.values) >= maxCardinality {
-		return errors.New("AppendBytesString enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
+		return errors.New("append enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
 	}
 
 	f.s.values = append(f.s.values, str)
@@ -142,8 +145,28 @@ func (s Series) Marshaler(index index.Int) json.Marshaler {
 }
 
 func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
-	// TODO
-	return false
+	otherE, ok := other.(Series)
+	if !ok {
+		return false
+	}
+
+	for ix, x := range index {
+		enumVal := s.data[x]
+		oEnumVal := otherE.data[otherIndex[ix]]
+		if enumVal.isNull() || oEnumVal.isNull() {
+			if enumVal == oEnumVal {
+				continue
+			}
+
+			return false
+		}
+
+		if s.values[enumVal] != otherE.values[oEnumVal] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (c Comparable) Compare(i, j uint32) series.CompareResult {

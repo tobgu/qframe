@@ -443,6 +443,7 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 			inputHeaders: []string{"foo"},
 			inputData:    "abc\ndef",
 			types:        map[string]string{"foo": "enum"},
+			expected:     map[string]interface{}{"foo": []string{"abc", "def"}},
 		},
 	}
 
@@ -454,7 +455,15 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 				assertErr(t, out.Err, tc.expectedErr)
 			} else {
 				assertNotErr(t, out.Err)
-				assertEquals(t, qframe.New(tc.expected, qframe.ColumnOrder(tc.inputHeaders...)), out)
+
+				enums := make(map[string][]string)
+				for k, v := range tc.types {
+					if v == "enum" {
+						enums[k] = nil
+					}
+				}
+
+				assertEquals(t, qframe.New(tc.expected, qframe.ColumnOrder(tc.inputHeaders...), qframe.Enums(enums)), out)
 			}
 		})
 	}
