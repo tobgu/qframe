@@ -18,17 +18,22 @@ func (v enumVal) isNull() bool {
 	return v == nullValue
 }
 
-// TODO: Split in factory and series?
 type Series struct {
-	data      []enumVal
-	values    []string
-	valToEnum map[string]enumVal
-	strict    bool
+	data   []enumVal
+	values []string
 }
 
-func New(values []string, sizeHint int) (Series, error) {
+// Factory is a helper used during construction of the enum series
+type Factory struct {
+	s         Series
+	valToEnum map[string]enumVal
+	strict    bool
+	hasBuilt  bool
+}
+
+func NewFactory(values []string, sizeHint int) (*Factory, error) {
 	if len(values) > maxCardinality {
-		return Series{}, errors.New("New enum", "too many unique values, max cardinality is %d", maxCardinality)
+		return nil, errors.New("New enum", "too many unique values, max cardinality is %d", maxCardinality)
 	}
 
 	if values == nil {
@@ -40,55 +45,69 @@ func New(values []string, sizeHint int) (Series, error) {
 		valToEnum[v] = enumVal(i)
 	}
 
-	return Series{strict: len(values) > 0, values: values, data: make([]enumVal, 0, sizeHint), valToEnum: valToEnum}, nil
+	return &Factory{s: Series{data: make([]enumVal, 0, sizeHint), values: values},
+		valToEnum: valToEnum,
+		strict:    len(values) > 0}, nil
 }
 
-func (s *Series) AppendNil() {
-	s.data = append(s.data, nullValue)
+func (f *Factory) assertNotHasBuilt() {
+	if f.hasBuilt {
+		panic("Factory may not be used once a series has been build")
+	}
 }
 
-func (s *Series) AppendByteString(str []byte) error {
-	if e, ok := s.valToEnum[string(str)]; ok {
-		s.data = append(s.data, e)
+func (f *Factory) AppendNil() {
+	f.s.data = append(f.s.data, nullValue)
+}
+
+func (f *Factory) AppendByteString(str []byte) error {
+	if e, ok := f.valToEnum[string(str)]; ok {
+		f.s.data = append(f.s.data, e)
 		return nil
 	}
 
 	v := string(str)
-	return s.appendString(v)
+	return f.appendString(v)
 }
 
-func (s *Series) AddStrings(strs ...string) error {
+func (f *Factory) AddStrings(strs ...string) error {
 	for _, str := range strs {
-		if err := s.AppendString(str); err != nil {
+		if err := f.AppendString(str); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Series) AppendString(str string) error {
-	if e, ok := s.valToEnum[str]; ok {
-		s.data = append(s.data, e)
+func (f *Factory) AppendString(str string) error {
+	if e, ok := f.valToEnum[str]; ok {
+		f.s.data = append(f.s.data, e)
 		return nil
 	}
 
-	return s.appendString(str)
+	return f.appendString(str)
 }
 
-func (s *Series) appendString(str string) error {
-	if s.strict {
-		return errors.New("AppendBytesString enum val", `unknown enum value "%s" using strict enum`, str)
+func (f *Factory) appendString(str string) error {
+	if f.strict {
+		return errors.New("AppendBytesString enum val", `unknown enum value "%f" using strict enum`, str)
 	}
 
-	if len(s.values) >= maxCardinality {
+	if len(f.s.values) >= maxCardinality {
 		return errors.New("AppendBytesString enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
 	}
 
-	s.values = append(s.values, str)
-	ev := enumVal(len(s.values) - 1)
-	s.data = append(s.data, ev)
-	s.valToEnum[str] = ev
+	f.s.values = append(f.s.values, str)
+	ev := enumVal(len(f.s.values) - 1)
+	f.s.data = append(f.s.data, ev)
+	f.valToEnum[str] = ev
 	return nil
+}
+
+func (f *Factory) ToSeries() Series {
+	// Using the factory after this method has been called and the series exposed
+	// is not recommended.
+	return f.s
 }
 
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
@@ -148,7 +167,7 @@ func (s Series) subset(index index.Int) Series {
 		data = append(data, s.data[ix])
 	}
 
-	return Series{data: data, values: s.values, strict: s.strict}
+	return Series{data: data, values: s.values}
 }
 
 func (s Series) Subset(index index.Int) series.Series {

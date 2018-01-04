@@ -157,23 +157,23 @@ func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool, dataType
 	}
 
 	if dataType == types.Enum {
-		enums, err := eseries.New(nil, len(pointers))
+		factory, err := eseries.NewFactory(nil, len(pointers))
 		if err != nil {
 			return nil, err
 		}
 
 		for _, p := range pointers {
 			if p.start == p.end && emptyNull {
-				enums.AppendNil()
+				factory.AppendNil()
 			} else {
-				err := enums.AppendByteString(bytes[p.start:p.end])
+				err := factory.AppendByteString(bytes[p.start:p.end])
 				if err != nil {
 					return nil, errors.Propagate("Create column", err)
 				}
 			}
 		}
 
-		return enums, nil
+		return factory.ToSeries(), nil
 	}
 
 	return nil, errors.New("Create column", "unknown data type: %s", dataType)
