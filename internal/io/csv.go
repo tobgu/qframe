@@ -15,8 +15,14 @@ type bytePointer struct {
 	end   uint32
 }
 
+type CsvConfig struct {
+	EmptyNull bool
+	Types     map[string]types.DataType
+	EnumVals  map[string][]string
+}
+
 // TODO: Take type map
-func ReadCsv(reader io.Reader, emptyNull bool, types map[string]types.DataType) (map[string]interface{}, []string, error) {
+func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string, error) {
 	r := csv.NewReader(reader)
 	byteHeader, err := r.Read()
 	if err != nil {
@@ -49,7 +55,7 @@ func ReadCsv(reader io.Reader, emptyNull bool, types map[string]types.DataType) 
 
 	dataMap := make(map[string]interface{}, len(headers))
 	for i, header := range headers {
-		data, err := columnToData(colBytes[i], colPointers[i], emptyNull, types[header])
+		data, err := columnToData(colBytes[i], colPointers[i], header, conf)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -61,8 +67,9 @@ func ReadCsv(reader io.Reader, emptyNull bool, types map[string]types.DataType) 
 }
 
 // Convert bytes to data columns, try, in turn int, float, bool and last string.
-func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool, dataType types.DataType) (interface{}, error) {
+func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CsvConfig) (interface{}, error) {
 	var err error
+	dataType := conf.Types[colName]
 
 	if dataType == types.Int || dataType == types.None {
 		intData := make([]int, 0, len(pointers))
@@ -135,7 +142,7 @@ func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool, dataType
 		stringMap := make(map[string]*string)
 		stringData := make([]*string, 0, len(pointers))
 		for _, p := range pointers {
-			if p.start == p.end && emptyNull {
+			if p.start == p.end && conf.EmptyNull {
 				stringData = append(stringData, nil)
 			} else {
 				// Reuse pointers to strings that have already occurred, good
@@ -157,13 +164,14 @@ func columnToData(bytes []byte, pointers []bytePointer, emptyNull bool, dataType
 	}
 
 	if dataType == types.Enum {
-		factory, err := eseries.NewFactory(nil, len(pointers))
+		values := conf.EnumVals[colName]
+		factory, err := eseries.NewFactory(values, len(pointers))
 		if err != nil {
 			return nil, err
 		}
 
 		for _, p := range pointers {
-			if p.start == p.end && emptyNull {
+			if p.start == p.end && conf.EmptyNull {
 				factory.AppendNil()
 			} else {
 				err := factory.AppendByteString(bytes[p.start:p.end])

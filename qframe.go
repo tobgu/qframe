@@ -474,24 +474,30 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	return qf.withIndex(qf.index[start:end])
 }
 
-type CsvConfig struct {
-	emptyNull bool
-	types     map[string]types.DataType
-}
+type CsvConfig dfio.CsvConfig
 
 type CsvConfigFunc func(*CsvConfig)
 
 func EmptyNull(emptyNull bool) CsvConfigFunc {
 	return func(c *CsvConfig) {
-		c.emptyNull = emptyNull
+		c.EmptyNull = emptyNull
 	}
 }
 
 func Types(typs map[string]string) CsvConfigFunc {
 	return func(c *CsvConfig) {
-		c.types = make(map[string]types.DataType, len(typs))
+		c.Types = make(map[string]types.DataType, len(typs))
 		for k, v := range typs {
-			c.types[k] = types.DataType(v)
+			c.Types[k] = types.DataType(v)
+		}
+	}
+}
+
+func EnumValues(values map[string][]string) CsvConfigFunc {
+	return func(c *CsvConfig) {
+		c.EnumVals = make(map[string][]string)
+		for k, v := range values {
+			c.EnumVals[k] = v
 		}
 	}
 }
@@ -502,7 +508,7 @@ func ReadCsv(reader io.Reader, confFuncs ...CsvConfigFunc) QFrame {
 		f(conf)
 	}
 
-	data, columns, err := dfio.ReadCsv(reader, conf.emptyNull, conf.types)
+	data, columns, err := dfio.ReadCsv(reader, dfio.CsvConfig(*conf))
 	if err != nil {
 		return QFrame{Err: err}
 	}

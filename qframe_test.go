@@ -330,7 +330,7 @@ func TestQFrame_Slice(t *testing.T) {
 	}
 }
 
-func TestQCacheFrame_ReadCsv(t *testing.T) {
+func TestQFrame_ReadCsv(t *testing.T) {
 	/*
 		Pandas reference
 		>>> data = """
@@ -439,11 +439,12 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 			types:        map[string]string{"foo": "float"},
 		},
 		{
-			name:         "Enum base case",
+			name:         "Enum with null value",
 			inputHeaders: []string{"foo"},
-			inputData:    "abc\ndef",
+			inputData:    "a\n\nc",
 			types:        map[string]string{"foo": "enum"},
-			expected:     map[string]interface{}{"foo": []string{"abc", "def"}},
+			emptyNull:    true,
+			expected:     map[string]interface{}{"foo": []*string{&a, nil, &c}},
 		},
 	}
 
@@ -467,6 +468,35 @@ func TestQCacheFrame_ReadCsv(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQFrame_Enum(t *testing.T) {
+	mon, tue, wed, thu, fri, sat, sun := "mon", "tue", "wed", "thu", "fri", "sat", "sun"
+	t.Run("Applies specified order", func(t *testing.T) {
+		input := `day
+tue
+mon
+sat
+wed
+sun
+thu
+mon
+thu
+
+`
+		out := qframe.ReadCsv(
+			strings.NewReader(input),
+			qframe.EmptyNull(true),
+			qframe.Types(map[string]string{"day": "enum"}),
+			qframe.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+		out = out.Sort(qframe.Order{Column: "day"})
+		expected := qframe.New(
+			map[string]interface{}{"day": []*string{nil, &mon, &mon, &tue, &wed, &thu, &thu, &sat, &sun}},
+			qframe.Enums(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+
+		assertNotErr(t, out.Err)
+		assertEquals(t, expected, out)
+	})
 }
 
 func TestQFrame_ReadJson(t *testing.T) {

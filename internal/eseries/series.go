@@ -170,7 +170,29 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 }
 
 func (c Comparable) Compare(i, j uint32) series.CompareResult {
-	// TODO
+	x, y := c.s.data[i], c.s.data[j]
+	if x.isNull() || y.isNull() {
+		if !x.isNull() {
+			return c.gtValue
+		}
+
+		if !y.isNull() {
+			return c.ltValue
+		}
+
+		// Consider nil == nil, this means that we can group
+		// by null values for example (this differs from Pandas)
+		return series.Equal
+	}
+
+	if x < y {
+		return c.ltValue
+	}
+
+	if x > y {
+		return c.gtValue
+	}
+
 	return series.Equal
 }
 
