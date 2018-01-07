@@ -101,7 +101,12 @@ func gt(index index.Int, column []*string, comparatee interface{}, bIndex index.
 	}
 
 	for i, x := range bIndex {
-		bIndex[i] = x || *column[index[i]] > comp
+		if !x {
+			sp := column[index[i]]
+			if sp != nil {
+				bIndex[i] = *sp > comp
+			}
+		}
 	}
 
 	return nil
@@ -114,7 +119,10 @@ func lt(index index.Int, column []*string, comparatee interface{}, bIndex index.
 	}
 
 	for i, x := range bIndex {
-		bIndex[i] = x || *column[index[i]] < comp
+		if !x {
+			sp := column[index[i]]
+			bIndex[i] = sp == nil || *sp < comp
+		}
 	}
 
 	return nil
