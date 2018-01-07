@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
+	"github.com/tobgu/qframe/internal/serialize"
 	"github.com/tobgu/qframe/internal/series"
 )
 
@@ -135,13 +136,41 @@ func (s Series) StringAt(i int, naRep string) string {
 }
 
 func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
-	// TODO: Share with string series
-	return buf
+	enum := s.data[i]
+	if enum.isNull() {
+		return append(buf, "null"...)
+	}
+
+	return serialize.AppendQuotedString(buf, s.values[enum])
+}
+
+type marshaler struct {
+	Series
+	index index.Int
+}
+
+func (m marshaler) MarshalJSON() ([]byte, error) {
+	buf := make([]byte, 0, len(m.index))
+	buf = append(buf, '[')
+	for i, ix := range m.index {
+		if i > 0 {
+			buf = append(buf, ',')
+		}
+
+		enum := m.data[ix]
+		if enum.isNull() {
+			buf = append(buf, "null"...)
+		} else {
+			buf = serialize.AppendQuotedString(buf, m.values[enum])
+		}
+	}
+
+	buf = append(buf, ']')
+	return buf, nil
 }
 
 func (s Series) Marshaler(index index.Int) json.Marshaler {
-	// TODO
-	return nil
+	return marshaler{Series: s, index: index}
 }
 
 func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {

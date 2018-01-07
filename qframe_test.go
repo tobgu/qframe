@@ -637,8 +637,10 @@ false,2.5,2,"b,c"
 }
 
 func TestQFrame_ToFromJSON(t *testing.T) {
+	config := []qframe.ConfigFunc{qframe.Enums(map[string][]string{"ENUM": {"aa", "bb"}})}
 	table := []struct {
 		orientation string
+		configFuncs []qframe.ConfigFunc
 	}{
 		{orientation: "records"},
 		{orientation: "columns"},
@@ -648,14 +650,14 @@ func TestQFrame_ToFromJSON(t *testing.T) {
 		t.Run(fmt.Sprintf("ToFromJSON %d", i), func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			data := map[string]interface{}{
-				"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}}
-			originalDf := qframe.New(data)
+				"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}, "ENUM": []string{"aa", "bb"}}
+			originalDf := qframe.New(data, config...)
 			assertNotErr(t, originalDf.Err)
 
 			err := originalDf.ToJson(buf, tc.orientation)
 			assertNotErr(t, err)
 
-			jsonDf := qframe.ReadJson(buf)
+			jsonDf := qframe.ReadJson(buf, config...)
 			assertNotErr(t, jsonDf.Err)
 			assertEquals(t, originalDf, jsonDf)
 		})

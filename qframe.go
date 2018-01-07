@@ -647,9 +647,8 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 }
 
 // TODO enums:
-// - Strict mode with defined values (including order)
 // - Tests
-// - Filtering, sorting, etc
+// - Filtering, etc
 
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
@@ -675,3 +674,4 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - Benchmarks comparing performance with Pandas
 // - Documentation
 // - Use https://goreportcard.com
+// - More serialization and deserialization tests
