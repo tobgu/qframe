@@ -117,7 +117,7 @@ func (f *Factory) ToSeries() Series {
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
 var aggregations = map[string]func(Series) enumVal{}
 
-var filterFuncs = map[filter.Comparator]func(index.Int, []enumVal, interface{}, index.Bool) error{
+var filterFuncs = map[filter.Comparator]func(index.Int, []enumVal, []string, string, index.Bool){
 	filter.Gt: gt,
 	filter.Lt: lt,
 }
@@ -232,7 +232,13 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 		return fmt.Errorf("invalid comparison operator for *string, %v", c)
 	}
 
-	return compFunc(index, s.data, comparatee, bIndex)
+	comp, ok := comparatee.(string)
+	if !ok {
+		return errors.New("Filter enum", "invalid comparison type, %s, expected string", comp)
+	}
+
+	compFunc(index, s.data, s.values, comp, bIndex)
+	return nil
 }
 
 func (s Series) subset(index index.Int) Series {
@@ -304,32 +310,22 @@ type Comparable struct {
 	gtValue series.CompareResult
 }
 
-func gt(index index.Int, column []enumVal, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Handle nil values
-	// TODO: Error if not locked type
-	comp, ok := comparatee.(enumVal)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
-	}
-
+func gt(index index.Int, column []enumVal, values []string, comparatee string, bIndex index.Bool) {
 	for i, x := range bIndex {
-		bIndex[i] = x || column[index[i]] > comp
+		if !x {
+			enum := column[index[i]]
+			if !enum.isNull() {
+				bIndex[i] = values[enum] > comparatee
+			}
+		}
 	}
-
-	return nil
 }
 
-func lt(index index.Int, column []enumVal, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Handle nil values
-	// TODO: Error if not locked type
-	comp, ok := comparatee.(enumVal)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
-	}
-
+func lt(index index.Int, column []enumVal, values []string, comparatee string, bIndex index.Bool) {
 	for i, x := range bIndex {
-		bIndex[i] = x || column[index[i]] < comp
+		if !x {
+			enum := column[index[i]]
+			bIndex[i] = enum.isNull() || values[enum] < comparatee
+		}
 	}
-
-	return nil
 }

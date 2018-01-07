@@ -691,3 +691,32 @@ func TestQFrame_ToJSONNaN(t *testing.T) {
 		})
 	}
 }
+
+func TestQFrame_FilterEnum(t *testing.T) {
+	a, b, c, d, e := "a", "b", "c", "d", "e"
+	enums := qframe.Enums(map[string][]string{"COL1": nil})
+	in := qframe.New(map[string]interface{}{
+		"COL1": []*string{&b, &c, &a, nil, &e, &d, nil}}, enums)
+
+	table := []struct {
+		filters  []filter.Filter
+		expected map[string]interface{}
+	}{
+		{
+			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: "b"}},
+			map[string]interface{}{"COL1": []*string{&c, &e, &d}},
+		},
+		{
+			[]filter.Filter{{Column: "COL1", Comparator: "<", Arg: "b"}},
+			map[string]interface{}{"COL1": []*string{&a, nil, nil}},
+		},
+	}
+
+	for i, tc := range table {
+		t.Run(fmt.Sprintf("Filter enum %d", i), func(t *testing.T) {
+			expected := qframe.New(tc.expected, enums)
+			out := in.Filter(tc.filters...)
+			assertEquals(t, expected, out)
+		})
+	}
+}
