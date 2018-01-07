@@ -17,7 +17,6 @@ type Series interface {
 	StringAt(i int, naRep string) string
 	AppendByteStringAt(buf []byte, i int) []byte
 	Marshaler(index index.Int) json.Marshaler
-	FillRecords(records []map[string]interface{}, index index.Int, colName string)
 }
 
 // TODO: Change to byte
