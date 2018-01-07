@@ -63,6 +63,10 @@ func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string
 		dataMap[header] = data
 	}
 
+	if len(conf.EnumVals) > 0 {
+		return nil, nil, errors.New("Read csv", "Enum values specified for non enum column")
+	}
+
 	return dataMap, headers, nil
 }
 
@@ -165,6 +169,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf Csv
 
 	if dataType == types.Enum {
 		values := conf.EnumVals[colName]
+		delete(conf.EnumVals, colName)
 		factory, err := eseries.NewFactory(values, len(pointers))
 		if err != nil {
 			return nil, err

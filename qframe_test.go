@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/filter"
 	"math"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -496,6 +497,45 @@ thu
 
 		assertNotErr(t, out.Err)
 		assertEquals(t, expected, out)
+	})
+
+	t.Run("Wont accept unknown values in strict mode", func(t *testing.T) {
+		input := `day
+tue
+mon
+foo
+`
+		out := qframe.ReadCsv(
+			strings.NewReader(input),
+			qframe.Types(map[string]string{"day": "enum"}),
+			qframe.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+
+		assertErr(t, out.Err, "unknown enum value")
+	})
+
+	t.Run("Fails with too high cardinality column", func(t *testing.T) {
+		input := make([]string, 0)
+		for i := 0; i < 256; i++ {
+			input = append(input, strconv.Itoa(i))
+		}
+
+		out := qframe.New(
+			map[string]interface{}{"foo": input},
+			qframe.Enums(map[string][]string{"foo": nil}))
+
+		assertErr(t, out.Err, "max cardinality")
+	})
+
+	t.Run("Fails when enum values specified for non enum column", func(t *testing.T) {
+		input := `day
+tue
+`
+
+		out := qframe.ReadCsv(
+			strings.NewReader(input),
+			qframe.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+
+		assertErr(t, out.Err, "specified for non enum column")
 	})
 }
 

@@ -93,7 +93,7 @@ func (f *Factory) AppendString(str string) error {
 
 func (f *Factory) appendString(str string) error {
 	if f.strict {
-		return errors.New("append enum val", `unknown enum value "%f" using strict enum`, str)
+		return errors.New("append enum val", `unknown enum value "%s" using strict enum`, str)
 	}
 
 	if len(f.s.values) >= maxCardinality {
