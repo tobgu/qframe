@@ -694,7 +694,7 @@ func TestQFrame_ToJSONNaN(t *testing.T) {
 
 func TestQFrame_FilterEnum(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
-	enums := qframe.Enums(map[string][]string{"COL1": nil})
+	enums := qframe.Enums(map[string][]string{"COL1": {"a", "b", "c", "d", "e"}})
 	in := qframe.New(map[string]interface{}{
 		"COL1": []*string{&b, &c, &a, nil, &e, &d, nil}}, enums)
 

@@ -18,7 +18,14 @@ func NewAscending(size uint32) Int {
 }
 
 func (ix Int) Filter(bIx Bool) Int {
-	result := make(Int, 0)
+	count := 0
+	for _, b := range bIx {
+		if b {
+			count++
+		}
+	}
+
+	result := make(Int, 0, count)
 	for i, b := range bIx {
 		if b {
 			result = append(result, ix[i])

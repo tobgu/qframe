@@ -2,3 +2,4 @@ vendor/*/
 go-qcache
 *.test
 *.out
+*.prof

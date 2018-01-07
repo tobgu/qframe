@@ -425,6 +425,52 @@ func BenchmarkQFrame_ToJsonColumns(b *testing.B) {
 	toJson(b, "columns")
 }
 
+func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
+	rowCount := 100000
+	cardinality := 9
+	input := csvEnumBytes(rowCount, cardinality)
+
+	table := []struct {
+		types         map[string]string
+		column        string
+		filter        string
+		expectedCount int
+	}{
+		{
+			types:         map[string]string{"COL.1": "enum", "COL.2": "enum"},
+			column:        "COL.1",
+			filter:        "Foo bar baz 5",
+			expectedCount: 55556,
+		},
+		{
+			types:         map[string]string{},
+			column:        "COL.1",
+			filter:        "Foo bar baz 5",
+			expectedCount: 55556,
+		},
+		{
+			types:         map[string]string{},
+			column:        "COL.2",
+			filter:        "AB5",
+			expectedCount: 55556,
+		},
+	}
+	for i, tc := range table {
+		r := bytes.NewReader(input)
+		df := qf.ReadCsv(r, qf.Types(tc.types))
+		b.Run(fmt.Sprintf("Test %d", i), func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				newDf := df.Filter(filter.Filter{Comparator: "<", Column: tc.column, Arg: tc.filter})
+				if newDf.Len() != tc.expectedCount {
+					b.Errorf("Unexpected count: %d, expected: %d", newDf.Len(), tc.expectedCount)
+				}
+			}
+		})
+	}
+}
+
 /*
 Go 1.7
 
@@ -558,4 +604,10 @@ BenchmarkQFrame_ReadCsvEnum/Type_enum-2         	      50	  28081769 ns/op	19135
 BenchmarkQFrame_ReadCsvEnum/Type_string-2       	      50	  28563580 ns/op	20526743 B/op	     238 allocs/op
 
 Total saving 1,4 Mb in line with what was expected given that one byte is used per entry instead of eight
+
+// Enum vs string filtering
+BenchmarkQFrame_FilterEnumVsString/Test_0-2         	    2000	    714369 ns/op	  335888 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Test_1-2         	    1000	   1757913 ns/op	  335888 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Test_2-2         	    1000	   1792186 ns/op	  335888 B/op	       3 allocs/op
+
 */
