@@ -435,6 +435,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 		column        string
 		filter        string
 		expectedCount int
+		comparator    filter.Comparator
 	}{
 		{
 			types:         map[string]string{"COL.1": "enum", "COL.2": "enum"},
@@ -454,15 +455,33 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 			filter:        "AB5",
 			expectedCount: 55556,
 		},
+		{
+			types:         map[string]string{},
+			column:        "COL.1",
+			filter:        "Foo bar baz 5",
+			expectedCount: 11111,
+			comparator:    "like",
+		},
+		{
+			types:         map[string]string{},
+			column:        "COL.1",
+			filter:        "Foo bar baz 5",
+			expectedCount: 11111,
+			comparator:    "ilike",
+		},
 	}
 	for i, tc := range table {
 		r := bytes.NewReader(input)
 		df := qf.ReadCsv(r, qf.Types(tc.types))
+		if tc.comparator == "" {
+			tc.comparator = "<"
+		}
+
 		b.Run(fmt.Sprintf("Test %d", i), func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				newDf := df.Filter(filter.Filter{Comparator: "<", Column: tc.column, Arg: tc.filter})
+				newDf := df.Filter(filter.Filter{Comparator: tc.comparator, Column: tc.column, Arg: tc.filter})
 				if newDf.Len() != tc.expectedCount {
 					b.Errorf("Unexpected count: %d, expected: %d", newDf.Len(), tc.expectedCount)
 				}
@@ -609,5 +628,13 @@ Total saving 1,4 Mb in line with what was expected given that one byte is used p
 BenchmarkQFrame_FilterEnumVsString/Test_0-2         	    2000	    714369 ns/op	  335888 B/op	       3 allocs/op
 BenchmarkQFrame_FilterEnumVsString/Test_1-2         	    1000	   1757913 ns/op	  335888 B/op	       3 allocs/op
 BenchmarkQFrame_FilterEnumVsString/Test_2-2         	    1000	   1792186 ns/op	  335888 B/op	       3 allocs/op
+
+// Initial "(i)like" matching of strings using regexes
+
+Case sensitive:
+BenchmarkQFrame_FilterEnumVsString/Test_3-2         	     100	  11765579 ns/op	  162600 B/op	      74 allocs/op
+
+Case insensitive:
+BenchmarkQFrame_FilterEnumVsString/Test_4-2         	      30	  41680939 ns/op	  163120 B/op	      91 allocs/op
 
 */

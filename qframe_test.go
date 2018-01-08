@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/filter"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -723,25 +724,54 @@ func TestQFrame_FilterEnum(t *testing.T) {
 
 func TestQFrame_FilterString(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
-	in := qframe.New(map[string]interface{}{
-		"COL1": []*string{&b, &c, &a, nil, &e, &d, nil}})
+	withNil := map[string]interface{}{"COL1": []*string{&b, &c, &a, nil, &e, &d, nil}}
+	mixed := map[string]interface{}{"COL1": []string{"ABC", "AbC", "DEF", "ABCDEF", "abc$def"}}
 
 	table := []struct {
+		input    map[string]interface{}
 		filters  []filter.Filter
 		expected map[string]interface{}
 	}{
 		{
+			withNil,
 			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: "b"}},
 			map[string]interface{}{"COL1": []*string{&c, &e, &d}},
 		},
 		{
+			withNil,
 			[]filter.Filter{{Column: "COL1", Comparator: "<", Arg: "b"}},
 			map[string]interface{}{"COL1": []*string{&a, nil, nil}},
+		},
+		{
+			withNil,
+			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: "b"}},
+			map[string]interface{}{"COL1": []*string{&b}},
+		},
+		{
+			mixed,
+			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: ".*EF.*"}},
+			map[string]interface{}{"COL1": []string{"DEF", "ABCDEF"}},
+		},
+		{
+			mixed,
+			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: "%EF%"}},
+			map[string]interface{}{"COL1": []string{"DEF", "ABCDEF"}},
+		},
+		{
+			mixed,
+			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: regexp.QuoteMeta("abc$def")}},
+			map[string]interface{}{"COL1": []string{"abc$def"}},
+		},
+		{
+			mixed,
+			[]filter.Filter{{Column: "COL1", Comparator: "ilike", Arg: "abc"}},
+			map[string]interface{}{"COL1": []string{"ABC", "AbC"}},
 		},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter string %d", i), func(t *testing.T) {
+			in := qframe.New(tc.input)
 			expected := qframe.New(tc.expected)
 			out := in.Filter(tc.filters...)
 			assertEquals(t, expected, out)

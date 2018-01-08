@@ -2,20 +2,26 @@ package sseries
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/serialize"
 	"github.com/tobgu/qframe/internal/series"
+	"regexp"
+	"strings"
 )
 
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
 var aggregations = map[string]func([]*string) *string{}
 
-var filterFuncs = map[filter.Comparator]func(index.Int, []*string, interface{}, index.Bool) error{
-	filter.Gt: gt,
-	filter.Lt: lt,
+var stringFilterFuncs = map[filter.Comparator]func(index.Int, []*string, string, index.Bool) error{
+	filter.Gt:  gt,
+	filter.Lt:  lt,
+	filter.Eq:  eq,
+	filter.Neq: neq,
+	"like":     like,
+	"ilike":    ilike,
 }
 
 func (s Series) StringAt(i int, naRep string) string {
@@ -91,20 +97,25 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
-// TODO: Some kind of code generation for all the below functions for all supported types
+func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
+	if compFunc, ok := stringFilterFuncs[c]; ok {
+		sComp, ok := comparatee.(string)
+		if !ok {
+			return errors.New("filter string column", "invalid filter type, expected string")
+		}
 
-func gt(index index.Int, column []*string, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Handle nil values
-	comp, ok := comparatee.(string)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
+		return compFunc(index, s.data, sComp, bIndex)
 	}
 
+	return errors.New("filter string column", "Unknown filter %s", c)
+}
+
+func gt(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			sp := column[index[i]]
 			if sp != nil {
-				bIndex[i] = *sp > comp
+				bIndex[i] = *sp > comparatee
 			}
 		}
 	}
@@ -112,16 +123,79 @@ func gt(index index.Int, column []*string, comparatee interface{}, bIndex index.
 	return nil
 }
 
-func lt(index index.Int, column []*string, comparatee interface{}, bIndex index.Bool) error {
-	comp, ok := comparatee.(string)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
+func lt(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			sp := column[index[i]]
+			bIndex[i] = sp == nil || *sp < comparatee
+		}
+	}
+
+	return nil
+}
+
+func eq(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			sp := column[index[i]]
+			if sp != nil {
+				bIndex[i] = *sp == comparatee
+			}
+		}
+	}
+
+	return nil
+}
+
+func neq(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			sp := column[index[i]]
+			if sp != nil {
+				bIndex[i] = *sp != comparatee
+			}
+		}
+	}
+
+	return nil
+}
+
+func like(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+	return regexFilter(index, column, comparatee, bIndex, true)
+}
+
+func ilike(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+	return regexFilter(index, column, comparatee, bIndex, false)
+}
+
+func regexFilter(index index.Int, column []*string, comparatee string, bIndex index.Bool, caseSensitive bool) error {
+	if !strings.HasPrefix(comparatee, "%") {
+		comparatee = "^" + comparatee
+	} else {
+		comparatee = comparatee[1:]
+	}
+
+	if !strings.HasSuffix(comparatee, "%") {
+		comparatee = comparatee + "$"
+	} else {
+		comparatee = comparatee[:len(comparatee)-1]
+	}
+
+	if !caseSensitive {
+		comparatee = "(?i)" + comparatee
+	}
+
+	r, err := regexp.Compile(comparatee)
+	if err != nil {
+		return errors.Propagate("string like", err)
 	}
 
 	for i, x := range bIndex {
 		if !x {
 			sp := column[index[i]]
-			bIndex[i] = sp == nil || *sp < comp
+			if sp != nil {
+				bIndex[i] = r.MatchString(*sp)
+			}
 		}
 	}
 

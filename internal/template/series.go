@@ -25,16 +25,6 @@ func New(d []dataType) Series {
 	return Series{data: d}
 }
 
-func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Also make it possible to compare to values in other column
-	compFunc, ok := filterFuncs[c]
-	if !ok {
-		return fmt.Errorf("invalid comparison operator for dataType, %v", c)
-	}
-
-	return compFunc(index, s.data, comparatee, bIndex)
-}
-
 func (s Series) subset(index index.Int) Series {
 	data := make([]dataType, 0, len(index))
 	for _, ix := range index {

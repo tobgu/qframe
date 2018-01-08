@@ -68,6 +68,16 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
+func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
+	// TODO: Also make it possible to compare to values in other column
+	compFunc, ok := filterFuncs[c]
+	if !ok {
+		return fmt.Errorf("invalid comparison operator for int, %v", c)
+	}
+
+	return compFunc(index, s.data, comparatee, bIndex)
+}
+
 // TODO: Some kind of code generation for all the below functions for all supported types
 
 func gt(index index.Int, column []int, comparatee interface{}, bIndex index.Bool) error {

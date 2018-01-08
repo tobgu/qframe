@@ -7,7 +7,6 @@ package iseries
 import (
 	"fmt"
 
-	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
 )
@@ -20,16 +19,6 @@ type Series struct {
 
 func New(d []int) Series {
 	return Series{data: d}
-}
-
-func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Also make it possible to compare to values in other column
-	compFunc, ok := filterFuncs[c]
-	if !ok {
-		return fmt.Errorf("invalid comparison operator for int, %v", c)
-	}
-
-	return compFunc(index, s.data, comparatee, bIndex)
 }
 
 func (s Series) subset(index index.Int) Series {

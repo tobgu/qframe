@@ -2,6 +2,7 @@ package bseries
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
@@ -52,4 +53,14 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	}
 
 	return true
+}
+
+func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
+	// TODO: Also make it possible to compare to values in other column
+	compFunc, ok := filterFuncs[c]
+	if !ok {
+		return fmt.Errorf("invalid comparison operator for bool, %v", c)
+	}
+
+	return compFunc(index, s.data, comparatee, bIndex)
 }

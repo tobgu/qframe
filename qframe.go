@@ -646,17 +646,12 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	return err
 }
 
-// TODO enums:
-// - Tests
-// - Filtering, etc
-
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
 //   null could be interpreted as NaN. Should not be impossible using the generated easyjson code
 //   as starting point for column based format and by refining type detection for the record based
 //   read. That would also allow proper parsing of integers for record format rather than making them
 //   floats.
-// - Optional typing when reading CSV
 // - Nice table printing in String function
 // - Support access by x, y (to support GoNum matrix interface)
 // - Implement query language.
@@ -665,7 +660,6 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - Bitwise filters for int
 // - Regex filters for strings
 // - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
-// - Handle string nil in filtering
 // - Handle float NaN in filtering
 // - AppendBytesString support to add columns to DF (in addition to project). Should produce a new df, no mutation!
 //   To be used with standin columns.
