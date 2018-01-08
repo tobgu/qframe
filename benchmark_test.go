@@ -458,14 +458,14 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 		{
 			types:         map[string]string{},
 			column:        "COL.1",
-			filter:        "Foo bar baz 5",
+			filter:        "%bar baz 5",
 			expectedCount: 11111,
 			comparator:    "like",
 		},
 		{
 			types:         map[string]string{},
 			column:        "COL.1",
-			filter:        "Foo bar baz 5",
+			filter:        "%bar baz 5",
 			expectedCount: 11111,
 			comparator:    "ilike",
 		},
@@ -636,5 +636,9 @@ BenchmarkQFrame_FilterEnumVsString/Test_3-2         	     100	  11765579 ns/op	 
 
 Case insensitive:
 BenchmarkQFrame_FilterEnumVsString/Test_4-2         	      30	  41680939 ns/op	  163120 B/op	      91 allocs/op
+
+// Remove the need for regexp in many cases:
+BenchmarkQFrame_FilterEnumVsString/Test_3-2         	    1000	   1788819 ns/op	  155690 B/op	       4 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Test_4-2         	     200	   9970913 ns/op	  155848 B/op	       7 allocs/op
 
 */
