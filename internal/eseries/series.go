@@ -6,8 +6,8 @@ import (
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
-	"github.com/tobgu/qframe/internal/serialize"
 	"github.com/tobgu/qframe/internal/series"
+	"github.com/tobgu/qframe/internal/strings"
 )
 
 type enumVal uint8
@@ -141,7 +141,7 @@ func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
 		return append(buf, "null"...)
 	}
 
-	return serialize.AppendQuotedString(buf, s.values[enum])
+	return strings.AppendQuotedString(buf, s.values[enum])
 }
 
 type marshaler struct {
@@ -161,7 +161,7 @@ func (m marshaler) MarshalJSON() ([]byte, error) {
 		if enum.isNull() {
 			buf = append(buf, "null"...)
 		} else {
-			buf = serialize.AppendQuotedString(buf, m.values[enum])
+			buf = strings.AppendQuotedString(buf, m.values[enum])
 		}
 	}
 

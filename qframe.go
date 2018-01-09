@@ -9,10 +9,11 @@ import (
 	"github.com/tobgu/qframe/internal/eseries"
 	"github.com/tobgu/qframe/internal/fseries"
 	"github.com/tobgu/qframe/internal/index"
-	dfio "github.com/tobgu/qframe/internal/io"
+	qfio "github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/iseries"
 	"github.com/tobgu/qframe/internal/series"
 	"github.com/tobgu/qframe/internal/sseries"
+	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"io"
 	"sort"
@@ -474,7 +475,7 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	return qf.withIndex(qf.index[start:end])
 }
 
-type CsvConfig dfio.CsvConfig
+type CsvConfig qfio.CsvConfig
 
 type CsvConfigFunc func(*CsvConfig)
 
@@ -508,7 +509,7 @@ func ReadCsv(reader io.Reader, confFuncs ...CsvConfigFunc) QFrame {
 		f(conf)
 	}
 
-	data, columns, err := dfio.ReadCsv(reader, dfio.CsvConfig(*conf))
+	data, columns, err := qfio.ReadCsv(reader, qfio.CsvConfig(*conf))
 	if err != nil {
 		return QFrame{Err: err}
 	}
@@ -517,7 +518,7 @@ func ReadCsv(reader io.Reader, confFuncs ...CsvConfigFunc) QFrame {
 }
 
 func ReadJson(reader io.Reader, fns ...ConfigFunc) QFrame {
-	data, err := dfio.UnmarshalJson(reader)
+	data, err := qfio.UnmarshalJson(reader)
 	if err != nil {
 		return QFrame{Err: err}
 	}
@@ -569,7 +570,7 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	columns := make([]series.Series, 0, len(qf.series))
 	for name, column := range qf.seriesByName {
 		columns = append(columns, column)
-		colByteNames = append(colByteNames, dfio.QuotedBytes(name))
+		colByteNames = append(colByteNames, qfstrings.QuotedBytes(name))
 	}
 
 	if orient == "records" {

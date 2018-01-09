@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/weberc2/fastcsv"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/eseries"
+	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"io"
 	"math"
@@ -78,7 +79,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf Csv
 	if dataType == types.Int || dataType == types.None {
 		intData := make([]int, 0, len(pointers))
 		for _, p := range pointers {
-			x, intErr := parseInt(bytes[p.start:p.end])
+			x, intErr := strings.ParseInt(bytes[p.start:p.end])
 			if intErr != nil {
 				err = intErr
 				break
@@ -104,7 +105,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf Csv
 				continue
 			}
 
-			x, floatErr := parseFloat(bytes[p.start:p.end])
+			x, floatErr := strings.ParseFloat(bytes[p.start:p.end])
 			if floatErr != nil {
 				err = floatErr
 				break
@@ -125,7 +126,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf Csv
 		err = nil
 		boolData := make([]bool, 0, len(pointers))
 		for _, p := range pointers {
-			x, boolErr := parseBool(bytes[p.start:p.end])
+			x, boolErr := strings.ParseBool(bytes[p.start:p.end])
 			if boolErr != nil {
 				err = boolErr
 				break
