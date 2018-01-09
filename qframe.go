@@ -646,6 +646,13 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	return err
 }
 
+// TODO string matching:
+// - Break out matching code from string series
+// - Implement the same for enums
+// - Add a bunch of matching specific tests
+// - Add benchmarks for enum matching
+// - Use upper case function also for case insensitive regexp matching
+
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
 //   null could be interpreted as NaN. Should not be impossible using the generated easyjson code

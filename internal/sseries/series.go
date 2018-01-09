@@ -220,7 +220,6 @@ func (m *SuffixMatcher) Matches(s *string) bool {
 type ContainsMatcher StringMatcher
 
 func (m *ContainsMatcher) Matches(s *string) bool {
-	println("Contains matcher", *s)
 	return strings.Contains(*s, m.matchString)
 }
 

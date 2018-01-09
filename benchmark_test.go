@@ -458,26 +458,26 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 		{
 			types:         map[string]string{},
 			column:        "COL.1",
-			filter:        "%bar baz 5",
+			filter:        "%bar baz 5%",
 			expectedCount: 11111,
 			comparator:    "like",
 		},
 		{
 			types:         map[string]string{},
 			column:        "COL.1",
-			filter:        "%bar baz 5",
+			filter:        "%bar baz 5%",
 			expectedCount: 11111,
 			comparator:    "ilike",
 		},
 	}
-	for i, tc := range table {
+	for _, tc := range table {
 		r := bytes.NewReader(input)
 		df := qf.ReadCsv(r, qf.Types(tc.types))
 		if tc.comparator == "" {
 			tc.comparator = "<"
 		}
 
-		b.Run(fmt.Sprintf("Test %d", i), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Filter %s %s", tc.filter, tc.comparator), func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -638,7 +638,9 @@ Case insensitive:
 BenchmarkQFrame_FilterEnumVsString/Test_4-2         	      30	  41680939 ns/op	  163120 B/op	      91 allocs/op
 
 // Remove the need for regexp in many cases:
-BenchmarkQFrame_FilterEnumVsString/Test_3-2         	    1000	   1788819 ns/op	  155690 B/op	       4 allocs/op
-BenchmarkQFrame_FilterEnumVsString/Test_4-2         	     200	   9970913 ns/op	  155848 B/op	       7 allocs/op
-
+BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<-2         	    2000	    692662 ns/op	  335888 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<#01-2      	    1000	   1620056 ns/op	  335893 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_AB5_<-2                   	    1000	   1631806 ns/op	  335888 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_like-2        	     500	   3245751 ns/op	  155716 B/op	       4 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike-2       	     100	  11418693 ns/op	  155873 B/op	       8 allocs/op
 */
