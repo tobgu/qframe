@@ -648,7 +648,6 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 }
 
 // TODO string matching:
-// - Break out matching code from string series
 // - Implement the same for enums
 // - Add a bunch of matching specific tests
 // - Add benchmarks for enum matching

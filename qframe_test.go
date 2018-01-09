@@ -725,7 +725,6 @@ func TestQFrame_FilterEnum(t *testing.T) {
 func TestQFrame_FilterString(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
 	withNil := map[string]interface{}{"COL1": []*string{&b, &c, &a, nil, &e, &d, nil}}
-	mixed := map[string]interface{}{"COL1": []string{"ABC", "AbC", "DEF", "ABCDEF", "abc$def"}}
 
 	table := []struct {
 		input    map[string]interface{}
@@ -747,26 +746,6 @@ func TestQFrame_FilterString(t *testing.T) {
 			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: "b"}},
 			map[string]interface{}{"COL1": []*string{&b}},
 		},
-		{
-			mixed,
-			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: ".*EF.*"}},
-			map[string]interface{}{"COL1": []string{"DEF", "ABCDEF"}},
-		},
-		{
-			mixed,
-			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: "%EF%"}},
-			map[string]interface{}{"COL1": []string{"DEF", "ABCDEF"}},
-		},
-		{
-			mixed,
-			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: regexp.QuoteMeta("abc$def")}},
-			map[string]interface{}{"COL1": []string{"abc$def"}},
-		},
-		{
-			mixed,
-			[]filter.Filter{{Column: "COL1", Comparator: "ilike", Arg: "abc"}},
-			map[string]interface{}{"COL1": []string{"ABC", "AbC"}},
-		},
 	}
 
 	for i, tc := range table {
@@ -774,6 +753,49 @@ func TestQFrame_FilterString(t *testing.T) {
 			in := qframe.New(tc.input)
 			expected := qframe.New(tc.expected)
 			out := in.Filter(tc.filters...)
+			assertEquals(t, expected, out)
+		})
+	}
+}
+
+func TestQFrame_LikeFilterString(t *testing.T) {
+	data := map[string]interface{}{"COL1": []string{"ABC", "AbC", "DEF", "ABCDEF", "abcdef", "FFF", "abc$def", "défåäöΦ"}}
+	table := []struct {
+		comparator filter.Comparator
+		arg        string
+		expected   []string
+	}{
+		// like
+		{"like", ".*EF.*", []string{"DEF", "ABCDEF"}},
+		{"like", "%EF%", []string{"DEF", "ABCDEF"}},
+		{"like", "AB%", []string{"ABC", "ABCDEF"}},
+		{"like", "%F", []string{"DEF", "ABCDEF", "FFF"}},
+		{"like", "ABC", []string{"ABC"}},
+		{"like", "défåäöΦ", []string{"défåäöΦ"}},
+		{"like", "%éfåäöΦ", []string{"défåäöΦ"}},
+		{"like", "défå%", []string{"défåäöΦ"}},
+		{"like", "%éfåäö%", []string{"défåäöΦ"}},
+		{"like", "abc$def", []string{}},
+		{"like", regexp.QuoteMeta("abc$def"), []string{"abc$def"}},
+
+		// ilike
+		{"ilike", ".*ef.*", []string{"DEF", "ABCDEF", "abcdef", "abc$def"}},
+		{"ilike", "ab%", []string{"ABC", "AbC", "ABCDEF", "abcdef", "abc$def"}},
+		{"ilike", "%f", []string{"DEF", "ABCDEF", "abcdef", "FFF", "abc$def"}},
+		{"ilike", "%ef%", []string{"DEF", "ABCDEF", "abcdef", "abc$def"}},
+		{"ilike", "défÅäöΦ", []string{"défåäöΦ"}},
+		{"ilike", "%éFåäöΦ", []string{"défåäöΦ"}},
+		{"ilike", "défå%", []string{"défåäöΦ"}},
+		{"ilike", "%éfåäÖ%", []string{"défåäöΦ"}},
+		{"ilike", "ABC$def", []string{}},
+		{"ilike", regexp.QuoteMeta("abc$DEF"), []string{"abc$def"}},
+	}
+
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("%s %s", tc.comparator, tc.arg), func(t *testing.T) {
+			in := qframe.New(data)
+			expected := qframe.New(map[string]interface{}{"COL1": tc.expected})
+			out := in.Filter(filter.Filter{Column: "COL1", Comparator: tc.comparator, Arg: tc.arg})
 			assertEquals(t, expected, out)
 		})
 	}
