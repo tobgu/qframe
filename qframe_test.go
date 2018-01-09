@@ -759,44 +759,55 @@ func TestQFrame_FilterString(t *testing.T) {
 }
 
 func TestQFrame_LikeFilterString(t *testing.T) {
-	data := map[string]interface{}{"COL1": []string{"ABC", "AbC", "DEF", "ABCDEF", "abcdef", "FFF", "abc$def", "défåäöΦ"}}
-	table := []struct {
-		comparator filter.Comparator
-		arg        string
-		expected   []string
-	}{
-		// like
-		{"like", ".*EF.*", []string{"DEF", "ABCDEF"}},
-		{"like", "%EF%", []string{"DEF", "ABCDEF"}},
-		{"like", "AB%", []string{"ABC", "ABCDEF"}},
-		{"like", "%F", []string{"DEF", "ABCDEF", "FFF"}},
-		{"like", "ABC", []string{"ABC"}},
-		{"like", "défåäöΦ", []string{"défåäöΦ"}},
-		{"like", "%éfåäöΦ", []string{"défåäöΦ"}},
-		{"like", "défå%", []string{"défåäöΦ"}},
-		{"like", "%éfåäö%", []string{"défåäöΦ"}},
-		{"like", "abc$def", []string{}},
-		{"like", regexp.QuoteMeta("abc$def"), []string{"abc$def"}},
+	col1 := []string{"ABC", "AbC", "DEF", "ABCDEF", "abcdef", "FFF", "abc$def", "défåäöΦ"}
 
-		// ilike
-		{"ilike", ".*ef.*", []string{"DEF", "ABCDEF", "abcdef", "abc$def"}},
-		{"ilike", "ab%", []string{"ABC", "AbC", "ABCDEF", "abcdef", "abc$def"}},
-		{"ilike", "%f", []string{"DEF", "ABCDEF", "abcdef", "FFF", "abc$def"}},
-		{"ilike", "%ef%", []string{"DEF", "ABCDEF", "abcdef", "abc$def"}},
-		{"ilike", "défÅäöΦ", []string{"défåäöΦ"}},
-		{"ilike", "%éFåäöΦ", []string{"défåäöΦ"}},
-		{"ilike", "défå%", []string{"défåäöΦ"}},
-		{"ilike", "%éfåäÖ%", []string{"défåäöΦ"}},
-		{"ilike", "ABC$def", []string{}},
-		{"ilike", regexp.QuoteMeta("abc$DEF"), []string{"abc$def"}},
+	// Add a couple of fields to be able to verify functionality for high cardinality enums
+	for i := 0; i < 200; i++ {
+		col1 = append(col1, fmt.Sprintf("foo%dbar", i))
 	}
 
-	for _, tc := range table {
-		t.Run(fmt.Sprintf("%s %s", tc.comparator, tc.arg), func(t *testing.T) {
-			in := qframe.New(data)
-			expected := qframe.New(map[string]interface{}{"COL1": tc.expected})
-			out := in.Filter(filter.Filter{Column: "COL1", Comparator: tc.comparator, Arg: tc.arg})
-			assertEquals(t, expected, out)
-		})
+	data := map[string]interface{}{"COL1": col1}
+	for _, enums := range []map[string][]string{{}, {"COL1": nil}} {
+		table := []struct {
+			comparator filter.Comparator
+			arg        string
+			expected   []string
+		}{
+			// like
+			{"like", ".*EF.*", []string{"DEF", "ABCDEF"}},
+			{"like", "%EF%", []string{"DEF", "ABCDEF"}},
+			{"like", "AB%", []string{"ABC", "ABCDEF"}},
+			{"like", "%F", []string{"DEF", "ABCDEF", "FFF"}},
+			{"like", "ABC", []string{"ABC"}},
+			{"like", "défåäöΦ", []string{"défåäöΦ"}},
+			{"like", "%éfåäöΦ", []string{"défåäöΦ"}},
+			{"like", "défå%", []string{"défåäöΦ"}},
+			{"like", "%éfåäö%", []string{"défåäöΦ"}},
+			{"like", "abc$def", []string{}},
+			{"like", regexp.QuoteMeta("abc$def"), []string{"abc$def"}},
+			{"like", "%180%", []string{"foo180bar"}},
+
+			// ilike
+			{"ilike", ".*ef.*", []string{"DEF", "ABCDEF", "abcdef", "abc$def"}},
+			{"ilike", "ab%", []string{"ABC", "AbC", "ABCDEF", "abcdef", "abc$def"}},
+			{"ilike", "%f", []string{"DEF", "ABCDEF", "abcdef", "FFF", "abc$def"}},
+			{"ilike", "%ef%", []string{"DEF", "ABCDEF", "abcdef", "abc$def"}},
+			{"ilike", "défÅäöΦ", []string{"défåäöΦ"}},
+			{"ilike", "%éFåäöΦ", []string{"défåäöΦ"}},
+			{"ilike", "défå%", []string{"défåäöΦ"}},
+			{"ilike", "%éfåäÖ%", []string{"défåäöΦ"}},
+			{"ilike", "ABC$def", []string{}},
+			{"ilike", regexp.QuoteMeta("abc$DEF"), []string{"abc$def"}},
+			{"ilike", "%180%", []string{"foo180bar"}},
+		}
+
+		for _, tc := range table {
+			t.Run(fmt.Sprintf("Enum %t, %s %s", len(enums) > 0, tc.comparator, tc.arg), func(t *testing.T) {
+				in := qframe.New(data, qframe.Enums(enums))
+				expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(enums))
+				out := in.Filter(filter.Filter{Column: "COL1", Comparator: tc.comparator, Arg: tc.arg})
+				assertEquals(t, expected, out)
+			})
+		}
 	}
 }

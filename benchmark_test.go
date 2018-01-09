@@ -469,6 +469,13 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 			expectedCount: 11111,
 			comparator:    "ilike",
 		},
+		{
+			types:         map[string]string{"COL.1": "enum", "COL.2": "enum"},
+			column:        "COL.1",
+			filter:        "%bar baz 5%",
+			expectedCount: 11111,
+			comparator:    "ilike",
+		},
 	}
 	for _, tc := range table {
 		r := bytes.NewReader(input)
@@ -477,7 +484,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 			tc.comparator = "<"
 		}
 
-		b.Run(fmt.Sprintf("Filter %s %s", tc.filter, tc.comparator), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Filter %s %s, enum: %t", tc.filter, tc.comparator, len(tc.types) > 0), func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {

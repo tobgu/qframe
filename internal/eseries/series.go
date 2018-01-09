@@ -7,7 +7,7 @@ import (
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
-	"github.com/tobgu/qframe/internal/strings"
+	qfstrings "github.com/tobgu/qframe/internal/strings"
 )
 
 type enumVal uint8
@@ -122,6 +122,11 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []enumVal, enumVal, inde
 	filter.Lt: lt,
 }
 
+var multiFilterFuncs = map[filter.Comparator]func(comparatee interface{}, values []string) (*bitset, error){
+	"like":  like,
+	"ilike": ilike,
+}
+
 func (s Series) Len() int {
 	return len(s.data)
 }
@@ -141,7 +146,7 @@ func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
 		return append(buf, "null"...)
 	}
 
-	return strings.AppendQuotedString(buf, s.values[enum])
+	return qfstrings.AppendQuotedString(buf, s.values[enum])
 }
 
 type marshaler struct {
@@ -161,7 +166,7 @@ func (m marshaler) MarshalJSON() ([]byte, error) {
 		if enum.isNull() {
 			buf = append(buf, "null"...)
 		} else {
-			buf = strings.AppendQuotedString(buf, m.values[enum])
+			buf = qfstrings.AppendQuotedString(buf, m.values[enum])
 		}
 	}
 
@@ -228,23 +233,38 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
 	// TODO: Also make it possible to compare to values in other column
 	compFunc, ok := filterFuncs[c]
-	if !ok {
-		return errors.New("Filter enum", "invalid comparison operator, %v", c)
+	if ok {
+		comp, ok := comparatee.(string)
+		if !ok {
+			return errors.New("Filter enum", "invalid comparison type, %s, expected string", comp)
+		}
+
+		for i, value := range s.values {
+			if value == comp {
+				compFunc(index, s.data, enumVal(i), bIndex)
+				return nil
+			}
+		}
+
+		return errors.New("Filter enum", "Unknown enum value in filter argument: %s", comp)
 	}
 
-	comp, ok := comparatee.(string)
-	if !ok {
-		return errors.New("Filter enum", "invalid comparison type, %s, expected string", comp)
-	}
+	multiFunc, ok := multiFilterFuncs[c]
+	if ok {
+		bset, err := multiFunc(comparatee, s.values)
+		if err != nil {
+			return errors.Propagate("Filter enum", err)
+		}
 
-	for i, value := range s.values {
-		if value == comp {
-			compFunc(index, s.data, enumVal(i), bIndex)
-			return nil
+		for i, x := range bIndex {
+			if !x {
+				enum := s.data[index[i]]
+				bIndex[i] = bset.isSet(enum)
+			}
 		}
 	}
 
-	return errors.New("Filter enum", "Unknown enum value in filter argument: %s", comp)
+	return errors.New("Filter enum", "unknown comparison operator, %v", c)
 }
 
 func (s Series) subset(index index.Int) Series {
@@ -334,4 +354,48 @@ func lt(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool
 			bIndex[i] = enum.isNull() || enum < comparatee
 		}
 	}
+}
+
+func like(comparatee interface{}, values []string) (*bitset, error) {
+	return filterLike(comparatee, values, true)
+}
+
+func ilike(comparatee interface{}, values []string) (*bitset, error) {
+	return filterLike(comparatee, values, false)
+}
+
+func filterLike(comparatee interface{}, values []string, caseSensitive bool) (*bitset, error) {
+	comp, ok := comparatee.(string)
+	if !ok {
+		return nil, errors.New("enum like", "invalid comparator type %v", comparatee)
+	}
+
+	matcher, err := qfstrings.NewMatcher(comp, caseSensitive)
+	if err != nil {
+		return nil, errors.Propagate("enum like", err)
+	}
+
+	bset := &bitset{}
+	for i, v := range values {
+		if matcher.Matches(&v) {
+			bset.set(enumVal(i))
+		}
+	}
+
+	return bset, nil
+}
+
+// Helper type for multi value filtering
+type bitset [4]uint64
+
+func (s *bitset) set(val enumVal) {
+	s[val>>6] |= 1 << (val & 0x3F)
+}
+
+func (s *bitset) isSet(val enumVal) bool {
+	return s[val>>6]&(1<<(val&0x3F)) > 0
+}
+
+func (s *bitset) String() string {
+	return fmt.Sprintf("%X %X %X %X", s[3], s[2], s[1], s[0])
 }
