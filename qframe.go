@@ -173,7 +173,41 @@ func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 		if !ok {
 			return qf.withErr(errors.New("Filter", `column does not exist, "%s"`, f.Column))
 		}
-		s.Filter(qf.index, f.Comparator, f.Arg, bIndex)
+
+		var err error
+		if f.Inverse {
+			// This is a small optimization, if the inverse operation is implemented
+			// on the series use that directly to avoid building an inverse boolean
+			// index further below.
+			done := false
+			if inverse, ok := filter.Inverse[f.Comparator]; ok {
+				err = s.Filter(qf.index, inverse, f.Arg, bIndex)
+
+				// Assume inverse not implemented in case of error here
+				if err == nil {
+					done = true
+				}
+			}
+
+			if !done {
+				// TODO: This branch needs proper testing
+				invBIndex := index.NewBool(bIndex.Len())
+				err = s.Filter(qf.index, f.Comparator, f.Arg, invBIndex)
+				if err == nil {
+					for i, x := range bIndex {
+						if !x {
+							bIndex[i] = !invBIndex[i]
+						}
+					}
+				}
+			}
+		} else {
+			err = s.Filter(qf.index, f.Comparator, f.Arg, bIndex)
+		}
+
+		if err != nil {
+			return qf.withErr(errors.Propagate("Filter", err))
+		}
 	}
 
 	return qf.withIndex(qf.index.Filter(bIndex))
@@ -647,11 +681,14 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	return err
 }
 
-// TODO string matching:
-// - Implement the same for enums
-// - Add a bunch of matching specific tests
-// - Add benchmarks for enum matching
-// - Use upper case function also for case insensitive regexp matching
+// TODO filter
+// - Complete basic filtering for all types
+// - Implement "in" and "not in"
+// - Bitwise filters for int (and their inverse/not?), or can we handle not in a more general
+//   way where no complementary functions are implemented by adding an extra step involving
+//   an additional, new, boolean slice that is kept in isolation and inverted before being
+//   merged with the current slice? Also consider "(not (or ....))".
+// - Make a general "not"
 
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
@@ -663,9 +700,6 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - Support access by x, y (to support GoNum matrix interface)
 // - Implement query language.
 // - Implement de Morgan transformations to handle "not".
-// - Common filter functions
-// - Bitwise filters for int
-// - Regex filters for strings
 // - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
 // - Handle float NaN in filtering
 // - AppendBytesString support to add columns to DF (in addition to project). Should produce a new df, no mutation!
@@ -676,3 +710,5 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - Documentation
 // - Use https://goreportcard.com
 // - More serialization and deserialization tests
+// - Perhaps make a special case for distinct with only one column involved that simply calls distinct on
+//   a series for that specific column. Should be quite a bit faster than current sort based implementation.

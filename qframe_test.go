@@ -58,6 +58,10 @@ func TestQFrame_Filter(t *testing.T) {
 				{Column: "COL.1", Comparator: "<", Arg: 2}},
 			qframe.New(map[string]interface{}{"COL.1": []int{1, 5}}),
 		},
+		{
+			[]filter.Filter{{Column: "COL.1", Comparator: ">", Arg: 4, Inverse: true}},
+			qframe.New(map[string]interface{}{"COL.1": []int{1, 2, 3, 4}}),
+		},
 	}
 
 	for i, tc := range table {

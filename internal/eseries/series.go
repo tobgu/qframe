@@ -262,6 +262,8 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 				bIndex[i] = bset.isSet(enum)
 			}
 		}
+
+		return nil
 	}
 
 	return errors.New("Filter enum", "unknown comparison operator, %v", c)

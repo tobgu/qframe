@@ -2,7 +2,7 @@ package iseries
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
@@ -23,9 +23,10 @@ var aggregations = map[string]func([]int) int{
 	"sum": sum,
 }
 
-var filterFuncs = map[filter.Comparator]func(index.Int, []int, interface{}, index.Bool) error{
-	filter.Gt: gt,
-	filter.Lt: lt,
+var filterFuncs = map[filter.Comparator]func(index.Int, []int, int, index.Bool){
+	filter.Gt:  gt,
+	filter.Gte: gte,
+	filter.Lt:  lt,
 }
 
 func (s Series) StringAt(i int, _ string) string {
@@ -72,36 +73,40 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 	// TODO: Also make it possible to compare to values in other column
 	compFunc, ok := filterFuncs[c]
 	if !ok {
-		return fmt.Errorf("invalid comparison operator for int, %v", c)
+		return errors.New("filter int", "unknown filter operator %v", c)
 	}
 
-	return compFunc(index, s.data, comparatee, bIndex)
+	comp, ok := comparatee.(int)
+	if !ok {
+		return errors.New("filter int", "invalid comparison type %v", c)
+	}
+
+	compFunc(index, s.data, comp, bIndex)
+	return nil
 }
 
 // TODO: Some kind of code generation for all the below functions for all supported types
 
-func gt(index index.Int, column []int, comparatee interface{}, bIndex index.Bool) error {
-	comp, ok := comparatee.(int)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
-	}
-
+func gt(index index.Int, column []int, comp int, bIndex index.Bool) {
 	for i, x := range bIndex {
-		bIndex[i] = x || column[index[i]] > comp
+		if !x {
+			bIndex[i] = column[index[i]] > comp
+		}
 	}
-
-	return nil
 }
 
-func lt(index index.Int, column []int, comparatee interface{}, bIndex index.Bool) error {
-	comp, ok := comparatee.(int)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
-	}
-
+func gte(index index.Int, column []int, comp int, bIndex index.Bool) {
 	for i, x := range bIndex {
-		bIndex[i] = x || column[index[i]] < comp
+		if !x {
+			bIndex[i] = column[index[i]] >= comp
+		}
 	}
+}
 
-	return nil
+func lt(index index.Int, column []int, comp int, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = column[index[i]] < comp
+		}
+	}
 }

@@ -80,6 +80,22 @@ func BenchmarkQFrame_Filter(b *testing.B) {
 	}
 }
 
+func BenchmarkQFrame_FilterNot(b *testing.B) {
+	data := qf.New(map[string]interface{}{
+		"S1": genInts(seed1, frameSize)})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		newData := data.Filter(
+			filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10, Inverse: true})
+
+		if newData.Len() != 9882 {
+			b.Errorf("Length was %d", newData.Len())
+		}
+	}
+}
+
 func BenchmarkDataFrame_Sort(b *testing.B) {
 	data := dataframe.New(
 		series.New(genInts(seed1, frameSize), series.Int, "S1"),
@@ -650,4 +666,12 @@ BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<#01-2      	    1000	  
 BenchmarkQFrame_FilterEnumVsString/Filter_AB5_<-2                   	    1000	   1631806 ns/op	  335888 B/op	       3 allocs/op
 BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_like-2        	     500	   3245751 ns/op	  155716 B/op	       4 allocs/op
 BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike-2       	     100	  11418693 ns/op	  155873 B/op	       8 allocs/op
+
+// Enum string matching, speedy:
+BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_false-2      	     100	  11583233 ns/op	  155792 B/op	       8 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       	    2000	    729671 ns/op	  155989 B/op	      13 allocs/op
+
+// Inverse (not) filtering:
+BenchmarkQFrame_FilterNot-2   	    2000	    810831 ns/op	  147459 B/op	       2 allocs/op
+
 */

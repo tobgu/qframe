@@ -44,3 +44,7 @@ func (ix Int) Copy() Int {
 	copy(newIndex, ix)
 	return newIndex
 }
+
+func (ix Bool) Len() int {
+	return len(ix)
+}
