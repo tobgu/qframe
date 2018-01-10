@@ -213,6 +213,16 @@ func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 	return qf.withIndex(qf.index.Filter(bIndex))
 }
 
+func (qf QFrame) Where(c filter.Clause) QFrame {
+	// TODO
+	return qf
+}
+
+func (qf QFrame) WhereJson(c string) QFrame {
+	// TODO
+	return qf
+}
+
 func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 	if len(qf.index) != len(other.index) {
 		return false, "Different length"
@@ -683,12 +693,11 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 
 // TODO filter
 // - Complete basic filtering for all types
-// - Implement "in" and "not in"
+// - Implement "in"
 // - Bitwise filters for int (and their inverse/not?), or can we handle not in a more general
 //   way where no complementary functions are implemented by adding an extra step involving
 //   an additional, new, boolean slice that is kept in isolation and inverted before being
 //   merged with the current slice? Also consider "(not (or ....))".
-// - Make a general "not"
 
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
