@@ -12,11 +12,15 @@ func f(column string, comparator filter.Comparator, arg interface{}) qframe.Filt
 }
 
 func and(clauses ...qframe.Clause) qframe.AndClause {
-	return qframe.And(false, clauses...)
+	return qframe.And(clauses...)
 }
 
 func or(clauses ...qframe.Clause) qframe.OrClause {
-	return qframe.Or(false, clauses...)
+	return qframe.Or(clauses...)
+}
+
+func not(clause qframe.Clause) qframe.NotClause {
+	return qframe.Not(clause)
 }
 
 func TestFilter_Success(t *testing.T) {
@@ -70,6 +74,31 @@ func TestFilter_Success(t *testing.T) {
 			"Nested single clause",
 			or(and(eq(4))),
 			[]int{4},
+		},
+		{
+			"Not start",
+			not(or(eq(1), eq(2))),
+			[]int{3, 4, 5},
+		},
+		{
+			"Not end",
+			not(or(eq(4), eq(5))),
+			[]int{1, 2, 3},
+		},
+		{
+			"Not mixed",
+			not(or(eq(4), eq(2))),
+			[]int{1, 3, 5},
+		},
+		{
+			"Not empty",
+			not(eq(6)),
+			[]int{1, 2, 3, 4, 5},
+		},
+		{
+			"Not full",
+			not(f("COL1", "<", 6)),
+			[]int{},
 		},
 	}
 

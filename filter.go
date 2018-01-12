@@ -14,13 +14,16 @@ type Clause interface {
 type comboClause struct {
 	err        error
 	subClauses []Clause
-	inverse    bool
 }
 
 // TODO: Implement String()
 type AndClause comboClause
 
 type OrClause comboClause
+
+type NotClause struct {
+	subClause Clause
+}
 
 func anyFilterErr(clauses []Clause) error {
 	for _, c := range clauses {
@@ -31,12 +34,12 @@ func anyFilterErr(clauses []Clause) error {
 	return nil
 }
 
-func And(inverse bool, clauses ...Clause) AndClause {
+func And(clauses ...Clause) AndClause {
 	if len(clauses) == 0 {
 		return AndClause{err: errors.New("new and clause", "zero subclauses not allowed")}
 	}
 
-	return AndClause{subClauses: clauses, inverse: inverse, err: anyFilterErr(clauses)}
+	return AndClause{subClauses: clauses, err: anyFilterErr(clauses)}
 }
 
 func (c AndClause) Filter(qf QFrame) QFrame {
@@ -57,12 +60,12 @@ func (c AndClause) Err() error {
 	return c.err
 }
 
-func Or(inverse bool, clauses ...Clause) OrClause {
+func Or(clauses ...Clause) OrClause {
 	if len(clauses) == 0 {
 		return OrClause{err: errors.New("new or clause", "zero subclauses not allowed")}
 	}
 
-	return OrClause{subClauses: clauses, inverse: inverse, err: anyFilterErr(clauses)}
+	return OrClause{subClauses: clauses, err: anyFilterErr(clauses)}
 }
 
 func intMax(x, y int) int {
@@ -155,4 +158,35 @@ func (c FilterClause) Filter(qf QFrame) QFrame {
 
 func (c FilterClause) Err() error {
 	return nil
+}
+
+func Not(c Clause) NotClause {
+	return NotClause{subClause: c}
+}
+
+func (c NotClause) Filter(qf QFrame) QFrame {
+	if c.Err() != nil {
+		return qf.withErr(c.Err())
+	}
+
+	newQf := c.subClause.Filter(qf)
+	if newQf.Err != nil {
+		return newQf
+	}
+
+	newIx := make(index.Int, 0, qf.index.Len()-newQf.index.Len())
+	newQfI := 0
+	for _, ix := range qf.index {
+		if newQfI < newQf.index.Len() && newQf.index[newQfI] == ix {
+			newQfI++
+		} else {
+			newIx = append(newIx, ix)
+		}
+	}
+
+	return qf.withIndex(newIx)
+}
+
+func (c NotClause) Err() error {
+	return c.subClause.Err()
 }
