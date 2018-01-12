@@ -9,3 +9,7 @@ fmt: generate
 
 vet: generate
 	go vet ./...
+
+cov: generate
+	go test github.com/tobgu/qframe/ -coverprofile=coverage.out
+	go tool cover -html=coverage.out

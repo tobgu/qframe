@@ -213,16 +213,6 @@ func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 	return qf.withIndex(qf.index.Filter(bIndex))
 }
 
-func (qf QFrame) Where(c filter.Clause) QFrame {
-	// TODO
-	return qf
-}
-
-func (qf QFrame) WhereJson(c string) QFrame {
-	// TODO
-	return qf
-}
-
 func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 	if len(qf.index) != len(other.index) {
 		return false, "Different length"
