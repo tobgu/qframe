@@ -83,17 +83,30 @@ func BenchmarkQFrame_Filter(b *testing.B) {
 func BenchmarkQFrame_FilterNot(b *testing.B) {
 	data := qf.New(map[string]interface{}{
 		"S1": genInts(seed1, frameSize)})
+	f := filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10, Inverse: true}
 
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		newData := data.Filter(
-			filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10, Inverse: true})
-
-		if newData.Len() != 9882 {
-			b.Errorf("Length was %d", newData.Len())
+	b.Run("qframe", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			newData := data.Filter(f)
+			if newData.Len() != 9882 {
+				b.Errorf("Length was %d", newData.Len())
+			}
 		}
-	}
+	})
+
+	b.Run("filter", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			f := qf.Not(qf.Filter(filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10}))
+			newData := f.Filter(data)
+			if newData.Len() != 9882 {
+				b.Errorf("Length was %d", newData.Len())
+			}
+		}
+	})
 }
 
 func BenchmarkDataFrame_Sort(b *testing.B) {
@@ -673,5 +686,18 @@ BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       
 
 // Inverse (not) filtering:
 BenchmarkQFrame_FilterNot-2   	    2000	    810831 ns/op	  147459 B/op	       2 allocs/op
+
+// Performance tweak for single, simple, clause statements to put them on par with calling the
+// Qframe Filter function directly
+
+// Before
+BenchmarkQFrame_FilterNot/qframe-2         	    2000	    716280 ns/op	  147465 B/op	       2 allocs/op
+BenchmarkQFrame_FilterNot/filter-2         	    2000	   1158211 ns/op	  516161 B/op	       4 allocs/op
+
+// After
+BenchmarkQFrame_FilterNot/qframe-2         	    2000	    713147 ns/op	  147465 B/op	       2 allocs/op
+BenchmarkQFrame_FilterNot/filter-2         	    2000	    726766 ns/op	  147521 B/op	       3 allocs/op
+
+
 
 */

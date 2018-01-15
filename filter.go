@@ -105,6 +105,9 @@ func orFrames(original, lhs, rhs *QFrame) *QFrame {
 		if found {
 			resultIx = append(resultIx, ix)
 		}
+
+		// Perhaps optimized special cases here for when one or both of
+		// the sides are exhausted?
 	}
 
 	newFrame := original.withIndex(resultIx)
@@ -167,6 +170,12 @@ func Not(c Clause) NotClause {
 func (c NotClause) Filter(qf QFrame) QFrame {
 	if c.Err() != nil {
 		return qf.withErr(c.Err())
+	}
+
+	if fc, ok := c.subClause.(FilterClause); ok {
+		f := filter.Filter(fc)
+		f.Inverse = !f.Inverse
+		return qf.Filter(f)
 	}
 
 	newQf := c.subClause.Filter(qf)
