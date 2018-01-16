@@ -22,7 +22,7 @@ var stringFilterFuncs = map[filter.Comparator]func(index.Int, []*string, string,
 	"ilike":    ilike,
 }
 
-func (s Series) StringAt(i int, naRep string) string {
+func (s Series) StringAt(i uint32, naRep string) string {
 	p := s.data[i]
 	if p == nil {
 		return naRep

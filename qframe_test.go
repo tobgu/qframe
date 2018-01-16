@@ -815,3 +815,21 @@ func TestQFrame_LikeFilterString(t *testing.T) {
 		}
 	}
 }
+
+func TestQFrame_String(t *testing.T) {
+	a := qframe.New(map[string]interface{}{
+		"COLUMN1": []string{"Long content", "a", "b", "c"},
+		"COL2":    []int{3, 2, 1, 123456},
+	}, qframe.ColumnOrder("COL2", "COLUMN1"))
+
+	expected := ` COL2 COLUMN1
+----- -------
+    3 Long...
+    2       a
+    1       b
+12...       c`
+
+	if expected != a.String() {
+		t.Errorf("\n%s\n != \n%s", expected, a.String())
+	}
+}

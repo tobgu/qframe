@@ -131,7 +131,7 @@ func (s Series) Len() int {
 	return len(s.data)
 }
 
-func (s Series) StringAt(i int, naRep string) string {
+func (s Series) StringAt(i uint32, naRep string) string {
 	v := s.data[i]
 	if v.isNull() {
 		return naRep

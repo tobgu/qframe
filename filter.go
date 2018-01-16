@@ -89,13 +89,6 @@ func (c OrClause) String() string {
 	return fmt.Sprintf(`["or", %s]`, clauseString(c.subClauses))
 }
 
-func intMax(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
 func orFrames(original, lhs, rhs *QFrame) *QFrame {
 	if lhs == nil {
 		return rhs

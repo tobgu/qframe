@@ -14,7 +14,7 @@ type Series interface {
 	Equals(index index.Int, other Series, otherIndex index.Int) bool
 	Comparable(reverse bool) Comparable
 	Aggregate(indices []index.Int, fnName string) (Series, error)
-	StringAt(i int, naRep string) string
+	StringAt(i uint32, naRep string) string
 	AppendByteStringAt(buf []byte, i int) []byte
 	Marshaler(index index.Int) json.Marshaler
 }

@@ -30,7 +30,7 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []int, int, index.Bool){
 	filter.Eq:  eq,
 }
 
-func (s Series) StringAt(i int, _ string) string {
+func (s Series) StringAt(i uint32, _ string) string {
 	return strconv.FormatInt(int64(s.data[i]), 10)
 }
 

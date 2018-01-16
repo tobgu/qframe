@@ -19,7 +19,7 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []float64, interface{}, 
 	filter.Lt: lt,
 }
 
-func (s Series) StringAt(i int, naRep string) string {
+func (s Series) StringAt(i uint32, naRep string) string {
 	value := s.data[i]
 	if math.IsNaN(value) {
 		return naRep

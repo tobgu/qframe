@@ -469,24 +469,53 @@ func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
 	return QFrame{series: newSeries, seriesByName: newSeriesByName, index: index.NewAscending(uint32(len(g.indices)))}
 }
 
+func fixLengthString(s string, pad string, desiredLen int) string {
+	// NB: Assumes desiredLen to be >= 3
+	if len(s) > desiredLen {
+		return s[:desiredLen-3] + "..."
+	}
+
+	padCount := desiredLen - len(s)
+	if padCount > 0 {
+		return strings.Repeat(pad, padCount) + s
+	}
+
+	return s
+}
+
+// Simple string representation of the table
 func (qf QFrame) String() string {
-	// TODO: Fix
+	// There are a lot of potential improvements to this function at the moment:
+	// - Limit output, both columns and rows
+	// - Configurable output widths, potentially per columns
+	// - Configurable alignment
 	if qf.Err != nil {
 		return qf.Err.Error()
 	}
 
-	result := ""
-	s := make([]string, 0, len(qf.index))
-	for name, values := range qf.seriesByName {
-		s = s[:0]
-		for _, ix := range qf.index {
-			s = append(s, values.StringAt(int(ix), "NaN"))
-		}
+	result := make([]string, 0, len(qf.index))
+	row := make([]string, len(qf.series))
+	colWidths := make([]int, len(qf.series))
+	minColWidth := 5
+	for i, s := range qf.series {
+		colWidths[i] = intMax(len(s.name), minColWidth)
+		row[i] = fixLengthString(s.name, " ", colWidths[i])
+	}
+	result = append(result, strings.Join(row, " "))
 
-		result += fmt.Sprintf("%s: [%s] ", name, strings.Join(s, ", "))
+	for i, _ := range qf.series {
+		row[i] = fixLengthString("", "-", colWidths[i])
+	}
+	result = append(result, strings.Join(row, " "))
+
+	for i := 0; i < qf.Len(); i++ {
+		for j, s := range qf.series {
+			row[j] = fixLengthString(s.StringAt(qf.index[i], "NaN"), " ", colWidths[j])
+		}
+		result = append(result, strings.Join(row, " "))
 	}
 
-	return result
+	return strings.Join(result, "\n")
 }
 
 func (qf QFrame) Slice(start, end int) QFrame {
@@ -586,7 +615,7 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 	for i := 0; i < qf.Len(); i++ {
 		row = row[:0]
 		for _, c := range columns {
-			row = append(row, c.StringAt(int(qf.index[i]), ""))
+			row = append(row, c.StringAt(qf.index[i], ""))
 		}
 		w.Write(row)
 	}
