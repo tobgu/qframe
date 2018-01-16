@@ -11,6 +11,12 @@ func f(column string, comparator filter.Comparator, arg interface{}) qframe.Filt
 	return qframe.Filter(filter.Filter{Column: column, Comparator: comparator, Arg: arg})
 }
 
+func notf(column string, comparator filter.Comparator, arg interface{}) qframe.FilterClause {
+	filter := f(column, comparator, arg)
+	filter.Inverse = true
+	return filter
+}
+
 func and(clauses ...qframe.Clause) qframe.AndClause {
 	return qframe.And(clauses...)
 }
@@ -133,6 +139,37 @@ func TestFilter_ErrorColumnDoesNotExist(t *testing.T) {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
 			b := c.Filter(a)
 			assertErr(t, b.Err, "column does not exist")
+		})
+	}
+}
+
+func TestFilter_String(t *testing.T) {
+	table := []struct {
+		clause   qframe.Clause
+		expected string
+	}{
+		{f("COL1", ">", 3), `[">", "COL1", 3]`},
+		{f("COL1", ">", "3"), `[">", "COL1", "3"]`},
+		{not(f("COL1", ">", 3)), `["not", [">", "COL1", 3]]`},
+		{notf("COL1", ">", 3), `["not", [">", "COL1", 3]]`},
+		{and(f("COL1", ">", 3)), `["and", [">", "COL1", 3]]`},
+		{or(f("COL1", ">", 3)), `["or", [">", "COL1", 3]]`},
+		{
+			and(f("COL1", ">", 3), f("COL2", ">", 3)),
+			`["and", [">", "COL1", 3], [">", "COL2", 3]]`,
+		},
+		{
+			or(f("COL1", ">", 3), f("COL2", ">", 3)),
+			`["or", [">", "COL1", 3], [">", "COL2", 3]]`,
+		},
+	}
+
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("String %s", tc.expected), func(t *testing.T) {
+			assertNotErr(t, tc.clause.Err())
+			if tc.expected != tc.clause.String() {
+				t.Errorf("%s != %s", tc.expected, tc.clause.String())
+			}
 		})
 	}
 }

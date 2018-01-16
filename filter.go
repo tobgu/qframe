@@ -1,22 +1,26 @@
 package qframe
 
 import (
+	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
+	"strings"
 )
 
 type Clause interface {
+	fmt.Stringer
 	Filter(qf QFrame) QFrame
 	Err() error
 }
+
+type FilterClause filter.Filter
 
 type comboClause struct {
 	err        error
 	subClauses []Clause
 }
 
-// TODO: Implement String()
 type AndClause comboClause
 
 type OrClause comboClause
@@ -40,6 +44,19 @@ func And(clauses ...Clause) AndClause {
 	}
 
 	return AndClause{subClauses: clauses, err: anyFilterErr(clauses)}
+}
+
+func clauseString(clauses []Clause) string {
+	reps := make([]string, 0, len(clauses))
+	for _, c := range clauses {
+		reps = append(reps, c.String())
+	}
+
+	return strings.Join(reps, ", ")
+}
+
+func (c AndClause) String() string {
+	return fmt.Sprintf(`["and", %s]`, clauseString(c.subClauses))
 }
 
 func (c AndClause) Filter(qf QFrame) QFrame {
@@ -66,6 +83,10 @@ func Or(clauses ...Clause) OrClause {
 	}
 
 	return OrClause{subClauses: clauses, err: anyFilterErr(clauses)}
+}
+
+func (c OrClause) String() string {
+	return fmt.Sprintf(`["or", %s]`, clauseString(c.subClauses))
 }
 
 func intMax(x, y int) int {
@@ -149,10 +170,12 @@ func (c OrClause) Err() error {
 	return c.err
 }
 
-type FilterClause filter.Filter
-
 func Filter(f filter.Filter) FilterClause {
 	return FilterClause(f)
+}
+
+func (c FilterClause) String() string {
+	return filter.Filter(c).String()
 }
 
 func (c FilterClause) Filter(qf QFrame) QFrame {
@@ -165,6 +188,10 @@ func (c FilterClause) Err() error {
 
 func Not(c Clause) NotClause {
 	return NotClause{subClause: c}
+}
+
+func (c NotClause) String() string {
+	return fmt.Sprintf(`["not", %s]`, c.subClause.String())
 }
 
 func (c NotClause) Filter(qf QFrame) QFrame {
