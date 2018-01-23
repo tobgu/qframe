@@ -39,6 +39,13 @@ func assertErr(t *testing.T, err error, expectedErr string) {
 	}
 }
 
+func assertTrue(t *testing.T, b bool) {
+	t.Helper()
+	if !b {
+		t.Error("Expected true")
+	}
+}
+
 func TestQFrame_Filter(t *testing.T) {
 	a := qframe.New(map[string]interface{}{
 		"COL.1": []int{1, 2, 3, 4, 5},
@@ -832,4 +839,26 @@ func TestQFrame_String(t *testing.T) {
 	if expected != a.String() {
 		t.Errorf("\n%s\n != \n%s", expected, a.String())
 	}
+}
+
+func TestQFrame_ByteSize(t *testing.T) {
+	a := qframe.New(map[string]interface{}{
+		"COL1": []string{"a", "b"},
+		"COL2": []int{3, 2},
+		"COL3": []float64{3.5, 2.0},
+		"COL4": []bool{true, false},
+		"COL5": []string{"1", "2"},
+	}, qframe.Enums(map[string][]string{"COL5": nil}))
+	totalSize := a.ByteSize()
+
+	// Not so much of a test as lock down on behavior to detect changes
+	if totalSize != 756 {
+		t.Errorf("Unexpected byte size: %d != %d", totalSize, 1234)
+	}
+
+	assertTrue(t, a.Select("COL1", "COL2", "COL3", "COL4").ByteSize() < totalSize)
+	assertTrue(t, a.Select("COL2", "COL3", "COL4", "COL5").ByteSize() < totalSize)
+	assertTrue(t, a.Select("COL1", "COL3", "COL4", "COL5").ByteSize() < totalSize)
+	assertTrue(t, a.Select("COL1", "COL2", "COL4", "COL5").ByteSize() < totalSize)
+	assertTrue(t, a.Select("COL1", "COL2", "COL3", "COL5").ByteSize() < totalSize)
 }

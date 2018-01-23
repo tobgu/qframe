@@ -35,6 +35,10 @@ func (ix Int) Filter(bIx Bool) Int {
 	return result
 }
 
+func (ix Int) ByteSize() int {
+	return 4 * ix.Len()
+}
+
 func (ix Int) Len() int {
 	return len(ix)
 }

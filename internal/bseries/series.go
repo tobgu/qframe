@@ -40,6 +40,11 @@ func (s Series) Marshaler(index index.Int) json.Marshaler {
 	return io.JsonBool(s.subset(index).data)
 }
 
+func (s Series) ByteSize() int {
+	// Slice header + data
+	return 2*8 + len(s.data)
+}
+
 func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
 	otherI, ok := other.(Series)
 	if !ok {

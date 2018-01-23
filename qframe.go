@@ -26,6 +26,10 @@ type namedSeries struct {
 	pos  int
 }
 
+func (ns namedSeries) ByteSize() int {
+	return ns.Series.ByteSize() + 2*8 + 8 + len(ns.name)
+}
+
 type QFrame struct {
 	series       []namedSeries
 	seriesByName map[string]namedSeries
@@ -503,7 +507,7 @@ func (qf QFrame) String() string {
 	}
 	result = append(result, strings.Join(row, " "))
 
-	for i, _ := range qf.series {
+	for i := range qf.series {
 		row[i] = fixLengthString("", "-", colWidths[i])
 	}
 	result = append(result, strings.Join(row, " "))
@@ -710,6 +714,26 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	return err
 }
 
+// Return a best effort guess of the current size occupied by the frame.
+// This does not factor for cases where multiple, different, frames reference
+// the underlying data.
+func (qf QFrame) ByteSize() int {
+	totalSize := 0
+	for k, v := range qf.seriesByName {
+		totalSize += len(k)
+		totalSize += 40 // Estimate of map entry overhead
+		totalSize += 16 // String header map key
+
+		// Series both in map and slice, hence 2 x, but don't double count the space
+		// occupied by the series itself.
+		totalSize += 2*v.ByteSize() - v.Series.ByteSize()
+	}
+
+	totalSize += qf.index.ByteSize()
+	totalSize += 16 // Error interface
+	return totalSize
+}
+
 // TODO filter
 // - Complete basic filtering for all types
 // - Implement "in"
@@ -717,6 +741,7 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 //   way where no complementary functions are implemented by adding an extra step involving
 //   an additional, new, boolean slice that is kept in isolation and inverted before being
 //   merged with the current slice? Also consider "(not (or ....))".
+// - Change == to = for equality
 
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
@@ -724,10 +749,7 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 //   as starting point for column based format and by refining type detection for the record based
 //   read. That would also allow proper parsing of integers for record format rather than making them
 //   floats.
-// - Nice table printing in String function
 // - Support access by x, y (to support GoNum matrix interface)
-// - Implement query language.
-// - Implement de Morgan transformations to handle "not".
 // - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
 // - Handle float NaN in filtering
 // - AppendBytesString support to add columns to DF (in addition to project). Should produce a new df, no mutation!
@@ -740,3 +762,4 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // - More serialization and deserialization tests
 // - Perhaps make a special case for distinct with only one column involved that simply calls distinct on
 //   a series for that specific column. Should be quite a bit faster than current sort based implementation.
+// - ByteSize

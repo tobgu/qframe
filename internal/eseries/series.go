@@ -178,6 +178,15 @@ func (s Series) Marshaler(index index.Int) json.Marshaler {
 	return marshaler{Series: s, index: index}
 }
 
+func (s Series) ByteSize() int {
+	totalSize := 2 * 2 * 8 // Slice headers
+	for _, s := range s.values {
+		totalSize += len(s)
+	}
+	totalSize += len(s.data)
+	return totalSize
+}
+
 func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
 	otherE, ok := other.(Series)
 	if !ok {

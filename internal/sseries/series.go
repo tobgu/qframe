@@ -43,6 +43,19 @@ func (s Series) Marshaler(index index.Int) json.Marshaler {
 	return io.JsonString(s.subset(index).data)
 }
 
+func (s Series) ByteSize() int {
+	// TODO: This is probably not how we want to do it in the end
+	//       since it's both inefficient and potentially wrong when
+	//       string sharing is significant.
+	// Slice header + pointers
+	totalSize := 2*8 + 8*len(s.data)
+	for _, s := range s.data {
+		totalSize += len(*s)
+	}
+
+	return totalSize
+}
+
 func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
 	otherI, ok := other.(Series)
 	if !ok {

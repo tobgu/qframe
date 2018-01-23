@@ -29,6 +29,9 @@ type NotClause struct {
 	subClause Clause
 }
 
+// Convinience type to simplify clients when no filtering is to be done.
+type NullClause struct{}
+
 func anyFilterErr(clauses []Clause) error {
 	for _, c := range clauses {
 		if c.Err() != nil {
@@ -56,6 +59,9 @@ func clauseString(clauses []Clause) string {
 }
 
 func (c AndClause) String() string {
+	if c.Err() != nil {
+		return c.Err().Error()
+	}
 	return fmt.Sprintf(`["and", %s]`, clauseString(c.subClauses))
 }
 
@@ -86,6 +92,10 @@ func Or(clauses ...Clause) OrClause {
 }
 
 func (c OrClause) String() string {
+	if c.Err() != nil {
+		return c.Err().Error()
+	}
+
 	return fmt.Sprintf(`["or", %s]`, clauseString(c.subClauses))
 }
 
@@ -168,6 +178,10 @@ func Filter(f filter.Filter) FilterClause {
 }
 
 func (c FilterClause) String() string {
+	if c.Err() != nil {
+		return c.Err().Error()
+	}
+
 	return filter.Filter(c).String()
 }
 
@@ -184,6 +198,10 @@ func Not(c Clause) NotClause {
 }
 
 func (c NotClause) String() string {
+	if c.Err() != nil {
+		return c.Err().Error()
+	}
+
 	return fmt.Sprintf(`["not", %s]`, c.subClause.String())
 }
 
@@ -218,4 +236,20 @@ func (c NotClause) Filter(qf QFrame) QFrame {
 
 func (c NotClause) Err() error {
 	return c.subClause.Err()
+}
+
+func Null() NullClause {
+	return NullClause{}
+}
+
+func (c NullClause) String() string {
+	return ""
+}
+
+func (c NullClause) Filter(qf QFrame) QFrame {
+	return qf
+}
+
+func (c NullClause) Err() error {
+	return nil
 }

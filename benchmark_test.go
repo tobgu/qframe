@@ -443,7 +443,6 @@ func toJson(b *testing.B, orient string) {
 			b.Errorf("Unexpected ToCsv error: %s", err)
 		}
 	}
-
 }
 
 func BenchmarkQFrame_ToJsonRecords(b *testing.B) {

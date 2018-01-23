@@ -17,6 +17,7 @@ type Series interface {
 	StringAt(i uint32, naRep string) string
 	AppendByteStringAt(buf []byte, i int) []byte
 	Marshaler(index index.Int) json.Marshaler
+	ByteSize() int
 }
 
 // TODO: Change to byte
