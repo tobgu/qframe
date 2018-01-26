@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
+	"reflect"
 	"strconv"
 )
 
@@ -84,7 +85,12 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 
 	comp, ok := comparatee.(int)
 	if !ok {
-		return errors.New("filter int", "invalid comparison type %v", c)
+		// Accept floats by truncating them
+		compFloat, ok := comparatee.(float64)
+		if !ok {
+			return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+		}
+		comp = int(compFloat)
 	}
 
 	compFunc(index, s.data, comp, bIndex)
