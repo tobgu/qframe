@@ -852,8 +852,9 @@ func TestQFrame_ByteSize(t *testing.T) {
 	totalSize := a.ByteSize()
 
 	// Not so much of a test as lock down on behavior to detect changes
-	if totalSize != 756 {
-		t.Errorf("Unexpected byte size: %d != %d", totalSize, 1234)
+	expectedSize := 740
+	if totalSize != expectedSize {
+		t.Errorf("Unexpected byte size: %d != %d", totalSize, expectedSize)
 	}
 
 	assertTrue(t, a.Select("COL1", "COL2", "COL3", "COL4").ByteSize() < totalSize)

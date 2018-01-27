@@ -140,7 +140,7 @@ func (s Series) StringAt(i uint32, naRep string) string {
 	return s.values[v]
 }
 
-func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
+func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
 	enum := s.data[i]
 	if enum.isNull() {
 		return append(buf, "null"...)

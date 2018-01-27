@@ -2,6 +2,7 @@ package sseries
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
@@ -13,7 +14,7 @@ import (
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
 var aggregations = map[string]func([]*string) *string{}
 
-var stringFilterFuncs = map[filter.Comparator]func(index.Int, []*string, string, index.Bool) error{
+var stringFilterFuncs = map[filter.Comparator]func(index.Int, Series, string, index.Bool) error{
 	filter.Gt:  gt,
 	filter.Lt:  lt,
 	filter.Eq:  eq,
@@ -23,7 +24,7 @@ var stringFilterFuncs = map[filter.Comparator]func(index.Int, []*string, string,
 }
 
 func (s Series) StringAt(i uint32, naRep string) string {
-	p := s.data[i]
+	p := s.stringAt(i)
 	if p == nil {
 		return naRep
 	}
@@ -31,40 +32,43 @@ func (s Series) StringAt(i uint32, naRep string) string {
 	return *p
 }
 
-func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
-	if s.data[i] == nil {
-		return append(buf, "null"...)
+func (s Series) stringSlice(index index.Int) []*string {
+	result := make([]*string, len(index))
+	for i, ix := range index {
+		result[i] = s.stringAt(ix)
 	}
 
-	return qfstrings.AppendQuotedString(buf, *s.data[i])
+	return result
+}
+
+func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
+	p := s.pointers[i]
+	if p.IsNull() {
+		return append(buf, "null"...)
+	}
+	str := qfstrings.UnsafeBytesToString(s.data[p.Offset() : p.Offset()+p.Len()])
+	return qfstrings.AppendQuotedString(buf, str)
 }
 
 func (s Series) Marshaler(index index.Int) json.Marshaler {
-	return io.JsonString(s.subset(index).data)
+	// TODO: This is a very inefficient way of marshalling to JSON
+	return io.JsonString(s.stringSlice(index))
 }
 
 func (s Series) ByteSize() int {
-	// TODO: This is probably not how we want to do it in the end
-	//       since it's both inefficient and potentially wrong when
-	//       string sharing is significant.
-	// Slice header + pointers
-	totalSize := 2*8 + 8*len(s.data)
-	for _, s := range s.data {
-		totalSize += len(*s)
-	}
-
-	return totalSize
+	return 8*len(s.pointers) + cap(s.data)
 }
 
 func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
-	otherI, ok := other.(Series)
+	otherS, ok := other.(Series)
 	if !ok {
 		return false
 	}
 
 	for ix, x := range index {
-		sPtr := s.data[x]
-		osPtr := otherI.data[otherIndex[ix]]
+		// TODO: This probably causes a lot of unnecessary allocations
+		sPtr := s.stringAt(x)
+		osPtr := otherS.stringAt(otherIndex[ix])
 		if sPtr == nil || osPtr == nil {
 			if sPtr == osPtr {
 				continue
@@ -82,7 +86,7 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 }
 
 func (c Comparable) Compare(i, j uint32) series.CompareResult {
-	x, y := c.data[i], c.data[j]
+	x, y := c.series.stringAt(i), c.series.stringAt(j)
 	if x == nil || y == nil {
 		if x != nil {
 			return c.gtValue
@@ -115,16 +119,16 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 			return errors.New("filter string column", "invalid filter type, expected string")
 		}
 
-		return compFunc(index, s.data, sComp, bIndex)
+		return compFunc(index, s, sComp, bIndex)
 	}
 
 	return errors.New("filter string column", "Unknown filter %s", c)
 }
 
-func gt(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+func gt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := column[index[i]]
+			sp := s.stringAt(index[i])
 			if sp != nil {
 				bIndex[i] = *sp > comparatee
 			}
@@ -134,10 +138,10 @@ func gt(index index.Int, column []*string, comparatee string, bIndex index.Bool)
 	return nil
 }
 
-func lt(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+func lt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := column[index[i]]
+			sp := s.stringAt(index[i])
 			bIndex[i] = sp == nil || *sp < comparatee
 		}
 	}
@@ -145,10 +149,10 @@ func lt(index index.Int, column []*string, comparatee string, bIndex index.Bool)
 	return nil
 }
 
-func eq(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+func eq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := column[index[i]]
+			sp := s.stringAt(index[i])
 			if sp != nil {
 				bIndex[i] = *sp == comparatee
 			}
@@ -158,10 +162,10 @@ func eq(index index.Int, column []*string, comparatee string, bIndex index.Bool)
 	return nil
 }
 
-func neq(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
+func neq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := column[index[i]]
+			sp := s.stringAt(index[i])
 			if sp != nil {
 				bIndex[i] = *sp != comparatee
 			}
@@ -171,15 +175,15 @@ func neq(index index.Int, column []*string, comparatee string, bIndex index.Bool
 	return nil
 }
 
-func like(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
-	return regexFilter(index, column, comparatee, bIndex, true)
+func like(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+	return regexFilter(index, s, comparatee, bIndex, true)
 }
 
-func ilike(index index.Int, column []*string, comparatee string, bIndex index.Bool) error {
-	return regexFilter(index, column, comparatee, bIndex, false)
+func ilike(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+	return regexFilter(index, s, comparatee, bIndex, false)
 }
 
-func regexFilter(index index.Int, column []*string, comparatee string, bIndex index.Bool, caseSensitive bool) error {
+func regexFilter(index index.Int, s Series, comparatee string, bIndex index.Bool, caseSensitive bool) error {
 	matcher, err := qfstrings.NewMatcher(comparatee, caseSensitive)
 	if err != nil {
 		return errors.Propagate("Regex filter", err)
@@ -187,7 +191,7 @@ func regexFilter(index index.Int, column []*string, comparatee string, bIndex in
 
 	for i, x := range bIndex {
 		if !x {
-			sp := column[index[i]]
+			sp := s.stringAt(index[i])
 			if sp != nil {
 				bIndex[i] = matcher.Matches(sp)
 			}
@@ -195,4 +199,104 @@ func regexFilter(index index.Int, column []*string, comparatee string, bIndex in
 	}
 
 	return nil
+}
+
+type Series struct {
+	pointers []qfstrings.Pointer
+	data     []byte
+}
+
+func NewBytes(pointers []qfstrings.Pointer, bytes []byte) Series {
+	return Series{pointers: pointers, data: bytes}
+}
+
+func NewStrings(strings []string) Series {
+	data := make([]byte, 0, len(strings))
+	pointers := make([]qfstrings.Pointer, len(strings))
+	offset := 0
+	for i, s := range strings {
+		pointers[i] = qfstrings.NewPointer(offset, len(s), false)
+		offset += len(s)
+		data = append(data, s...)
+	}
+
+	return NewBytes(pointers, data)
+}
+
+func New(strings []*string) Series {
+	data := make([]byte, 0, len(strings))
+	pointers := make([]qfstrings.Pointer, len(strings))
+	offset := 0
+	for i, s := range strings {
+		if s == nil {
+			pointers[i] = qfstrings.NewPointer(offset, 0, true)
+		} else {
+			sLen := len(*s)
+			pointers[i] = qfstrings.NewPointer(offset, sLen, false)
+			offset += sLen
+			data = append(data, *s...)
+		}
+	}
+
+	return NewBytes(pointers, data)
+}
+
+func (s Series) stringAt(i uint32) *string {
+	// TODO: Check the use of stringAt, it may cause unnecessary allocations in a lot of places...
+	p := s.pointers[i]
+	return p.Apply(s.data)
+}
+
+func (s Series) subset(index index.Int) Series {
+	data := make([]byte, 0, len(index))
+	pointers := make([]qfstrings.Pointer, len(index))
+	offset := 0
+	for i, ix := range index {
+		p := s.pointers[ix]
+		pointers[i] = qfstrings.NewPointer(offset, p.Len(), p.IsNull())
+		if !p.IsNull() {
+			data = append(data, s.data[p.Offset():p.Offset()+p.Len()]...)
+			offset += p.Len()
+		}
+	}
+
+	return Series{data: data, pointers: pointers}
+}
+
+func (s Series) Subset(index index.Int) series.Series {
+	return s.subset(index)
+}
+
+func (s Series) Comparable(reverse bool) series.Comparable {
+	if reverse {
+		return Comparable{series: s, ltValue: series.GreaterThan, gtValue: series.LessThan}
+	}
+
+	return Comparable{series: s, ltValue: series.LessThan, gtValue: series.GreaterThan}
+}
+
+func (s Series) String() string {
+	return fmt.Sprintf("%v", s.data)
+}
+
+func (s Series) Aggregate(indices []index.Int, fnName string) (series.Series, error) {
+	//	fn, ok := aggregations[fnName]
+	//	if !ok {
+	//		return nil, fmt.Errorf("aggregation function %s is not defined for in series", fnName)
+	//	}
+
+	//	data := make([]*string, 0, len(indices))
+	//	for _, ix := range indices {
+	//		subS := s.subset(ix)
+	//		data = append(data, fn(subS.data))
+	//	}
+
+	// TODO: This is broken
+	return Series{data: nil, pointers: nil}, nil
+}
+
+type Comparable struct {
+	series  Series
+	ltValue series.CompareResult
+	gtValue series.CompareResult
 }

@@ -102,6 +102,8 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	for i, name := range config.columnOrder {
 		var localS series.Series
 		column := data[name]
+
+		// TODO: Change this case to use strings directly for strings and enums
 		if sc, ok := column.([]string); ok {
 			// Convenience conversion to support string slices in addition
 			// to string pointer slices.
@@ -138,6 +140,9 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 		case eseries.Series:
 			localS = c
 			currentLen = c.Len()
+		case qfstrings.StringBlob:
+			localS = sseries.NewBytes(c.Pointers, c.Data)
+			currentLen = len(c.Pointers)
 		default:
 			return QFrame{Err: errors.New("New", "unknown column format of: %v", c)}
 		}
@@ -659,7 +664,7 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 			for j, c := range columns {
 				jsonBuf = append(jsonBuf, colByteNames[j]...)
 				jsonBuf = append(jsonBuf, byte(':'))
-				jsonBuf = c.AppendByteStringAt(jsonBuf, int(ix))
+				jsonBuf = c.AppendByteStringAt(jsonBuf, ix)
 				jsonBuf = append(jsonBuf, byte(','))
 			}
 

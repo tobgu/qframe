@@ -5,7 +5,6 @@ package template
 import (
 	"fmt"
 	"github.com/tobgu/genny/generic"
-	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
 )
@@ -15,7 +14,6 @@ type dataType generic.Number
 //go:generate genny -in=$GOFILE -out=../iseries/series_gen.go -pkg=iseries gen "dataType=int"
 //go:generate genny -in=$GOFILE -out=../fseries/series_gen.go -pkg=fseries gen "dataType=float64"
 //go:generate genny -in=$GOFILE -out=../bseries/series_gen.go -pkg=bseries gen "dataType=bool"
-//go:generate genny -in=$GOFILE -out=../sseries/series_gen.go -pkg=sseries gen "dataType=*string"
 
 type Series struct {
 	data []dataType

@@ -144,28 +144,16 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf Csv
 	}
 
 	if dataType == types.String || dataType == types.None {
-		stringMap := make(map[string]*string)
-		stringData := make([]*string, 0, len(pointers))
-		for _, p := range pointers {
+		stringPointers := make([]strings.Pointer, len(pointers))
+		for i, p := range pointers {
 			if p.start == p.end && conf.EmptyNull {
-				stringData = append(stringData, nil)
+				stringPointers[i] = strings.NewPointer(int(p.start), 0, true)
 			} else {
-				// Reuse pointers to strings that have already occurred, good
-				// way to save some memory and allocations for columns with
-				// recurring strings. Less good for high cardinality columns.
-				// If this is a problem the decision of whether to use it or
-				// not could probably be made dynamic.
-				if sp, ok := stringMap[string(bytes[p.start:p.end])]; ok {
-					stringData = append(stringData, sp)
-				} else {
-					s := string(bytes[p.start:p.end])
-					stringMap[s] = &s
-					stringData = append(stringData, &s)
-				}
+				stringPointers[i] = strings.NewPointer(int(p.start), int(p.end-p.start), false)
 			}
 		}
 
-		return stringData, nil
+		return strings.StringBlob{Pointers: stringPointers, Data: bytes}, nil
 	}
 
 	if dataType == types.Enum {

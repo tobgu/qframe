@@ -32,7 +32,7 @@ func (s Series) StringAt(i uint32, _ string) string {
 	return strconv.FormatBool(s.data[i])
 }
 
-func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
+func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
 	return strconv.AppendBool(buf, s.data[i])
 }
 

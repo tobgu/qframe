@@ -35,7 +35,7 @@ func (s Series) StringAt(i uint32, _ string) string {
 	return strconv.FormatInt(int64(s.data[i]), 10)
 }
 
-func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
+func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
 	return strconv.AppendInt(buf, int64(s.data[i]), 10)
 }
 

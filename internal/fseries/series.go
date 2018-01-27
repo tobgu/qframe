@@ -27,7 +27,7 @@ func (s Series) StringAt(i uint32, naRep string) string {
 	return strconv.FormatFloat(s.data[i], 'f', -1, 64)
 }
 
-func (s Series) AppendByteStringAt(buf []byte, i int) []byte {
+func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
 	return strconv.AppendFloat(buf, s.data[i], 'f', -1, 64)
 }
 
