@@ -388,7 +388,7 @@ func filterLike(comparatee interface{}, values []string, caseSensitive bool) (*b
 
 	bset := &bitset{}
 	for i, v := range values {
-		if matcher.Matches(&v) {
+		if matcher.Matches(v) {
 			bset.set(enumVal(i))
 		}
 	}

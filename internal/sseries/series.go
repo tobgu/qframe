@@ -24,18 +24,22 @@ var stringFilterFuncs = map[filter.Comparator]func(index.Int, Series, string, in
 }
 
 func (s Series) StringAt(i uint32, naRep string) string {
-	p := s.stringAt(i)
-	if p == nil {
-		return naRep
+	if s, isNull := s.stringAt(i); !isNull {
+		return s
 	}
 
-	return *p
+	return naRep
 }
 
 func (s Series) stringSlice(index index.Int) []*string {
 	result := make([]*string, len(index))
 	for i, ix := range index {
-		result[i] = s.stringAt(ix)
+		s, isNull := s.stringAt(ix)
+		if isNull {
+			result[i] = nil
+		} else {
+			result[i] = &s
+		}
 	}
 
 	return result
@@ -66,18 +70,17 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	}
 
 	for ix, x := range index {
-		// TODO: This probably causes a lot of unnecessary allocations
-		sPtr := s.stringAt(x)
-		osPtr := otherS.stringAt(otherIndex[ix])
-		if sPtr == nil || osPtr == nil {
-			if sPtr == osPtr {
+		s, sNull := s.stringAt(x)
+		os, osNull := otherS.stringAt(otherIndex[ix])
+		if sNull || osNull {
+			if sNull && osNull {
 				continue
 			}
 
 			return false
 		}
 
-		if *sPtr != *osPtr {
+		if s != os {
 			return false
 		}
 	}
@@ -86,13 +89,14 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 }
 
 func (c Comparable) Compare(i, j uint32) series.CompareResult {
-	x, y := c.series.stringAt(i), c.series.stringAt(j)
-	if x == nil || y == nil {
-		if x != nil {
+	x, xNull := c.series.stringAt(i)
+	y, yNull := c.series.stringAt(j)
+	if xNull || yNull {
+		if !xNull {
 			return c.gtValue
 		}
 
-		if y != nil {
+		if !yNull {
 			return c.ltValue
 		}
 
@@ -101,11 +105,11 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 		return series.Equal
 	}
 
-	if *x < *y {
+	if x < y {
 		return c.ltValue
 	}
 
-	if *x > *y {
+	if x > y {
 		return c.gtValue
 	}
 
@@ -128,9 +132,9 @@ func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interfac
 func gt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := s.stringAt(index[i])
-			if sp != nil {
-				bIndex[i] = *sp > comparatee
+			s, isNull := s.stringAt(index[i])
+			if !isNull {
+				bIndex[i] = s > comparatee
 			}
 		}
 	}
@@ -141,8 +145,8 @@ func gt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 func lt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := s.stringAt(index[i])
-			bIndex[i] = sp == nil || *sp < comparatee
+			p := s.pointers[index[i]]
+			bIndex[i] = p.IsNull() || qfstrings.UnsafeBytesToString(s.data[p.Offset():p.Offset()+p.Len()]) < comparatee
 		}
 	}
 
@@ -152,9 +156,9 @@ func lt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 func eq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := s.stringAt(index[i])
-			if sp != nil {
-				bIndex[i] = *sp == comparatee
+			s, isNull := s.stringAt(index[i])
+			if !isNull {
+				bIndex[i] = s == comparatee
 			}
 		}
 	}
@@ -165,9 +169,9 @@ func eq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 func neq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			sp := s.stringAt(index[i])
-			if sp != nil {
-				bIndex[i] = *sp != comparatee
+			s, isNull := s.stringAt(index[i])
+			if !isNull {
+				bIndex[i] = s != comparatee
 			}
 		}
 	}
@@ -191,9 +195,9 @@ func regexFilter(index index.Int, s Series, comparatee string, bIndex index.Bool
 
 	for i, x := range bIndex {
 		if !x {
-			sp := s.stringAt(index[i])
-			if sp != nil {
-				bIndex[i] = matcher.Matches(sp)
+			s, isNull := s.stringAt(index[i])
+			if !isNull {
+				bIndex[i] = matcher.Matches(s)
 			}
 		}
 	}
@@ -241,10 +245,12 @@ func New(strings []*string) Series {
 	return NewBytes(pointers, data)
 }
 
-func (s Series) stringAt(i uint32) *string {
-	// TODO: Check the use of stringAt, it may cause unnecessary allocations in a lot of places...
+func (s Series) stringAt(i uint32) (string, bool) {
 	p := s.pointers[i]
-	return p.Apply(s.data)
+	if p.IsNull() {
+		return "", true
+	}
+	return qfstrings.UnsafeBytesToString(s.data[p.Offset() : p.Offset()+p.Len()]), false
 }
 
 func (s Series) subset(index index.Int) Series {

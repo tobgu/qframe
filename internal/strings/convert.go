@@ -43,12 +43,11 @@ func QuotedBytes(s string) []byte {
 // The passed in byte buffer is used to hold the converted string. The returned
 // string is not safe to use when bP goes out of scope and the content may
 // be overwritten upon next call to this function.
-func ToUpper(bP *[]byte, sP *string) string {
+func ToUpper(bP *[]byte, s string) string {
 	// nbytes is the number of bytes encoded in b.
 	var nbytes int
 
 	var b []byte
-	s := *sP
 	for i, c := range s {
 		r := unicode.ToUpper(c)
 		if r == c {

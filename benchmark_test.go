@@ -700,4 +700,12 @@ BenchmarkQFrame_FilterNot/filter-2         	    2000	    726766 ns/op	  147521 B
 // Restructure string series to use a byte blob with offsets and lengths
 BenchmarkQFrame_ReadCsv-2       	      20	  85906027 ns/op	84728656 B/op	     500 allocs/op
 
+// Fix string filters to make better use of the new string blob structure:
+BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<,_enum:_true-2         	    2000	    691081 ns/op	  335888 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<,_enum:_false-2        	    1000	   1902665 ns/op	  335889 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_AB5_<,_enum:_false-2                  	    1000	   1935237 ns/op	  335888 B/op	       3 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_like,_enum:_false-2       	     500	   3855434 ns/op	  155680 B/op	       4 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_false-2      	     100	  11881963 ns/op	  155792 B/op	       8 allocs/op
+BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       	    2000	    691971 ns/op	  155824 B/op	       9 allocs/op
+
 */

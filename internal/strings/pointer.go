@@ -31,15 +31,6 @@ func (p Pointer) IsNull() bool {
 	return p&nullBit > 0
 }
 
-// NB: Not safe to use the returned string when the b is no longer referenced.
-func (p Pointer) Apply(b []byte) *string {
-	if p.IsNull() {
-		return nil
-	}
-	s := UnsafeBytesToString(b[p.Offset() : p.Offset()+p.Len()])
-	return &s
-}
-
 func (p Pointer) String() string {
 	return fmt.Sprintf("{offset: %d, len: %d, isNull: %v}",
 		p.Offset(), p.Len(), p.IsNull())

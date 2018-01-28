@@ -7,7 +7,7 @@ import (
 )
 
 type Matcher interface {
-	Matches(s *string) bool
+	Matches(s string) bool
 }
 
 type CIStringMatcher struct {
@@ -17,25 +17,25 @@ type CIStringMatcher struct {
 
 type CIPrefixMatcher CIStringMatcher
 
-func (m *CIPrefixMatcher) Matches(s *string) bool {
+func (m *CIPrefixMatcher) Matches(s string) bool {
 	return strings.HasPrefix(ToUpper(&m.buf, s), m.matchString)
 }
 
 type CISuffixMatcher CIStringMatcher
 
-func (m *CISuffixMatcher) Matches(s *string) bool {
+func (m *CISuffixMatcher) Matches(s string) bool {
 	return strings.HasSuffix(ToUpper(&m.buf, s), m.matchString)
 }
 
 type CIContainsMatcher CIStringMatcher
 
-func (m *CIContainsMatcher) Matches(s *string) bool {
+func (m *CIContainsMatcher) Matches(s string) bool {
 	return strings.Contains(ToUpper(&m.buf, s), m.matchString)
 }
 
 type CIExactMatcher CIStringMatcher
 
-func (m *CIExactMatcher) Matches(s *string) bool {
+func (m *CIExactMatcher) Matches(s string) bool {
 	return ToUpper(&m.buf, s) == m.matchString
 }
 
@@ -45,34 +45,34 @@ type StringMatcher struct {
 
 type PrefixMatcher StringMatcher
 
-func (m *PrefixMatcher) Matches(s *string) bool {
-	return strings.HasPrefix(*s, m.matchString)
+func (m *PrefixMatcher) Matches(s string) bool {
+	return strings.HasPrefix(s, m.matchString)
 }
 
 type SuffixMatcher StringMatcher
 
-func (m *SuffixMatcher) Matches(s *string) bool {
-	return strings.HasSuffix(*s, m.matchString)
+func (m *SuffixMatcher) Matches(s string) bool {
+	return strings.HasSuffix(s, m.matchString)
 }
 
 type ContainsMatcher StringMatcher
 
-func (m *ContainsMatcher) Matches(s *string) bool {
-	return strings.Contains(*s, m.matchString)
+func (m *ContainsMatcher) Matches(s string) bool {
+	return strings.Contains(s, m.matchString)
 }
 
 type ExactMatcher StringMatcher
 
-func (m *ExactMatcher) Matches(s *string) bool {
-	return *s == m.matchString
+func (m *ExactMatcher) Matches(s string) bool {
+	return s == m.matchString
 }
 
 type RegexpMatcher struct {
 	r *regexp.Regexp
 }
 
-func (m *RegexpMatcher) Matches(s *string) bool {
-	return m.r.MatchString(*s)
+func (m *RegexpMatcher) Matches(s string) bool {
+	return m.r.MatchString(s)
 }
 
 func stripPercent(s string) string {
