@@ -263,6 +263,10 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 		return qf
 	}
 
+	if len(orders) == 0 {
+		return qf
+	}
+
 	comparables := make([]series.Comparable, 0, len(orders))
 	for _, o := range orders {
 		s, ok := qf.seriesByName[o.Column]
