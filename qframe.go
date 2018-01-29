@@ -548,7 +548,7 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	}
 
 	if end > qf.Len() {
-		return qf.withErr(errors.New("Slice", "end must not be greater than dataframe length"))
+		return qf.withErr(errors.New("Slice", "end must not be greater than qframe length"))
 	}
 
 	return qf.withIndex(qf.index[start:end])
