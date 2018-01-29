@@ -29,7 +29,7 @@ type NotClause struct {
 	subClause Clause
 }
 
-// Convinience type to simplify clients when no filtering is to be done.
+// Convenience type to simplify clients when no filtering is to be done.
 type NullClause struct{}
 
 func anyFilterErr(clauses []Clause) error {

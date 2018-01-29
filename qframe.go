@@ -441,6 +441,9 @@ func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
 		return QFrame{Err: g.Err}
 	}
 
+	// TODO: Perhaps fnsAndCols should not be a required, in which case a qframe
+	// should be returned that corresponds to the qframe sorted by the group by
+	// columns.
 	if len(fnsAndCols)%2 != 0 || len(fnsAndCols) == 0 {
 		return QFrame{Err: errors.New("Aggregate", "aggregation expects even number of arguments, col1, fn1, col2, fn2")}
 	}
@@ -767,4 +770,4 @@ func (qf QFrame) ByteSize() int {
 // - More serialization and deserialization tests
 // - Perhaps make a special case for distinct with only one column involved that simply calls distinct on
 //   a series for that specific column. Should be quite a bit faster than current sort based implementation.
-// - ByteSize
+// - Fix aggregation for string columns
