@@ -404,7 +404,7 @@ type Grouper struct {
 
 // Leaving out columns will make one large group over which aggregations can be done
 func (qf QFrame) GroupBy(columns ...string) Grouper {
-	if err := qf.checkColumns("Select", columns); err != nil {
+	if err := qf.checkColumns("GroupBy", columns); err != nil {
 		return Grouper{Err: err}
 	}
 
@@ -445,14 +445,14 @@ func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
 		return QFrame{Err: g.Err}
 	}
 
-	// TODO: Perhaps fnsAndCols should not be a required, in which case a qframe
-	// should be returned that corresponds to the qframe sorted by the group by
-	// columns.
-	if len(fnsAndCols)%2 != 0 || len(fnsAndCols) == 0 {
+	if len(fnsAndCols)%2 != 0 {
 		return QFrame{Err: errors.New("Aggregate", "aggregation expects even number of arguments, col1, fn1, col2, fn2")}
 	}
 
 	// TODO: Check that columns exist but are not part of groupedColumns
+
+	// Loop over all groups and pick the first row in each of the groups.
+	// This index will be used to populate the grouped by columns below.
 	firstElementIx := make(index.Int, len(g.indices))
 	for i, ix := range g.indices {
 		firstElementIx[i] = ix[0]
