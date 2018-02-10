@@ -11,8 +11,18 @@ import (
 	"strconv"
 )
 
+func sum(values []float64) float64 {
+	result := 0.0
+	for _, v := range values {
+		result += v
+	}
+	return result
+}
+
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
-var aggregations = map[string]func([]float64) float64{}
+var aggregations = map[string]func([]float64) float64{
+	"sum": sum,
+}
 
 var filterFuncs = map[filter.Comparator]func(index.Int, []float64, interface{}, index.Bool) error{
 	filter.Gt: gt,

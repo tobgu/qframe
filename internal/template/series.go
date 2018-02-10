@@ -51,7 +51,7 @@ func (s Series) String() string {
 func (s Series) Aggregate(indices []index.Int, fnName string) (series.Series, error) {
 	fn, ok := aggregations[fnName]
 	if !ok {
-		return nil, fmt.Errorf("aggregation function %s is not defined for in series", fnName)
+		return nil, fmt.Errorf("aggregation function %s is not defined for series", fnName)
 	}
 
 	data := make([]dataType, 0, len(indices))
