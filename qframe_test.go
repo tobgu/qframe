@@ -863,3 +863,24 @@ func TestQFrame_ByteSize(t *testing.T) {
 	assertTrue(t, a.Select("COL1", "COL2", "COL4", "COL5").ByteSize() < totalSize)
 	assertTrue(t, a.Select("COL1", "COL2", "COL3", "COL5").ByteSize() < totalSize)
 }
+
+func TestQFrame_ApplyAliasColumn(t *testing.T) {
+	input := qframe.New(map[string]interface{}{
+		"COL1": []string{"a", "b"},
+		"COL2": []int{3, 2},
+	})
+
+	expectedNew := qframe.New(map[string]interface{}{
+		"COL1": []string{"a", "b"},
+		"COL2": []int{3, 2},
+		"COL3": []int{3, 2},
+	})
+
+	expectedReplace := qframe.New(map[string]interface{}{
+		"COL1": []int{3, 2},
+		"COL2": []int{3, 2},
+	})
+
+	assertEquals(t, expectedNew, input.Apply("", "COL3", "COL2"))
+	assertEquals(t, expectedReplace, input.Apply("", "COL1", "COL2"))
+}

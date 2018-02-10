@@ -554,6 +554,56 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	return qf.withIndex(qf.index[start:end])
 }
 
+func (qf QFrame) setSeries(name string, s series.Series) QFrame {
+	newF := qf.withIndex(qf.index)
+	existingS, overwrite := qf.seriesByName[name]
+	newColCount := len(qf.series)
+	pos := newColCount
+	if overwrite {
+		pos = existingS.pos
+	} else {
+		newColCount++
+	}
+
+	newF.series = make([]namedSeries, newColCount)
+	newF.seriesByName = make(map[string]namedSeries, newColCount)
+	copy(newF.series, qf.series)
+	for k, v := range qf.seriesByName {
+		newF.seriesByName[k] = v
+	}
+
+	newS := namedSeries{Series: s, name: name, pos: pos}
+	newF.seriesByName[name] = newS
+	newF.series[pos] = newS
+	return newF
+}
+
+// Passing an empty string as fnName will simply copy srcCol to dstCol. Not
+// sure if this API will remain.
+// TODO: Should perhaps accept more than one srcCol (two should be enough?)
+// TODO: Apply actual functions rather than named function
+func (qf QFrame) Apply(fnName, dstCol string, srcCol string) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	srcSeries, ok := qf.seriesByName[srcCol]
+	if !ok {
+		return qf.withErr(errors.New("Apply", "no such column: %s", srcCol))
+	}
+
+	if fnName == "" {
+		return qf.setSeries(dstCol, srcSeries.Series)
+	}
+
+	// TODO
+	panic("Not supported yet")
+}
+
+////////////
+//// IO ////
+////////////
+
 type CsvConfig qfio.CsvConfig
 
 type CsvConfigFunc func(*CsvConfig)
