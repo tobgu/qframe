@@ -413,6 +413,11 @@ func (qf QFrame) GroupBy(columns ...string) Grouper {
 		return grouper
 	}
 
+	if len(columns) == 0 {
+		grouper.indices = []index.Int{qf.index}
+		return grouper
+	}
+
 	orders := qf.orders(columns)
 	comparables := qf.reverseComparables(columns, orders)
 
