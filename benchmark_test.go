@@ -525,42 +525,6 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_SumAggregateWithGroup(b *testing.B) {
-	rowCount := 100000
-	input := csvBytes(rowCount)
-
-	r := bytes.NewReader(input)
-	df := qf.ReadCsv(r)
-	if df.Err != nil {
-		b.Errorf("Unexpected CSV error: %s", df.Err)
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		g := df.GroupBy() //"STRING1")
-		result := g.Aggregate("sum", "FLOAT1")
-		if result.Len() != 1 { //0000 {
-			b.Errorf("Unexpected len: %d", result.Len())
-		}
-	}
-}
-
-/*
-// Benchmarks without grouping
-
-// Original solution, always using subset
-BenchmarkQFrame_SumAggregateWithGroup-2   	    2000	    642119 ns/op	  803474 B/op	       9 allocs/op
-
-// "Optimal" solution, sum inlined, not a passed function
-BenchmarkQFrame_SumAggregateWithGroup-2   	   10000	    117348 ns/op	     656 B/op	       8 allocs/op
-
-// With sub slice check
-BenchmarkQFrame_SumAggregateWithGroup-2   	   10000	    192485 ns/op	     656 B/op	       8 allocs/op
-*/
-
-// BenchmarkQFrame_SumAggregateWithGroup-2   	    2000	    642119 ns/op	  803474 B/op	       9 allocs/op
 
 /*
 Go 1.7
