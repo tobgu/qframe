@@ -46,16 +46,28 @@ func (s Series) String() string {
 	return fmt.Sprintf("%v", s.data)
 }
 
-func (s Series) Aggregate(indices []index.Int, fnName string) (series.Series, error) {
-	fn, ok := aggregations[fnName]
-	if !ok {
-		return nil, fmt.Errorf("aggregation function %s is not defined for series", fnName)
+func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, error) {
+	var actualFn func([]float64) float64
+	var ok bool
+
+	switch t := fn.(type) {
+	case string:
+		actualFn, ok = aggregations[t]
+		if !ok {
+			return nil, fmt.Errorf("aggregation function %s is not defined for series", fn)
+		}
+	case func([]float64) float64:
+		actualFn = t
+	default:
+		// TODO: Genny is buggy and won't let you use your own errors package.
+		//       We use a standard error here for now.
+		return nil, fmt.Errorf("invalid aggregation function type: %v", t)
 	}
 
 	data := make([]float64, 0, len(indices))
 	for _, ix := range indices {
 		subS := s.subset(ix)
-		data = append(data, fn(subS.data))
+		data = append(data, actualFn(subS.data))
 	}
 
 	return Series{data: data}, nil

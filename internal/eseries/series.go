@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
+	"github.com/tobgu/qframe/internal/sseries"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 )
 
@@ -113,9 +114,6 @@ func (f *Factory) ToSeries() Series {
 	// is not recommended.
 	return f.s
 }
-
-// TODO: Probably need a more general aggregation pattern, int -> float (average for example)
-var aggregations = map[string]func(Series) enumVal{}
 
 var filterFuncs = map[filter.Comparator]func(index.Int, []enumVal, enumVal, index.Bool){
 	filter.Gt: gt,
@@ -326,19 +324,21 @@ func (s Series) String() string {
 	return fmt.Sprintf("%v", strs)
 }
 
-func (s Series) Aggregate(indices []index.Int, fnName string) (series.Series, error) {
-	fn, ok := aggregations[fnName]
-	if !ok {
-		return nil, fmt.Errorf("aggregation function %s is not defined for enum series", fnName)
+func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, error) {
+	// NB! The result of aggregating over an enum series is a string series
+	switch t := fn.(type) {
+	case string:
+		// There are currently no build in aggregations for enums
+		return nil, errors.New("enum aggregate", "aggregation function %s is not defined for enum series", fn)
+	case func([]*string) *string:
+		data := make([]*string, 0, len(indices))
+		for _, ix := range indices {
+			data = append(data, t(s.stringSlice(ix)))
+		}
+		return sseries.New(data), nil
+	default:
+		return nil, errors.New("enum aggregate", "invalid aggregation function type: %v", t)
 	}
-
-	data := make([]enumVal, 0, len(indices))
-	for _, ix := range indices {
-		subS := s.subset(ix)
-		data = append(data, fn(subS))
-	}
-
-	return Series{data: data}, nil
 }
 
 type Comparable struct {

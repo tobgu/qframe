@@ -6,13 +6,14 @@ import (
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
-	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 )
 
-// TODO: Probably need a more general aggregation pattern, int -> float (average for example)
-var aggregations = map[string]func([]*string) *string{}
+//go:generate easyjson $GOFILE
+
+//easyjson:json
+type JsonString []*string
 
 var stringFilterFuncs = map[filter.Comparator]func(index.Int, Series, string, index.Bool) error{
 	filter.Gt:  gt,
@@ -56,7 +57,7 @@ func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
 
 func (s Series) Marshaler(index index.Int) json.Marshaler {
 	// TODO: This is a very inefficient way of marshalling to JSON
-	return io.JsonString(s.stringSlice(index))
+	return JsonString(s.stringSlice(index))
 }
 
 func (s Series) ByteSize() int {
@@ -285,20 +286,20 @@ func (s Series) String() string {
 	return fmt.Sprintf("%v", s.data)
 }
 
-func (s Series) Aggregate(indices []index.Int, fnName string) (series.Series, error) {
-	//	fn, ok := aggregations[fnName]
-	//	if !ok {
-	//		return nil, fmt.Errorf("aggregation function %s is not defined for in series", fnName)
-	//	}
-
-	//	data := make([]*string, 0, len(indices))
-	//	for _, ix := range indices {
-	//		subS := s.subset(ix)
-	//		data = append(data, fn(subS.data))
-	//	}
-
-	// TODO: This is broken
-	return Series{data: nil, pointers: nil}, nil
+func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, error) {
+	switch t := fn.(type) {
+	case string:
+		// There are currently no build in aggregations for strings
+		return nil, errors.New("enum aggregate", "aggregation function %s is not defined for enum series", fn)
+	case func([]*string) *string:
+		data := make([]*string, 0, len(indices))
+		for _, ix := range indices {
+			data = append(data, t(s.stringSlice(ix)))
+		}
+		return New(data), nil
+	default:
+		return nil, errors.New("string aggregate", "invalid aggregation function type: %v", t)
+	}
 }
 
 type Comparable struct {

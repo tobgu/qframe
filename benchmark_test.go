@@ -525,7 +525,6 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 }
 
-
 /*
 Go 1.7
 

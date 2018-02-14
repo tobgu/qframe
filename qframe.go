@@ -3,6 +3,7 @@ package qframe
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bseries"
@@ -442,16 +443,10 @@ func (qf QFrame) GroupBy(columns ...string) Grouper {
 	return grouper
 }
 
-// TODO: Type "Aggregation"?
-
 // fnsAndCols is a list of alternating function names and column names
-func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
+func (g Grouper) Aggregate(aggs ...aggregation.Aggregation) QFrame {
 	if g.Err != nil {
 		return QFrame{Err: g.Err}
-	}
-
-	if len(fnsAndCols)%2 != 0 {
-		return QFrame{Err: errors.New("Aggregate", "aggregation expects even number of arguments, col1, fn1, col2, fn2")}
 	}
 
 	// TODO: Check that columns exist but are not part of groupedColumns
@@ -463,8 +458,8 @@ func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
 		firstElementIx[i] = ix[0]
 	}
 
-	newSeriesByName := make(map[string]namedSeries, len(g.groupedColumns)+len(fnsAndCols)/2)
-	newSeries := make([]namedSeries, 0, len(g.groupedColumns)+len(fnsAndCols)/2)
+	newSeriesByName := make(map[string]namedSeries, len(g.groupedColumns)+len(aggs))
+	newSeries := make([]namedSeries, 0, len(g.groupedColumns)+len(aggs))
 	for i, col := range g.groupedColumns {
 		s := g.seriesByName[col]
 		s.pos = i
@@ -474,16 +469,14 @@ func (g Grouper) Aggregate(fnsAndCols ...string) QFrame {
 	}
 
 	var err error
-	for i := 0; i < len(fnsAndCols); i += 2 {
-		fn := fnsAndCols[i]
-		col := fnsAndCols[i+1]
-		s := g.seriesByName[col]
-		s.Series, err = s.Aggregate(g.indices, fn)
+	for _, agg := range aggs {
+		s := g.seriesByName[agg.Column]
+		s.Series, err = s.Aggregate(g.indices, agg.Fn)
 		if err != nil {
 			return QFrame{Err: errors.Propagate("Aggregate", err)}
 		}
 
-		newSeriesByName[col] = s
+		newSeriesByName[agg.Column] = s
 		newSeries = append(newSeries, s)
 	}
 

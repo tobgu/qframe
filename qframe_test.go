@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/tobgu/qframe"
+	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/filter"
 	"math"
 	"regexp"
@@ -234,13 +235,23 @@ func TestQFrame_Distinct(t *testing.T) {
 }
 
 func TestQFrame_GroupByAggregate(t *testing.T) {
+	ownSum := func(col []int) int {
+		result := 0
+		for _, x := range col {
+			result += x
+		}
+		return result
+	}
+
 	table := []struct {
+		name         string
 		input        map[string]interface{}
 		expected     map[string]interface{}
 		groupColumns []string
-		aggregations []string
+		aggregations []aggregation.Aggregation
 	}{
 		{
+			name: "built in aggregation function",
 			input: map[string]interface{}{
 				"COL.1": []int{0, 0, 1, 2},
 				"COL.2": []int{0, 0, 1, 1},
@@ -250,9 +261,21 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL.2": []int{0, 1, 1},
 				"COL.3": []int{3, 5, 7}},
 			groupColumns: []string{"COL.1", "COL.2"},
-			aggregations: []string{"sum", "COL.3"},
+			aggregations: []aggregation.Aggregation{aggregation.New("sum", "COL.3")},
 		},
 		{
+			name: "user defined aggregation function",
+			input: map[string]interface{}{
+				"COL.1": []int{0, 0, 1, 1},
+				"COL.2": []int{1, 2, 5, 7}},
+			expected: map[string]interface{}{
+				"COL.1": []int{0, 1},
+				"COL.2": []int{3, 12}},
+			groupColumns: []string{"COL.1"},
+			aggregations: []aggregation.Aggregation{aggregation.New(ownSum, "COL.2")},
+		},
+		{
+			name: "empty qframe",
 			input: map[string]interface{}{
 				"COL.1": []int{},
 				"COL.2": []int{}},
@@ -260,12 +283,12 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL.1": []int{},
 				"COL.2": []int{}},
 			groupColumns: []string{"COL.1"},
-			aggregations: []string{"sum", "COL.2"},
+			aggregations: []aggregation.Aggregation{aggregation.New("sum", "COL.2")},
 		},
 	}
 
-	for i, tc := range table {
-		t.Run(fmt.Sprintf("GroupByAggregate %d", i), func(t *testing.T) {
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("GroupByAggregate %s", tc.name), func(t *testing.T) {
 			in := qframe.New(tc.input)
 			out := in.GroupBy(tc.groupColumns...).Aggregate(tc.aggregations...)
 			assertEquals(t, qframe.New(tc.expected), out)
@@ -883,4 +906,25 @@ func TestQFrame_ApplyAliasColumn(t *testing.T) {
 
 	assertEquals(t, expectedNew, input.Apply("", "COL3", "COL2"))
 	assertEquals(t, expectedReplace, input.Apply("", "COL1", "COL2"))
+}
+
+func TestQFrame_AggregateStrings(t *testing.T) {
+	table := []struct {
+		enums map[string][]string
+	}{
+		{map[string][]string{"COL2": nil}},
+		{map[string][]string{}},
+	}
+
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("Enum %t", len(tc.enums) > 0), func(t *testing.T) {
+			input := qframe.New(map[string]interface{}{
+				"COL1": []string{"a", "b", "a", "b", "a"},
+				"COL2": []string{"x", "p", "y", "q", "z"},
+			}, qframe.Enums(tc.enums))
+			expected := qframe.New(map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x,y,z", "p,q"}})
+			out := input.GroupBy("COL1").Aggregate(aggregation.New(aggregation.StrJoin(","), "COL2"))
+			assertEquals(t, expected, out)
+		})
+	}
 }
