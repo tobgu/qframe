@@ -576,26 +576,66 @@ func (qf QFrame) setSeries(name string, s series.Series) QFrame {
 	return newF
 }
 
-// Passing an empty string as fnName will simply copy srcCol to dstCol. Not
+// Passing nil as fn will simply copy srcCol to dstCol. Not
 // sure if this API will remain.
 // TODO: Should perhaps accept more than one srcCol (two should be enough?)
 // TODO: Apply actual functions rather than named function
-func (qf QFrame) Apply(fnName, dstCol string, srcCol string) QFrame {
+func (qf QFrame) Apply(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
-	srcSeries, ok := qf.seriesByName[srcCol]
+	namedSrcSeries1, ok := qf.seriesByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("Apply", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("Apply", "no such column: %s", srcCol1))
 	}
 
-	if fnName == "" {
-		return qf.setSeries(dstCol, srcSeries.Series)
+	srcSeries1 := namedSrcSeries1.Series
+	if fn == nil {
+		return qf.setSeries(dstCol, srcSeries1)
 	}
 
-	// TODO
-	panic("Not supported yet")
+	var newSeries series.Series
+	var err error
+	if srcCol2 != "" {
+		// Double argument function
+		namedSrcSeries2, ok := qf.seriesByName[srcCol2]
+		if !ok {
+			return qf.withErr(errors.New("Apply", "no such column: %s", srcCol2))
+		}
+		srcSeries2 := namedSrcSeries2.Series
+
+		switch t := fn.(type) {
+		case func(int, int) int:
+			newSeries, err = iseries.Apply2(t, srcSeries1, srcSeries2, qf.index)
+		case func(float64, float64) float64:
+			newSeries, err = fseries.Apply2(t, srcSeries1, srcSeries2, qf.index)
+		case func(bool, bool) bool:
+			newSeries, err = bseries.Apply2(t, srcSeries1, srcSeries2, qf.index)
+		default:
+			// TODO: String and enums
+			err = errors.New("Apply", "unexpected double argument function type %#v", fn)
+		}
+	} else {
+		// Single argument function
+		switch t := fn.(type) {
+		case func(int) int:
+			newSeries, err = iseries.Apply1(t, srcSeries1, qf.index)
+		case func(float64) float64:
+			newSeries, err = fseries.Apply1(t, srcSeries1, qf.index)
+		case func(bool) bool:
+			newSeries, err = bseries.Apply1(t, srcSeries1, qf.index)
+		default:
+			// TODO: String and enums
+			err = errors.New("Apply", "unexpected single argument function type %#v", fn)
+		}
+	}
+
+	if err != nil {
+		return qf.withErr(err)
+	}
+
+	return qf.setSeries(dstCol, newSeries)
 }
 
 ////////////

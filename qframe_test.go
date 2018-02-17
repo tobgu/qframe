@@ -904,8 +904,20 @@ func TestQFrame_ApplyAliasColumn(t *testing.T) {
 		"COL2": []int{3, 2},
 	})
 
-	assertEquals(t, expectedNew, input.Apply("", "COL3", "COL2"))
-	assertEquals(t, expectedReplace, input.Apply("", "COL1", "COL2"))
+	assertEquals(t, expectedNew, input.Apply(nil, "COL3", "COL2", ""))
+	assertEquals(t, expectedReplace, input.Apply(nil, "COL1", "COL2", ""))
+}
+
+func TestQFrame_ApplySingleArg(t *testing.T) {
+	input := qframe.New(map[string]interface{}{
+		"COL1": []int{3, 2},
+	})
+
+	expectedNew := qframe.New(map[string]interface{}{
+		"COL1": []int{6, 4},
+	})
+
+	assertEquals(t, expectedNew, input.Apply(func(a int) int { return 2 * a }, "COL1", "COL1", ""))
 }
 
 func TestQFrame_AggregateStrings(t *testing.T) {

@@ -4,6 +4,7 @@ package template
 
 import (
 	"fmt"
+	"github.com/golang/go/test/fixedbugs"
 	"github.com/tobgu/genny/generic"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
@@ -23,10 +24,39 @@ func New(d []dataType) Series {
 	return Series{data: d}
 }
 
+func Apply1(fn func(dataType) dataType, s series.Series, ix index.Int) (Series, error) {
+	sI, ok := s.(Series)
+	if !ok {
+		return Series{}, fmt.Errorf("Apply2: invalid column type: %#v", s)
+	}
+
+	result := make([]dataType, len(sI.data))
+	for _, i := range ix {
+		result[i] = fn(sI.data[i])
+	}
+
+	return New(result), nil
+}
+
+func Apply2(fn func(dataType, dataType) dataType, s1, s2 series.Series, ix index.Int) (Series, error) {
+	sI1, ok1 := s1.(Series)
+	sI2, ok2 := s2.(Series)
+	if !ok1 || !ok2 {
+		return Series{}, fmt.Errorf("Apply2: invalid column type: %#v, %#v", s1, s2)
+	}
+
+	result := make([]dataType, len(sI1.data))
+	for _, i := range ix {
+		result[i] = fn(sI1.data[i], sI2.data[i])
+	}
+
+	return New(result), nil
+}
+
 func (s Series) subset(index index.Int) Series {
-	data := make([]dataType, 0, len(index))
-	for _, ix := range index {
-		data = append(data, s.data[ix])
+	data := make([]dataType, len(index))
+	for i, ix := range index {
+		data[i] = s.data[ix]
 	}
 
 	return Series{data: data}

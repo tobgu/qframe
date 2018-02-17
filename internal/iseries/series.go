@@ -19,7 +19,6 @@ func sum(values []int) int {
 	return result
 }
 
-// TODO: Probably need a more general aggregation pattern, int -> float (average for example)
 var aggregations = map[string]func([]int) int{
 	"sum": sum,
 }

@@ -21,10 +21,39 @@ func New(d []int) Series {
 	return Series{data: d}
 }
 
+func Apply1(fn func(int) int, s series.Series, ix index.Int) (Series, error) {
+	sI, ok := s.(Series)
+	if !ok {
+		return Series{}, fmt.Errorf("Apply2: invalid column type: %#v", s)
+	}
+
+	result := make([]int, len(sI.data))
+	for _, i := range ix {
+		result[i] = fn(sI.data[i])
+	}
+
+	return New(result), nil
+}
+
+func Apply2(fn func(int, int) int, s1, s2 series.Series, ix index.Int) (Series, error) {
+	sI1, ok1 := s1.(Series)
+	sI2, ok2 := s2.(Series)
+	if !ok1 || !ok2 {
+		return Series{}, fmt.Errorf("Apply2: invalid column type: %#v, %#v", s1, s2)
+	}
+
+	result := make([]int, len(sI1.data))
+	for _, i := range ix {
+		result[i] = fn(sI1.data[i], sI2.data[i])
+	}
+
+	return New(result), nil
+}
+
 func (s Series) subset(index index.Int) Series {
-	data := make([]int, 0, len(index))
-	for _, ix := range index {
-		data = append(data, s.data[ix])
+	data := make([]int, len(index))
+	for i, ix := range index {
+		data[i] = s.data[ix]
 	}
 
 	return Series{data: data}
