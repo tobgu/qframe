@@ -302,6 +302,14 @@ func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, e
 	}
 }
 
+func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
+	return nil, fmt.Errorf("string series does not emplement Apply1 yet")
+}
+
+func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
+	return Series{}, fmt.Errorf("string series does not emplement Apply2 yet")
+}
+
 type Comparable struct {
 	series  Series
 	ltValue series.CompareResult

@@ -576,66 +576,76 @@ func (qf QFrame) setSeries(name string, s series.Series) QFrame {
 	return newF
 }
 
-// Passing nil as fn will simply copy srcCol to dstCol. Not
-// sure if this API will remain.
-// TODO: Should perhaps accept more than one srcCol (two should be enough?)
-// TODO: Apply actual functions rather than named function
-func (qf QFrame) Apply(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
+func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	namedSeries, ok := qf.seriesByName[srcCol]
+	if !ok {
+		return qf.withErr(errors.New("Apply", "no such column: %s", srcCol))
+	}
+
+	return qf.setSeries(dstCol, namedSeries.Series)
+}
+
+func (qf QFrame) Apply1(fn interface{}, dstCol, srcCol string) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	namedSeries, ok := qf.seriesByName[srcCol]
+	if !ok {
+		return qf.withErr(errors.New("Apply1", "no such column: %s", srcCol))
+	}
+
+	srcSeries := namedSeries.Series
+
+	sliceResult, err := srcSeries.Apply1(fn, qf.index)
+	if err != nil {
+		return qf.withErr(errors.Propagate("Apply1", err))
+	}
+
+	var newSeries series.Series
+	switch t := sliceResult.(type) {
+	case []int:
+		newSeries = iseries.New(t)
+	case []float64:
+		newSeries = fseries.New(t)
+	case []bool:
+		newSeries = bseries.New(t)
+	case []*string:
+		newSeries = sseries.New(t)
+	default:
+		return qf.withErr(errors.New("Apply1", "unexpected type of new series %#v", t))
+	}
+
+	return qf.setSeries(dstCol, newSeries)
+}
+
+func (qf QFrame) Apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	namedSrcSeries1, ok := qf.seriesByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("Apply", "no such column: %s", srcCol1))
+		return qf.withErr(errors.New("Apply2", "no such column: %s", srcCol1))
 	}
-
 	srcSeries1 := namedSrcSeries1.Series
-	if fn == nil {
-		return qf.setSeries(dstCol, srcSeries1)
+
+	namedSrcSeries2, ok := qf.seriesByName[srcCol2]
+	if !ok {
+		return qf.withErr(errors.New("Apply2", "no such column: %s", srcCol2))
 	}
+	srcSeries2 := namedSrcSeries2.Series
 
-	var newSeries series.Series
-	var err error
-	if srcCol2 != "" {
-		// Double argument function
-		namedSrcSeries2, ok := qf.seriesByName[srcCol2]
-		if !ok {
-			return qf.withErr(errors.New("Apply", "no such column: %s", srcCol2))
-		}
-		srcSeries2 := namedSrcSeries2.Series
-
-		switch t := fn.(type) {
-		case func(int, int) int:
-			newSeries, err = iseries.Apply2(t, srcSeries1, srcSeries2, qf.index)
-		case func(float64, float64) float64:
-			newSeries, err = fseries.Apply2(t, srcSeries1, srcSeries2, qf.index)
-		case func(bool, bool) bool:
-			newSeries, err = bseries.Apply2(t, srcSeries1, srcSeries2, qf.index)
-		default:
-			// TODO: String and enums
-			err = errors.New("Apply", "unexpected double argument function type %#v", fn)
-		}
-	} else {
-		// Single argument function
-		switch t := fn.(type) {
-		case func(int) int:
-			newSeries, err = iseries.Apply1(t, srcSeries1, qf.index)
-		case func(float64) float64:
-			newSeries, err = fseries.Apply1(t, srcSeries1, qf.index)
-		case func(bool) bool:
-			newSeries, err = bseries.Apply1(t, srcSeries1, qf.index)
-		default:
-			// TODO: String and enums
-			err = errors.New("Apply", "unexpected single argument function type %#v", fn)
-		}
-	}
-
+	resultSeries, err := srcSeries1.Apply2(fn, srcSeries2, qf.index)
 	if err != nil {
-		return qf.withErr(err)
+		return qf.withErr(errors.Propagate("Apply2", err))
 	}
 
-	return qf.setSeries(dstCol, newSeries)
+	return qf.setSeries(dstCol, resultSeries)
 }
 
 ////////////
@@ -842,6 +852,9 @@ func (qf QFrame) ByteSize() int {
 //   an additional, new, boolean slice that is kept in isolation and inverted before being
 //   merged with the current slice? Also consider "(not (or ....))".
 // - Change == to = for equality
+// - Also allow custom filtering by allowing functions fn(type) bool to be passed to filter.
+// - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
+//   than the stdlib version.
 
 // TODO:
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
@@ -850,7 +863,8 @@ func (qf QFrame) ByteSize() int {
 //   read. That would also allow proper parsing of integers for record format rather than making them
 //   floats.
 // - Support access by x, y (to support GoNum matrix interface)
-// - More general structure for aggregation functions that allows []int->float []float->int, []bool->bool
+// - Column cast from one type to another by arbitrary function, int -> float, float -> int, float->string, ...
+// - Built in Apply functions by named strings to allow performance boosts for most common functions?
 // - Handle float NaN in filtering
 // - AppendBytesString support to add columns to DF (in addition to project). Should produce a new df, no mutation!
 //   To be used with standin columns.

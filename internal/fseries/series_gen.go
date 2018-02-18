@@ -21,30 +21,67 @@ func New(d []float64) Series {
 	return Series{data: d}
 }
 
-func Apply1(fn func(float64) float64, s series.Series, ix index.Int) (Series, error) {
-	sI, ok := s.(Series)
-	if !ok {
-		return Series{}, fmt.Errorf("Apply2: invalid column type: %#v", s)
+// Apply single argument function. The result may be a column
+// of a different type than the current series.
+func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
+	var err error
+	switch t := fn.(type) {
+	case func(float64) (int, error):
+		result := make([]int, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.data[i]); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case func(float64) (float64, error):
+		result := make([]float64, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.data[i]); err != nil {
+				return Series{}, err
+			}
+		}
+		return result, nil
+	case func(float64) (bool, error):
+		result := make([]bool, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.data[i]); err != nil {
+				return Series{}, err
+			}
+		}
+		return result, nil
+	case func(float64) (*string, error):
+		result := make([]*string, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.data[i]); err != nil {
+				return Series{}, err
+			}
+		}
+		return result, nil
+	default:
+		return nil, fmt.Errorf("cannot apply type %#v to column", fn)
 	}
-
-	result := make([]float64, len(sI.data))
-	for _, i := range ix {
-		result[i] = fn(sI.data[i])
-	}
-
-	return New(result), nil
 }
 
-func Apply2(fn func(float64, float64) float64, s1, s2 series.Series, ix index.Int) (Series, error) {
-	sI1, ok1 := s1.(Series)
-	sI2, ok2 := s2.(Series)
-	if !ok1 || !ok2 {
-		return Series{}, fmt.Errorf("Apply2: invalid column type: %#v, %#v", s1, s2)
+// Apply double argument function to two columns. Both columns must have the
+// same type. The resulting series will have the same type as this series.
+func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
+	ss2, ok := s2.(Series)
+	if !ok {
+		return Series{}, fmt.Errorf("Apply2: invalid series type: %#v", s2)
 	}
 
-	result := make([]float64, len(sI1.data))
+	t, ok := fn.(func(float64, float64) (float64, error))
+	if !ok {
+		return Series{}, fmt.Errorf("Apply2: invalid function type: %#v", fn)
+	}
+
+	result := make([]float64, len(s.data))
+	var err error
 	for _, i := range ix {
-		result[i] = fn(sI1.data[i], sI2.data[i])
+		if result[i], err = t(s.data[i], ss2.data[i]); err != nil {
+			return Series{}, err
+		}
 	}
 
 	return New(result), nil

@@ -18,6 +18,9 @@ type Series interface {
 	AppendByteStringAt(buf []byte, i uint32) []byte
 	Marshaler(index index.Int) json.Marshaler
 	ByteSize() int
+
+	Apply1(fn interface{}, ix index.Int) (interface{}, error)
+	Apply2(fn interface{}, s2 Series, ix index.Int) (Series, error)
 }
 
 // TODO: Change to byte

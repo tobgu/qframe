@@ -887,7 +887,7 @@ func TestQFrame_ByteSize(t *testing.T) {
 	assertTrue(t, a.Select("COL1", "COL2", "COL3", "COL5").ByteSize() < totalSize)
 }
 
-func TestQFrame_ApplyAliasColumn(t *testing.T) {
+func TestQFrame_CopyColumn(t *testing.T) {
 	input := qframe.New(map[string]interface{}{
 		"COL1": []string{"a", "b"},
 		"COL2": []int{3, 2},
@@ -904,8 +904,8 @@ func TestQFrame_ApplyAliasColumn(t *testing.T) {
 		"COL2": []int{3, 2},
 	})
 
-	assertEquals(t, expectedNew, input.Apply(nil, "COL3", "COL2", ""))
-	assertEquals(t, expectedReplace, input.Apply(nil, "COL1", "COL2", ""))
+	assertEquals(t, expectedNew, input.Copy("COL3", "COL2"))
+	assertEquals(t, expectedReplace, input.Copy("COL1", "COL2"))
 }
 
 func TestQFrame_ApplySingleArg(t *testing.T) {
@@ -917,7 +917,22 @@ func TestQFrame_ApplySingleArg(t *testing.T) {
 		"COL1": []int{6, 4},
 	})
 
-	assertEquals(t, expectedNew, input.Apply(func(a int) int { return 2 * a }, "COL1", "COL1", ""))
+	assertEquals(t, expectedNew, input.Apply1(func(a int) (int, error) { return 2 * a, nil }, "COL1", "COL1"))
+}
+
+func TestQFrame_ApplyDoubleArg(t *testing.T) {
+	input := qframe.New(map[string]interface{}{
+		"COL1": []int{3, 2},
+		"COL2": []int{30, 20},
+	})
+
+	expectedNew := qframe.New(map[string]interface{}{
+		"COL1": []int{3, 2},
+		"COL2": []int{30, 20},
+		"COL3": []int{33, 22},
+	})
+
+	assertEquals(t, expectedNew, input.Apply2(func(a, b int) (int, error) { return a + b, nil }, "COL3", "COL1", "COL2"))
 }
 
 func TestQFrame_AggregateStrings(t *testing.T) {
