@@ -908,7 +908,7 @@ func TestQFrame_CopyColumn(t *testing.T) {
 	assertEquals(t, expectedReplace, input.Copy("COL1", "COL2"))
 }
 
-func TestQFrame_ApplySingleArg(t *testing.T) {
+func TestQFrame_ApplySingleArgIntToInt(t *testing.T) {
 	input := qframe.New(map[string]interface{}{
 		"COL1": []int{3, 2},
 	})
@@ -918,6 +918,45 @@ func TestQFrame_ApplySingleArg(t *testing.T) {
 	})
 
 	assertEquals(t, expectedNew, input.Apply1(func(a int) (int, error) { return 2 * a, nil }, "COL1", "COL1"))
+}
+
+func TestQFrame_ApplySingleArgStringToBool(t *testing.T) {
+	input := qframe.New(map[string]interface{}{
+		"COL1": []string{"a", "aa", "aaa"},
+	})
+
+	expectedNew := qframe.New(map[string]interface{}{
+		"COL1":    []string{"a", "aa", "aaa"},
+		"IS_LONG": []bool{false, false, true},
+	})
+
+	assertEquals(t, expectedNew, input.Apply1(func(x *string) (bool, error) { return len(*x) > 2, nil }, "IS_LONG", "COL1"))
+}
+
+func TestQFrame_ApplySingleArgString(t *testing.T) {
+	a, b := "a", "b"
+	A, B := "A", "B"
+	input := qframe.New(map[string]interface{}{
+		"COL1": []*string{&a, &b, nil},
+	})
+
+	expectedNew := qframe.New(map[string]interface{}{
+		"COL1": []*string{&A, &B, nil},
+	})
+
+	toUpper := func(x *string) (*string, error) {
+		if x == nil {
+			return x, nil
+		}
+		result := strings.ToUpper(*x)
+		return &result, nil
+	}
+
+	// General function
+	assertEquals(t, expectedNew, input.Apply1(toUpper, "COL1", "COL1"))
+
+	// Built in function
+	assertEquals(t, expectedNew, input.Apply1("ToUpper", "COL1", "COL1"))
 }
 
 func TestQFrame_ApplyDoubleArg(t *testing.T) {

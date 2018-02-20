@@ -606,21 +606,23 @@ func (qf QFrame) Apply1(fn interface{}, dstCol, srcCol string) QFrame {
 		return qf.withErr(errors.Propagate("Apply1", err))
 	}
 
-	var newSeries series.Series
+	var resultSeries series.Series
 	switch t := sliceResult.(type) {
 	case []int:
-		newSeries = iseries.New(t)
+		resultSeries = iseries.New(t)
 	case []float64:
-		newSeries = fseries.New(t)
+		resultSeries = fseries.New(t)
 	case []bool:
-		newSeries = bseries.New(t)
+		resultSeries = bseries.New(t)
 	case []*string:
-		newSeries = sseries.New(t)
+		resultSeries = sseries.New(t)
+	case series.Series:
+		resultSeries = t
 	default:
 		return qf.withErr(errors.New("Apply1", "unexpected type of new series %#v", t))
 	}
 
-	return qf.setSeries(dstCol, newSeries)
+	return qf.setSeries(dstCol, resultSeries)
 }
 
 func (qf QFrame) Apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {

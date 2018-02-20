@@ -41,7 +41,7 @@ func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		result := make([]float64, len(s.data))
 		for _, i := range ix {
 			if result[i], err = t(s.data[i]); err != nil {
-				return Series{}, err
+				return nil, err
 			}
 		}
 		return result, nil
@@ -49,7 +49,7 @@ func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		result := make([]bool, len(s.data))
 		for _, i := range ix {
 			if result[i], err = t(s.data[i]); err != nil {
-				return Series{}, err
+				return nil, err
 			}
 		}
 		return result, nil
@@ -57,7 +57,7 @@ func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		result := make([]*string, len(s.data))
 		for _, i := range ix {
 			if result[i], err = t(s.data[i]); err != nil {
-				return Series{}, err
+				return nil, err
 			}
 		}
 		return result, nil

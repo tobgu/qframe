@@ -11,6 +11,7 @@ import (
 	"github.com/tobgu/qframe/filter"
 	"io/ioutil"
 	"math/rand"
+	"strings"
 	"testing"
 )
 
@@ -525,6 +526,48 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 }
 
+func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
+	rowCount := 100000
+	cardinality := 9
+	input := csvEnumBytes(rowCount, cardinality)
+	r := bytes.NewReader(input)
+	df := qf.ReadCsv(r)
+
+	var customDf qf.QFrame
+	b.Run("Apply with custom function", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			customDf = df.Apply1(func(s *string) (*string, error) { x := strings.ToUpper(*s); return &x, nil }, "COL.1", "COL.1")
+			if customDf.Err != nil || customDf.Len() != rowCount {
+				b.Errorf("Len: %d, err: %s", customDf.Len(), customDf.Err)
+			}
+		}
+	})
+
+	var builtInDf qf.QFrame
+	b.Run("Apply with built in function", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			builtInDf = df.Apply1("ToUpper", "COL.1", "COL.1")
+			if builtInDf.Err != nil || builtInDf.Len() != rowCount {
+				b.Errorf("Len: %d, err: %s", builtInDf.Len(), builtInDf.Err)
+			}
+		}
+	})
+
+	b.Run("Verify equality", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if eq, reason := builtInDf.Equals(customDf); !eq {
+				b.Errorf("Not equal: %s", reason)
+			}
+		}
+	})
+}
+
 /*
 Go 1.7
 
@@ -708,4 +751,7 @@ BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_like,_enum:_false-2       
 BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_false-2      	     100	  11881963 ns/op	  155792 B/op	       8 allocs/op
 BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       	    2000	    691971 ns/op	  155824 B/op	       9 allocs/op
 
+// Compare string to upper, first as general custom function, second as specialized built in function.
+BenchmarkQFrame_ApplyStringToString/Apply_with_custom_function-2         	      30	  42895890 ns/op	17061043 B/op	  400020 allocs/op
+BenchmarkQFrame_ApplyStringToString/Apply_with_built_in_function-2       	     100	  12163217 ns/op	 2107024 B/op	       7 allocs/op
 */

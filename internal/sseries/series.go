@@ -24,6 +24,34 @@ var stringFilterFuncs = map[filter.Comparator]func(index.Int, Series, string, in
 	"ilike":    ilike,
 }
 
+var stringApplyFuncs = map[string]func(index.Int, Series) (interface{}, error){
+	"ToUpper": toUpper,
+}
+
+// This is an example of how a more efficient built in function
+// could be implemented that makes use of the underlying representation
+// to make the operation faster than what could be done using the
+// generic function based API.
+// This function is roughly 3 - 4 times faster than applying the corresponding
+// general function (depending on the input size, etc. of course).
+func toUpper(ix index.Int, source Series) (interface{}, error) {
+	if len(source.pointers) == 0 {
+		return source, nil
+	}
+
+	pointers := make([]qfstrings.Pointer, len(source.pointers))
+	sizeEstimate := int(float64(len(source.data)) * (float64(len(ix)) / float64(len(source.pointers))))
+	data := make([]byte, 0, sizeEstimate)
+	strBuf := make([]byte, 1024)
+	for _, i := range ix {
+		str, isNull := source.stringAt(i)
+		pointers[i] = qfstrings.NewPointer(len(data), len(str), isNull)
+		data = append(data, qfstrings.ToUpper(&strBuf, str)...)
+	}
+
+	return NewBytes(pointers, data), nil
+}
+
 func (s Series) StringAt(i uint32, naRep string) string {
 	if s, isNull := s.stringAt(i); !isNull {
 		return s
@@ -302,8 +330,56 @@ func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, e
 	}
 }
 
+func stringToPtr(s string, isNull bool) *string {
+	if isNull {
+		return nil
+	}
+	return &s
+}
+
 func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
-	return nil, fmt.Errorf("string series does not emplement Apply1 yet")
+	var err error
+	switch t := fn.(type) {
+	case func(*string) (int, error):
+		result := make([]int, len(s.pointers))
+		for _, i := range ix {
+			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case func(*string) (float64, error):
+		result := make([]float64, len(s.pointers))
+		for _, i := range ix {
+			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case func(*string) (bool, error):
+		result := make([]bool, len(s.pointers))
+		for _, i := range ix {
+			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case func(*string) (*string, error):
+		result := make([]*string, len(s.pointers))
+		for _, i := range ix {
+			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case string:
+		if f, ok := stringApplyFuncs[t]; ok {
+			return f(ix, s)
+		}
+		return nil, errors.New("string.Apply1", "unknown built in function %s", t)
+	default:
+		return nil, errors.New("string.Apply1", "cannot apply type %#v to column", fn)
+	}
 }
 
 func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
