@@ -854,11 +854,14 @@ func (qf QFrame) ByteSize() int {
 //   an additional, new, boolean slice that is kept in isolation and inverted before being
 //   merged with the current slice? Also consider "(not (or ....))".
 // - Change == to = for equality
-// - Also allow custom filtering by allowing functions fn(type) bool to be passed to filter.
+// - Also allow custom filtering by allowing functions "fn(type) bool" to be passed to filter.
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
 
 // TODO:
+// - Make it possible to implement custom Series and use as input to QFrame constructor (this could probably
+//   be extended to allow custom series to be created from JSON, CSV, etc. as well, this is not in scope at the
+//   moment though).
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
 //   null could be interpreted as NaN. Should not be impossible using the generated easyjson code
 //   as starting point for column based format and by refining type detection for the record based

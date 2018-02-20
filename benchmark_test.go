@@ -526,6 +526,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 }
 
+// TODO: Extract common functionality in below functions
 func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
 	rowCount := 100000
 	cardinality := 9
@@ -556,13 +557,46 @@ func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
 			}
 		}
 	})
+}
 
-	b.Run("Verify equality", func(b *testing.B) {
+func BenchmarkQFrame_ApplyEnum(b *testing.B) {
+	rowCount := 100000
+	cardinality := 9
+	input := csvEnumBytes(rowCount, cardinality)
+	r := bytes.NewReader(input)
+	df := qf.ReadCsv(r, qf.Types(map[string]string{"COL.1": "enum"}))
+
+	var customDf qf.QFrame
+	b.Run("Apply with custom function", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if eq, reason := builtInDf.Equals(customDf); !eq {
-				b.Errorf("Not equal: %s", reason)
+			customDf = df.Apply1(toUpper, "COL.1", "COL.1")
+			if customDf.Err != nil || customDf.Len() != rowCount {
+				b.Errorf("Len: %d, err: %s", customDf.Len(), customDf.Err)
+			}
+		}
+	})
+
+	var builtInDf qf.QFrame
+	b.Run("Apply with built in function", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			builtInDf = df.Apply1("ToUpper", "COL.1", "COL.1")
+			if builtInDf.Err != nil || builtInDf.Len() != rowCount {
+				b.Errorf("Len: %d, err: %s", builtInDf.Len(), builtInDf.Err)
+			}
+		}
+	})
+
+	b.Run("Apply int function (for reference)", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			builtInDf = df.Apply1(func(x *string) (int, error) { return len(*x), nil }, "COL.1", "COL.1")
+			if builtInDf.Err != nil || builtInDf.Len() != rowCount {
+				b.Errorf("Len: %d, err: %s", builtInDf.Len(), builtInDf.Err)
 			}
 		}
 	})
@@ -754,4 +788,9 @@ BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       
 // Compare string to upper, first as general custom function, second as specialized built in function.
 BenchmarkQFrame_ApplyStringToString/Apply_with_custom_function-2         	      30	  42895890 ns/op	17061043 B/op	  400020 allocs/op
 BenchmarkQFrame_ApplyStringToString/Apply_with_built_in_function-2       	     100	  12163217 ns/op	 2107024 B/op	       7 allocs/op
+
+// Compare apply for enums
+BenchmarkQFrame_ApplyEnum/Apply_with_custom_function-2         	      50	  38505068 ns/op	15461041 B/op	  300020 allocs/op
+BenchmarkQFrame_ApplyEnum/Apply_with_built_in_function-2       	  300000	      3566 ns/op	    1232 B/op	      23 allocs/op
+BenchmarkQFrame_ApplyEnum/Apply_int_function_(for_reference)-2 	    1000	   1550604 ns/op	  803491 B/op	       6 allocs/op
 */

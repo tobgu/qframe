@@ -9,6 +9,7 @@ import (
 	"github.com/tobgu/qframe/internal/series"
 	"github.com/tobgu/qframe/internal/sseries"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"strings"
 )
 
 type enumVal uint8
@@ -123,6 +124,24 @@ var filterFuncs = map[filter.Comparator]func(index.Int, []enumVal, enumVal, inde
 var multiFilterFuncs = map[filter.Comparator]func(comparatee interface{}, values []string) (*bitset, error){
 	"like":  like,
 	"ilike": ilike,
+}
+
+var enumApplyFuncs = map[string]func(index.Int, Series) (interface{}, error){
+	"ToUpper": toUpper,
+}
+
+func toUpper(_ index.Int, s Series) (interface{}, error) {
+	// This demonstrates how built in functions can be made a lot more
+	// efficient than the current general functions.
+	// In this example the upper function only has to be applied once to
+	// every enum value instead of once to every element. The data field
+	// can be kept as is.
+	newValues := make([]string, len(s.values))
+	for i, s := range s.values {
+		newValues[i] = strings.ToUpper(s)
+	}
+
+	return Series{data: s.data, values: newValues}, nil
 }
 
 func (s Series) Len() int {
@@ -341,8 +360,63 @@ func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, e
 	}
 }
 
+func (s Series) stringPtrAt(i uint32) *string {
+	if s.data[i].isNull() {
+		return nil
+	}
+	return &s.values[s.data[i]]
+}
+
 func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
-	return nil, fmt.Errorf("enum series does not emplement Apply1 yet")
+	/*
+		Interesting optimisations could be applied here given that:
+		- The passed in function always returns the same value given the same input
+		- Or, for enums a given restriction is that the functions will only be called once for each value
+		In that case a mapping between the enum value and the result could be set up to avoid having to
+		call the function multiple times for the same input.
+	*/
+	var err error
+	switch t := fn.(type) {
+	case func(*string) (int, error):
+		result := make([]int, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.stringPtrAt(i)); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case func(*string) (float64, error):
+		result := make([]float64, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.stringPtrAt(i)); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case func(*string) (bool, error):
+		result := make([]bool, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.stringPtrAt(i)); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case func(*string) (*string, error):
+		result := make([]*string, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.stringPtrAt(i)); err != nil {
+				return nil, err
+			}
+		}
+		return result, nil
+	case string:
+		if f, ok := enumApplyFuncs[t]; ok {
+			return f(ix, s)
+		}
+		return nil, errors.New("string.Apply1", "unknown built in function %s", t)
+	default:
+		return nil, errors.New("enum.Apply1", "cannot apply type %#v to column", fn)
+	}
 }
 
 func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {

@@ -933,6 +933,14 @@ func TestQFrame_ApplySingleArgStringToBool(t *testing.T) {
 	assertEquals(t, expectedNew, input.Apply1(func(x *string) (bool, error) { return len(*x) > 2, nil }, "IS_LONG", "COL1"))
 }
 
+func toUpper(x *string) (*string, error) {
+	if x == nil {
+		return x, nil
+	}
+	result := strings.ToUpper(*x)
+	return &result, nil
+}
+
 func TestQFrame_ApplySingleArgString(t *testing.T) {
 	a, b := "a", "b"
 	A, B := "A", "B"
@@ -944,19 +952,29 @@ func TestQFrame_ApplySingleArgString(t *testing.T) {
 		"COL1": []*string{&A, &B, nil},
 	})
 
-	toUpper := func(x *string) (*string, error) {
-		if x == nil {
-			return x, nil
-		}
-		result := strings.ToUpper(*x)
-		return &result, nil
-	}
-
 	// General function
 	assertEquals(t, expectedNew, input.Apply1(toUpper, "COL1", "COL1"))
 
 	// Built in function
 	assertEquals(t, expectedNew, input.Apply1("ToUpper", "COL1", "COL1"))
+}
+
+func TestQFrame_ApplySingleArgEnum(t *testing.T) {
+	a, b := "a", "b"
+	A, B := "A", "B"
+	input := qframe.New(
+		map[string]interface{}{"COL1": []*string{&a, &b, nil, &a}},
+		qframe.Enums(map[string][]string{"COL1": nil}))
+
+	expectedData := map[string]interface{}{"COL1": []*string{&A, &B, nil, &A}}
+	expectedNewGeneral := qframe.New(expectedData)
+	expectedNewBuiltIn := qframe.New(expectedData, qframe.Enums(map[string][]string{"COL1": nil}))
+
+	// General function
+	assertEquals(t, expectedNewGeneral, input.Apply1(toUpper, "COL1", "COL1"))
+
+	// Builtin function
+	assertEquals(t, expectedNewBuiltIn, input.Apply1("ToUpper", "COL1", "COL1"))
 }
 
 func TestQFrame_ApplyDoubleArg(t *testing.T) {

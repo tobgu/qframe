@@ -22,7 +22,6 @@ type CsvConfig struct {
 	EnumVals  map[string][]string
 }
 
-// TODO: Take type map
 func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string, error) {
 	r := csv.NewReader(reader)
 	byteHeader, err := r.Read()
