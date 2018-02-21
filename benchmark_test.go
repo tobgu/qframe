@@ -11,7 +11,6 @@ import (
 	"github.com/tobgu/qframe/filter"
 	"io/ioutil"
 	"math/rand"
-	"strings"
 	"testing"
 )
 
@@ -526,7 +525,21 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 }
 
-// TODO: Extract common functionality in below functions
+func benchApply(b *testing.B, name string, input qf.QFrame, fn interface{}) {
+	b.Helper()
+	b.Run(name, func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			result := input.Apply1(fn, "COL.1", "COL.1")
+			if result.Err != nil {
+				b.Errorf("Err: %s", result.Len(), result.Err)
+			}
+		}
+	})
+
+}
+
 func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
 	rowCount := 100000
 	cardinality := 9
@@ -534,29 +547,8 @@ func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
 	r := bytes.NewReader(input)
 	df := qf.ReadCsv(r)
 
-	var customDf qf.QFrame
-	b.Run("Apply with custom function", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			customDf = df.Apply1(func(s *string) (*string, error) { x := strings.ToUpper(*s); return &x, nil }, "COL.1", "COL.1")
-			if customDf.Err != nil || customDf.Len() != rowCount {
-				b.Errorf("Len: %d, err: %s", customDf.Len(), customDf.Err)
-			}
-		}
-	})
-
-	var builtInDf qf.QFrame
-	b.Run("Apply with built in function", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			builtInDf = df.Apply1("ToUpper", "COL.1", "COL.1")
-			if builtInDf.Err != nil || builtInDf.Len() != rowCount {
-				b.Errorf("Len: %d, err: %s", builtInDf.Len(), builtInDf.Err)
-			}
-		}
-	})
+	benchApply(b, "Apply with custom function", df, toUpper)
+	benchApply(b, "Apply with builtin function", df, "ToUpper")
 }
 
 func BenchmarkQFrame_ApplyEnum(b *testing.B) {
@@ -566,40 +558,9 @@ func BenchmarkQFrame_ApplyEnum(b *testing.B) {
 	r := bytes.NewReader(input)
 	df := qf.ReadCsv(r, qf.Types(map[string]string{"COL.1": "enum"}))
 
-	var customDf qf.QFrame
-	b.Run("Apply with custom function", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			customDf = df.Apply1(toUpper, "COL.1", "COL.1")
-			if customDf.Err != nil || customDf.Len() != rowCount {
-				b.Errorf("Len: %d, err: %s", customDf.Len(), customDf.Err)
-			}
-		}
-	})
-
-	var builtInDf qf.QFrame
-	b.Run("Apply with built in function", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			builtInDf = df.Apply1("ToUpper", "COL.1", "COL.1")
-			if builtInDf.Err != nil || builtInDf.Len() != rowCount {
-				b.Errorf("Len: %d, err: %s", builtInDf.Len(), builtInDf.Err)
-			}
-		}
-	})
-
-	b.Run("Apply int function (for reference)", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			builtInDf = df.Apply1(func(x *string) (int, error) { return len(*x), nil }, "COL.1", "COL.1")
-			if builtInDf.Err != nil || builtInDf.Len() != rowCount {
-				b.Errorf("Len: %d, err: %s", builtInDf.Len(), builtInDf.Err)
-			}
-		}
-	})
+	benchApply(b, "Apply with custom function", df, toUpper)
+	benchApply(b, "Apply with built in function", df, "ToUpper")
+	benchApply(b, "Apply int function (for reference)", df, func(x *string) (int, error) { return len(*x), nil })
 }
 
 /*

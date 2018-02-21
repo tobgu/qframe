@@ -318,7 +318,7 @@ func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, e
 	switch t := fn.(type) {
 	case string:
 		// There are currently no build in aggregations for strings
-		return nil, errors.New("enum aggregate", "aggregation function %s is not defined for enum series", fn)
+		return nil, errors.New("enum aggregate", "aggregation function %s is not defined for string series", fn)
 	case func([]*string) *string:
 		data := make([]*string, 0, len(indices))
 		for _, ix := range indices {
