@@ -187,15 +187,17 @@ func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 		var err error
 		if f.Inverse {
 			// This is a small optimization, if the inverse operation is implemented
-			// on the series use that directly to avoid building an inverse boolean
+			// as built in on the series use that directly to avoid building an inverse boolean
 			// index further below.
 			done := false
-			if inverse, ok := filter.Inverse[f.Comparator]; ok {
-				err = s.Filter(qf.index, inverse, f.Arg, bIndex)
+			if sComp, ok := f.Comparator.(string); ok {
+				if inverse, ok := filter.Inverse[sComp]; ok {
+					err = s.Filter(qf.index, inverse, f.Arg, bIndex)
 
-				// Assume inverse not implemented in case of error here
-				if err == nil {
-					done = true
+					// Assume inverse not implemented in case of error here
+					if err == nil {
+						done = true
+					}
 				}
 			}
 

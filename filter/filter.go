@@ -6,20 +6,18 @@ import "fmt"
 //       package but rather be moved into an internal folder and be wrapped
 //       by a couple of config functions for the QFrame.
 
-type Comparator string
-
 const (
-	Gt  Comparator = ">"
-	Gte Comparator = ">="
-	Eq  Comparator = "=="
-	Neq Comparator = "!="
-	Lt  Comparator = "<"
-	Lte Comparator = "<="
-	In  Comparator = "in"
-	Nin Comparator = "not in"
+	Gt  = ">"
+	Gte = ">="
+	Eq  = "=="
+	Neq = "!="
+	Lt  = "<"
+	Lte = "<="
+	In  = "in"
+	Nin = "not in"
 )
 
-var Inverse = map[Comparator]Comparator{
+var Inverse = map[string]string{
 	Gt:  Lte,
 	Gte: Lt,
 	Eq:  Neq,
@@ -30,7 +28,8 @@ var Inverse = map[Comparator]Comparator{
 }
 
 type Filter struct {
-	Comparator Comparator
+	// Comparator may be a string referring to a built in or a function returning bool
+	Comparator interface{}
 	Column     string
 	Arg        interface{}
 	Inverse    bool
@@ -42,7 +41,7 @@ func (f Filter) String() string {
 		arg = fmt.Sprintf(`"%s"`, s)
 	}
 
-	s := fmt.Sprintf(`["%s", "%s", %v]`, f.Comparator, f.Column, arg)
+	s := fmt.Sprintf(`["%v", "%s", %v]`, f.Comparator, f.Column, arg)
 	if f.Inverse {
 		return fmt.Sprintf(`["not", %s]`, s)
 	}

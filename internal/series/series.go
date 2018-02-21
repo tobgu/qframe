@@ -3,13 +3,13 @@ package series
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tobgu/qframe/filter"
+	// TODO: Make index a public package?
 	"github.com/tobgu/qframe/internal/index"
 )
 
 type Series interface {
 	fmt.Stringer
-	Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error
+	Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error
 	Subset(index index.Int) Series
 	Equals(index index.Int, other Series, otherIndex index.Int) bool
 	Comparable(reverse bool) Comparable

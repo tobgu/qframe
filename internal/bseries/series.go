@@ -2,8 +2,7 @@ package bseries
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/tobgu/qframe/filter"
+	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
@@ -13,7 +12,7 @@ import (
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
 var aggregations = map[string]func([]bool) bool{}
 
-var filterFuncs = map[filter.Comparator]func(index.Int, []bool, interface{}, index.Bool) error{}
+var filterFuncs = map[string]func(index.Int, []bool, interface{}, index.Bool) error{}
 
 func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	x, y := c.data[i], c.data[j]
@@ -60,12 +59,24 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	return true
 }
 
-func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
 	// TODO: Also make it possible to compare to values in other column
-	compFunc, ok := filterFuncs[c]
-	if !ok {
-		return fmt.Errorf("invalid comparison operator for bool, %v", c)
+	switch t := comparator.(type) {
+	case string:
+		compFunc, ok := filterFuncs[t]
+		if !ok {
+			return errors.New("filter bool", "invalid comparison operator for bool, %v", comparator)
+		}
+		compFunc(index, s.data, comparatee, bIndex)
+		return nil
+	case func(bool) bool:
+		for i, x := range bIndex {
+			if !x {
+				bIndex[i] = t(s.data[index[i]])
+			}
+		}
+		return nil
+	default:
+		return errors.New("filter bool", "invalid filter type %v", comparator)
 	}
-
-	return compFunc(index, s.data, comparatee, bIndex)
 }

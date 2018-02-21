@@ -116,12 +116,12 @@ func (f *Factory) ToSeries() Series {
 	return f.s
 }
 
-var filterFuncs = map[filter.Comparator]func(index.Int, []enumVal, enumVal, index.Bool){
+var filterFuncs = map[string]func(index.Int, []enumVal, enumVal, index.Bool){
 	filter.Gt: gt,
 	filter.Lt: lt,
 }
 
-var multiFilterFuncs = map[filter.Comparator]func(comparatee interface{}, values []string) (*bitset, error){
+var multiFilterFuncs = map[string]func(comparatee interface{}, values []string) (*bitset, error){
 	"like":  like,
 	"ilike": ilike,
 }
@@ -256,43 +256,55 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
-func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
 	// TODO: Also make it possible to compare to values in other column
-	compFunc, ok := filterFuncs[c]
-	if ok {
-		comp, ok := comparatee.(string)
-		if !ok {
-			return errors.New("Filter enum", "invalid comparison type, %s, expected string", comp)
-		}
-
-		for i, value := range s.values {
-			if value == comp {
-				compFunc(index, s.data, enumVal(i), bIndex)
-				return nil
+	switch t := comparator.(type) {
+	case string:
+		compFunc, ok := filterFuncs[t]
+		if ok {
+			comp, ok := comparatee.(string)
+			if !ok {
+				return errors.New("Filter enum", "invalid comparison type, %s, expected string", comp)
 			}
+
+			for i, value := range s.values {
+				if value == comp {
+					compFunc(index, s.data, enumVal(i), bIndex)
+					return nil
+				}
+			}
+
+			return errors.New("Filter enum", "Unknown enum value in filter argument: %s", comp)
 		}
 
-		return errors.New("Filter enum", "Unknown enum value in filter argument: %s", comp)
-	}
+		multiFunc, ok := multiFilterFuncs[t]
+		if ok {
+			bset, err := multiFunc(comparatee, s.values)
+			if err != nil {
+				return errors.Propagate("Filter enum", err)
+			}
 
-	multiFunc, ok := multiFilterFuncs[c]
-	if ok {
-		bset, err := multiFunc(comparatee, s.values)
-		if err != nil {
-			return errors.Propagate("Filter enum", err)
+			for i, x := range bIndex {
+				if !x {
+					enum := s.data[index[i]]
+					bIndex[i] = bset.isSet(enum)
+				}
+			}
+
+			return nil
 		}
 
+		return errors.New("Filter enum", "unknown comparison operator, %v", comparator)
+	case func(*string) bool:
 		for i, x := range bIndex {
 			if !x {
-				enum := s.data[index[i]]
-				bIndex[i] = bset.isSet(enum)
+				bIndex[i] = t(s.stringPtrAt(index[i]))
 			}
 		}
-
 		return nil
+	default:
+		return errors.New("filter float", "invalid filter type %v", comparator)
 	}
-
-	return errors.New("Filter enum", "unknown comparison operator, %v", c)
 }
 
 func (s Series) subset(index index.Int) Series {

@@ -803,7 +803,7 @@ func TestQFrame_LikeFilterString(t *testing.T) {
 	data := map[string]interface{}{"COL1": col1}
 	for _, enums := range []map[string][]string{{}, {"COL1": nil}} {
 		table := []struct {
-			comparator filter.Comparator
+			comparator string
 			arg        string
 			expected   []string
 		}{

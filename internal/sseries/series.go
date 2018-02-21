@@ -15,7 +15,7 @@ import (
 //easyjson:json
 type JsonString []*string
 
-var stringFilterFuncs = map[filter.Comparator]func(index.Int, Series, string, index.Bool) error{
+var stringFilterFuncs = map[string]func(index.Int, Series, string, index.Bool) error{
 	filter.Gt:  gt,
 	filter.Lt:  lt,
 	filter.Eq:  eq,
@@ -145,17 +145,33 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
-func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
-	if compFunc, ok := stringFilterFuncs[c]; ok {
-		sComp, ok := comparatee.(string)
-		if !ok {
-			return errors.New("filter string column", "invalid filter type, expected string")
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+	switch t := comparator.(type) {
+	case string:
+		if compFunc, ok := stringFilterFuncs[t]; ok {
+			sComp, ok := comparatee.(string)
+			if !ok {
+				return errors.New("filter string column", "invalid filter type, expected string")
+			}
+
+			return compFunc(index, s, sComp, bIndex)
 		}
-
-		return compFunc(index, s, sComp, bIndex)
+		return errors.New("filter string column", "Unknown filter %s", comparator)
+	case func(*string) bool:
+		for i, x := range bIndex {
+			if !x {
+				str, isNull := s.stringAt(index[i])
+				if isNull {
+					bIndex[i] = t(nil)
+				} else {
+					bIndex[i] = t(&str)
+				}
+			}
+		}
+		return nil
+	default:
+		return errors.New("filter string", "invalid filter type %v", comparator)
 	}
-
-	return errors.New("filter string column", "Unknown filter %s", c)
 }
 
 func gt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {

@@ -59,12 +59,16 @@ func BenchmarkDataFrame_Filter(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_Filter(b *testing.B) {
-	data := qf.New(map[string]interface{}{
+func exampleIntFrame(size int) qf.QFrame {
+	return qf.New(map[string]interface{}{
 		"S1": genInts(seed1, frameSize),
 		"S2": genInts(seed2, frameSize),
 		"S3": genInts(seed3, frameSize),
 		"S4": genInts(seed4, frameSize)})
+}
+
+func BenchmarkQFrame_FilterIntBuiltIn(b *testing.B) {
+	data := exampleIntFrame(frameSize)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -75,7 +79,32 @@ func BenchmarkQFrame_Filter(b *testing.B) {
 			filter.Filter{Column: "S3", Comparator: ">", Arg: int(0.9 * frameSize)})
 
 		if newData.Len() != 27142 {
-			b.Errorf("Length was %d", newData.Len())
+			b.Errorf("Length was %d, Err: %s", newData.Len(), newData.Err)
+		}
+	}
+}
+
+func lessThan(limit int) func(int) bool {
+	return func(x int) bool { return x < limit }
+}
+
+func greaterThan(limit int) func(int) bool {
+	return func(x int) bool { return x > limit }
+}
+
+func BenchmarkQFrame_FilterIntGeneral(b *testing.B) {
+	data := exampleIntFrame(frameSize)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		newData := data.Filter(
+			filter.Filter{Column: "S1", Comparator: lessThan(frameSize / 10)},
+			filter.Filter{Column: "S2", Comparator: lessThan(frameSize / 10)},
+			filter.Filter{Column: "S3", Comparator: greaterThan(int(0.9 * frameSize))})
+
+		if newData.Len() != 27142 {
+			b.Errorf("Length was %d, Err: %s", newData.Len(), newData.Err)
 		}
 	}
 }
@@ -463,7 +492,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 		column        string
 		filter        string
 		expectedCount int
-		comparator    filter.Comparator
+		comparator    string
 	}{
 		{
 			types:         map[string]string{"COL.1": "enum", "COL.2": "enum"},
@@ -754,4 +783,10 @@ BenchmarkQFrame_ApplyStringToString/Apply_with_built_in_function-2       	     1
 BenchmarkQFrame_ApplyEnum/Apply_with_custom_function-2         	      50	  38505068 ns/op	15461041 B/op	  300020 allocs/op
 BenchmarkQFrame_ApplyEnum/Apply_with_built_in_function-2       	  300000	      3566 ns/op	    1232 B/op	      23 allocs/op
 BenchmarkQFrame_ApplyEnum/Apply_int_function_(for_reference)-2 	    1000	   1550604 ns/op	  803491 B/op	       6 allocs/op
+
+// The difference in using built in filter vs general filter func passed as argument. Basically the overhead of a function
+// call for each row. Smaller than I would have thought actually.
+BenchmarkQFrame_FilterIntBuiltIn-2   	    1000	   1685483 ns/op	  221184 B/op	       2 allocs/op
+BenchmarkQFrame_FilterIntGeneral-2   	     500	   2631678 ns/op	  221239 B/op	       5 allocs/op
+
 */

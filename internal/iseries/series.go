@@ -23,7 +23,7 @@ var aggregations = map[string]func([]int) int{
 	"sum": sum,
 }
 
-var filterFuncs = map[filter.Comparator]func(index.Int, []int, int, index.Bool){
+var filterFuncs = map[string]func(index.Int, []int, int, index.Bool){
 	filter.Gt:  gt,
 	filter.Gte: gte,
 	filter.Lt:  lt,
@@ -75,25 +75,36 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
-func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
 	// TODO: Also make it possible to compare to values in other column
-	compFunc, ok := filterFuncs[c]
-	if !ok {
-		return errors.New("filter int", "unknown filter operator %v", c)
-	}
-
-	comp, ok := comparatee.(int)
-	if !ok {
-		// Accept floats by truncating them
-		compFloat, ok := comparatee.(float64)
+	switch t := comparator.(type) {
+	case string:
+		comp, ok := comparatee.(int)
 		if !ok {
-			return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+			// Accept floats by truncating them
+			compFloat, ok := comparatee.(float64)
+			if !ok {
+				return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+			}
+			comp = int(compFloat)
 		}
-		comp = int(compFloat)
-	}
 
-	compFunc(index, s.data, comp, bIndex)
-	return nil
+		compFunc, ok := filterFuncs[t]
+		if !ok {
+			return errors.New("filter int", "unknown filter operator %v", comparatee)
+		}
+		compFunc(index, s.data, comp, bIndex)
+		return nil
+	case func(int) bool:
+		for i, x := range bIndex {
+			if !x {
+				bIndex[i] = t(s.data[index[i]])
+			}
+		}
+		return nil
+	default:
+		return errors.New("filter int", "invalid filter type %v", comparator)
+	}
 }
 
 // TODO: Some kind of code generation for all the below functions for all supported types

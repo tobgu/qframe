@@ -3,6 +3,7 @@ package fseries
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
@@ -24,7 +25,7 @@ var aggregations = map[string]func([]float64) float64{
 	"sum": sum,
 }
 
-var filterFuncs = map[filter.Comparator]func(index.Int, []float64, interface{}, index.Bool) error{
+var filterFuncs = map[string]func(index.Int, []float64, interface{}, index.Bool) error{
 	filter.Gt: gt,
 	filter.Lt: lt,
 }
@@ -95,14 +96,26 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
-func (s Series) Filter(index index.Int, c filter.Comparator, comparatee interface{}, bIndex index.Bool) error {
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
 	// TODO: Also make it possible to compare to values in other column
-	compFunc, ok := filterFuncs[c]
-	if !ok {
-		return fmt.Errorf("invalid comparison operator for float64, %v", c)
+	switch t := comparator.(type) {
+	case string:
+		compFunc, ok := filterFuncs[t]
+		if !ok {
+			return fmt.Errorf("invalid comparison operator for float64, %v", comparator)
+		}
+		compFunc(index, s.data, comparatee, bIndex)
+		return nil
+	case func(float64) bool:
+		for i, x := range bIndex {
+			if !x {
+				bIndex[i] = t(s.data[index[i]])
+			}
+		}
+		return nil
+	default:
+		return errors.New("filter float", "invalid filter type %v", comparator)
 	}
-
-	return compFunc(index, s.data, comparatee, bIndex)
 }
 
 // TODO: Some kind of code generation for all the below functions for all supported types

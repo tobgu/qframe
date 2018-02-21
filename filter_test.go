@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-func f(column string, comparator filter.Comparator, arg interface{}) qframe.FilterClause {
+func f(column string, comparator string, arg interface{}) qframe.FilterClause {
 	return qframe.Filter(filter.Filter{Column: column, Comparator: comparator, Arg: arg})
 }
 
-func notf(column string, comparator filter.Comparator, arg interface{}) qframe.FilterClause {
+func notf(column string, comparator string, arg interface{}) qframe.FilterClause {
 	filter := f(column, comparator, arg)
 	filter.Inverse = true
 	return filter
