@@ -17,7 +17,7 @@ func assertEquals(t *testing.T, expected, actual qframe.QFrame) {
 	t.Helper()
 	equal, reason := expected.Equals(actual)
 	if !equal {
-		t.Errorf("QFrames not equal, %s.\nexpected=%s\nactual=%s", reason, expected, actual)
+		t.Errorf("QFrames not equal, %s.\nexpected=\n%s\nactual=\n%s", reason, expected, actual)
 	}
 }
 
@@ -978,18 +978,33 @@ func TestQFrame_ApplySingleArgEnum(t *testing.T) {
 }
 
 func TestQFrame_ApplyDoubleArg(t *testing.T) {
-	input := qframe.New(map[string]interface{}{
-		"COL1": []int{3, 2},
-		"COL2": []int{30, 20},
-	})
+	table := []struct {
+		name     string
+		input    map[string]interface{}
+		expected interface{}
+		fn interface{}
+	}{
+		{
+			name: "int",
+			input: map[string]interface{}{"COL1": []int{3, 2}, "COL2": []int{30, 20}},
+			expected: []int{33, 22},
+			fn: func(a, b int) (int, error) { return a + b, nil }},
+		{
+			name: "string",
+			input: map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x", "y"}},
+			expected: []string{"ax", "by"},
+			fn: func(a, b *string) (*string, error) { result := *a + *b; return &result, nil }},
+	}
 
-	expectedNew := qframe.New(map[string]interface{}{
-		"COL1": []int{3, 2},
-		"COL2": []int{30, 20},
-		"COL3": []int{33, 22},
-	})
-
-	assertEquals(t, expectedNew, input.Apply2(func(a, b int) (int, error) { return a + b, nil }, "COL3", "COL1", "COL2"))
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			in := qframe.New(tc.input)
+			tc.input["COL3"] = tc.expected
+			expected := qframe.New(tc.input)
+			out := in.Apply2(tc.fn, "COL3", "COL1", "COL2")
+			assertEquals(t, expected, out)
+		})
+	}
 }
 
 func TestQFrame_AggregateStrings(t *testing.T) {

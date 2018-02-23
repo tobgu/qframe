@@ -8,6 +8,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"reflect"
 )
 
 //go:generate easyjson $GOFILE
@@ -399,7 +400,27 @@ func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 }
 
 func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
-	return Series{}, fmt.Errorf("string series does not emplement Apply2 yet")
+	s2S, ok := s2.(Series)
+	if !ok {
+		return nil, errors.New("string.Apply2", "invalid column type %v", reflect.TypeOf(s2))
+	}
+
+	switch t := fn.(type) {
+	case func(*string, *string) (*string, error):
+		var err error
+		result := make([]*string, len(s.pointers))
+		for _, i := range ix {
+			if result[i], err = t(stringToPtr(s.stringAt(i)), stringToPtr(s2S.stringAt(i))); err != nil {
+				return nil, err
+			}
+		}
+		return New(result), nil
+	case string:
+		// No built in functions for strings at this stage
+		return nil, errors.New("string.Apply2", "unknown built in function %s", t)
+	default:
+		return nil, errors.New("string.Apply2", "cannot apply type %#v to column", fn)
+	}
 }
 
 type Comparable struct {
