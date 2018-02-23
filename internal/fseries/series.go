@@ -8,8 +8,8 @@ import (
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
 	"math"
-	"strconv"
 	"reflect"
+	"strconv"
 )
 
 func sum(values []float64) float64 {
@@ -24,7 +24,7 @@ var aggregations = map[string]func([]float64) float64{
 	"sum": sum,
 }
 
-var filterFuncs = map[string]func(index.Int, []float64, float64, index.Bool) {
+var filterFuncs = map[string]func(index.Int, []float64, float64, index.Bool){
 	filter.Gt: gt,
 	filter.Lt: lt,
 }

@@ -887,3 +887,4 @@ func (qf QFrame) ByteSize() int {
 // - Split series files into different files (aggregations, filters, apply funcs, etc.)
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
+// - Apply2 enum + string, convert enum to string automatically to allow it or are we fine with explicit casts?

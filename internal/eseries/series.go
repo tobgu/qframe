@@ -9,6 +9,7 @@ import (
 	"github.com/tobgu/qframe/internal/series"
 	"github.com/tobgu/qframe/internal/sseries"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"reflect"
 	"strings"
 )
 
@@ -432,7 +433,31 @@ func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 }
 
 func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
-	return Series{}, fmt.Errorf("enum series does not emplement Apply2 yet")
+	s2S, ok := s2.(Series)
+	if !ok {
+		return nil, errors.New("enum.Apply2", "invalid column type %v", reflect.TypeOf(s2))
+	}
+
+	switch t := fn.(type) {
+	case func(*string, *string) (*string, error):
+		var err error
+		result := make([]*string, len(s.data))
+		for _, i := range ix {
+			if result[i], err = t(s.stringPtrAt(i), s2S.stringPtrAt(i)); err != nil {
+				return nil, err
+			}
+		}
+
+		// NB! String series returned here, not enum. Returning enum could result
+		// in unforeseen results (eg. it would not always fit in an enum, the order
+		// is not given).
+		return sseries.New(result), nil
+	case string:
+		// No built in functions for strings at this stage
+		return nil, errors.New("enum.Apply2", "unknown built in function %s", t)
+	default:
+		return nil, errors.New("enum.Apply2", "cannot apply type %#v to column", fn)
+	}
 }
 
 type Comparable struct {

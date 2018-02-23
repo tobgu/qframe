@@ -982,25 +982,32 @@ func TestQFrame_ApplyDoubleArg(t *testing.T) {
 		name     string
 		input    map[string]interface{}
 		expected interface{}
-		fn interface{}
+		fn       interface{}
+		enums    map[string][]string
 	}{
 		{
-			name: "int",
-			input: map[string]interface{}{"COL1": []int{3, 2}, "COL2": []int{30, 20}},
+			name:     "int",
+			input:    map[string]interface{}{"COL1": []int{3, 2}, "COL2": []int{30, 20}},
 			expected: []int{33, 22},
-			fn: func(a, b int) (int, error) { return a + b, nil }},
+			fn:       func(a, b int) (int, error) { return a + b, nil }},
 		{
-			name: "string",
-			input: map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x", "y"}},
+			name:     "string",
+			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x", "y"}},
 			expected: []string{"ax", "by"},
-			fn: func(a, b *string) (*string, error) { result := *a + *b; return &result, nil }},
+			fn:       func(a, b *string) (*string, error) { result := *a + *b; return &result, nil }},
+		{
+			name:     "enum",
+			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x", "y"}},
+			expected: []string{"ax", "by"},
+			fn:       func(a, b *string) (*string, error) { result := *a + *b; return &result, nil },
+			enums:    map[string][]string{"COL1": nil, "COL2": nil}},
 	}
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
-			in := qframe.New(tc.input)
+			in := qframe.New(tc.input, qframe.Enums(tc.enums))
 			tc.input["COL3"] = tc.expected
-			expected := qframe.New(tc.input)
+			expected := qframe.New(tc.input, qframe.Enums(tc.enums))
 			out := in.Apply2(tc.fn, "COL3", "COL1", "COL2")
 			assertEquals(t, expected, out)
 		})
