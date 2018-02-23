@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
+	"reflect"
 	"strconv"
 )
 
@@ -77,6 +78,6 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 		}
 		return nil
 	default:
-		return errors.New("filter bool", "invalid filter type %v", comparator)
+		return errors.New("filter bool", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 }

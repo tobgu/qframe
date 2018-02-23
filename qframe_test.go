@@ -47,35 +47,67 @@ func assertTrue(t *testing.T, b bool) {
 	}
 }
 
-func TestQFrame_Filter(t *testing.T) {
-	a := qframe.New(map[string]interface{}{
-		"COL.1": []int{1, 2, 3, 4, 5},
-	})
-
+func TestQFrame_FilterAgainstConstant(t *testing.T) {
 	table := []struct {
+		name     string
 		filters  []filter.Filter
+		input    map[string]interface{}
 		expected qframe.QFrame
 	}{
 		{
-			[]filter.Filter{{Column: "COL.1", Comparator: ">", Arg: 3}},
-			qframe.New(map[string]interface{}{"COL.1": []int{4, 5}}),
-		},
+			"built in greater than",
+			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: 3}},
+			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			qframe.New(map[string]interface{}{"COL1": []int{4, 5}})},
 		{
+			"combined with OR",
 			[]filter.Filter{
-				{Column: "COL.1", Comparator: ">", Arg: 4},
-				{Column: "COL.1", Comparator: "<", Arg: 2}},
-			qframe.New(map[string]interface{}{"COL.1": []int{1, 5}}),
-		},
+				{Column: "COL1", Comparator: ">", Arg: 4},
+				{Column: "COL1", Comparator: "<", Arg: 2}},
+			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			qframe.New(map[string]interface{}{"COL1": []int{1, 5}})},
 		{
-			[]filter.Filter{{Column: "COL.1", Comparator: ">", Arg: 4, Inverse: true}},
-			qframe.New(map[string]interface{}{"COL.1": []int{1, 2, 3, 4}}),
-		},
+			"inverse",
+			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: 4, Inverse: true}},
+			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			qframe.New(map[string]interface{}{"COL1": []int{1, 2, 3, 4}})},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
-			b := a.Filter(tc.filters...)
-			assertEquals(t, tc.expected, b)
+			input := qframe.New(tc.input)
+			output := input.Filter(tc.filters...)
+			assertEquals(t, tc.expected, output)
+		})
+	}
+}
+
+func TestQFrame_FilterAgainstSeries(t *testing.T) {
+	table := []struct {
+		name       string
+		comparator interface{}
+		input      map[string]interface{}
+		expected   map[string]interface{}
+	}{
+		{
+			"built in int compare",
+			">",
+			map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
+			map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
+		{
+			"custom int compare",
+			func(a, b int) bool { return a > b },
+			map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
+			map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
+	}
+
+	for i, tc := range table {
+		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
+			input := qframe.New(tc.input)
+			arg, err := input.GetSeries("COL1")
+			assertNotErr(t, err)
+			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: arg})
+			assertEquals(t, qframe.New(tc.expected), output)
 		})
 	}
 }

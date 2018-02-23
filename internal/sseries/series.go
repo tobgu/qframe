@@ -171,7 +171,7 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 		}
 		return nil
 	default:
-		return errors.New("filter string", "invalid filter type %v", comparator)
+		return errors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 }
 

@@ -652,6 +652,19 @@ func (qf QFrame) Apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame 
 	return qf.setSeries(dstCol, resultSeries)
 }
 
+func (qf QFrame) GetSeries(name string) (series.Series, error) {
+	if qf.Err != nil {
+		return nil, qf.Err
+	}
+
+	s, ok := qf.seriesByName[name]
+	if !ok {
+		return nil, errors.New("GetSeries", "No such series in QFrame, %s", name)
+	}
+
+	return s.Series, nil
+}
+
 ////////////
 //// IO ////
 ////////////
@@ -883,7 +896,6 @@ func (qf QFrame) ByteSize() int {
 // - Perhaps make a special case for distinct with only one column involved that simply calls distinct on
 //   a series for that specific column. Should be quite a bit faster than current sort based implementation.
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
-// - Apply2 for strings and enums
 // - Split series files into different files (aggregations, filters, apply funcs, etc.)
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?

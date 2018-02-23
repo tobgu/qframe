@@ -23,11 +23,20 @@ var aggregations = map[string]func([]int) int{
 	"sum": sum,
 }
 
+// Series - constant
 var filterFuncs = map[string]func(index.Int, []int, int, index.Bool){
 	filter.Gt:  gt,
 	filter.Gte: gte,
 	filter.Lt:  lt,
 	filter.Eq:  eq,
+}
+
+// Series - Series
+var filterFuncs2 = map[string]func(index.Int, []int, []int, index.Bool){
+	filter.Gt:  gt2,
+	filter.Gte: gte2,
+	filter.Lt:  lt2,
+	filter.Eq:  eq2,
 }
 
 func (s Series) StringAt(i uint32, _ string) string {
@@ -75,35 +84,78 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
-func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Also make it possible to compare to values in other column
-	switch t := comparator.(type) {
-	case string:
-		comp, ok := comparatee.(int)
+func intComp(comparatee interface{}) (int, bool) {
+	comp, ok := comparatee.(int)
+	if !ok {
+		// Accept floats by truncating them
+		compFloat, ok := comparatee.(float64)
 		if !ok {
-			// Accept floats by truncating them
-			compFloat, ok := comparatee.(float64)
-			if !ok {
-				return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
-			}
-			comp = int(compFloat)
+			return 0, false
 		}
+		comp = int(compFloat)
+	}
 
-		compFunc, ok := filterFuncs[t]
+	return comp, true
+}
+
+func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+	intC, ok := intComp(comparatee)
+	if ok {
+		filterFn, ok := filterFuncs[comparator]
 		if !ok {
 			return errors.New("filter int", "unknown filter operator %v", comparatee)
 		}
-		compFunc(index, s.data, comp, bIndex)
-		return nil
-	case func(int) bool:
-		for i, x := range bIndex {
-			if !x {
-				bIndex[i] = t(s.data[index[i]])
-			}
+		filterFn(index, s.data, intC, bIndex)
+	} else {
+		seriesC, ok := comparatee.(Series)
+		if !ok {
+			return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 		}
+
+		filterFn, ok := filterFuncs2[comparator]
+		if !ok {
+			return errors.New("filter int", "unknown filter operator %v", comparatee)
+		}
+		filterFn(index, s.data, seriesC.data, bIndex)
+	}
+
+	return nil
+}
+
+func (s Series) filterCustom1(index index.Int, bIndex index.Bool, fn func(int) bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.data[index[i]])
+		}
+	}
+}
+
+func (s Series) filterCustom2(index index.Int, bIndex index.Bool, comparatee interface{}, fn func(int, int) bool) error {
+	otherS, ok := comparatee.(Series)
+	if !ok {
+		return errors.New("filter int", "expected comparatee to be int series, was %v", reflect.TypeOf(comparatee))
+	}
+
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.data[index[i]], otherS.data[index[i]])
+		}
+	}
+
+	return nil
+}
+
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+	switch t := comparator.(type) {
+	case string:
+		return s.filterBuiltIn(index, t, comparatee, bIndex)
+	case func(int) bool:
+		s.filterCustom1(index, bIndex, t)
 		return nil
+	case func(int, int) bool:
+		return s.filterCustom2(index, bIndex, comparatee, t)
 	default:
-		return errors.New("filter int", "invalid filter type %v", comparator)
+		return errors.New("filter int", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 }
 
@@ -135,6 +187,42 @@ func eq(index index.Int, column []int, comp int, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = column[index[i]] == comp
+		}
+	}
+}
+
+func gt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			pos := index[i]
+			bIndex[i] = column[pos] > compCol[pos]
+		}
+	}
+}
+
+func gte2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			pos := index[i]
+			bIndex[i] = column[pos] >= compCol[pos]
+		}
+	}
+}
+
+func lt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			pos := index[i]
+			bIndex[i] = column[pos] < compCol[pos]
+		}
+	}
+}
+
+func eq2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			pos := index[i]
+			bIndex[i] = column[pos] == compCol[pos]
 		}
 	}
 }
