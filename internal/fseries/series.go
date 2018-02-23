@@ -2,7 +2,6 @@ package fseries
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
@@ -10,6 +9,7 @@ import (
 	"github.com/tobgu/qframe/internal/series"
 	"math"
 	"strconv"
+	"reflect"
 )
 
 func sum(values []float64) float64 {
@@ -20,12 +20,11 @@ func sum(values []float64) float64 {
 	return result
 }
 
-// TODO: Probably need a more general aggregation pattern, int -> float (average for example)
 var aggregations = map[string]func([]float64) float64{
 	"sum": sum,
 }
 
-var filterFuncs = map[string]func(index.Int, []float64, interface{}, index.Bool) error{
+var filterFuncs = map[string]func(index.Int, []float64, float64, index.Bool) {
 	filter.Gt: gt,
 	filter.Lt: lt,
 }
@@ -100,11 +99,16 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 	// TODO: Also make it possible to compare to values in other column
 	switch t := comparator.(type) {
 	case string:
+		comp, ok := comparatee.(float64)
+		if !ok {
+			return errors.New("filter float", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+		}
+
 		compFunc, ok := filterFuncs[t]
 		if !ok {
-			return fmt.Errorf("invalid comparison operator for float64, %v", comparator)
+			return errors.New("filter float", "invalid comparison operator for float64, %v", comparator)
 		}
-		compFunc(index, s.data, comparatee, bIndex)
+		compFunc(index, s.data, comp, bIndex)
 		return nil
 	case func(float64) bool:
 		for i, x := range bIndex {
@@ -118,32 +122,19 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 	}
 }
 
-// TODO: Some kind of code generation for all the below functions for all supported types
-
-func gt(index index.Int, column []float64, comparatee interface{}, bIndex index.Bool) error {
-	comp, ok := comparatee.(float64)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
-	}
-
-	for i, x := range bIndex {
-		bIndex[i] = x || column[index[i]] > comp
-	}
-
-	return nil
-}
-
-func lt(index index.Int, column []float64, comparatee interface{}, bIndex index.Bool) error {
-	comp, ok := comparatee.(float64)
-	if !ok {
-		return fmt.Errorf("invalid comparison type")
-	}
-
-	for i, x := range bIndex {
-		bIndex[i] = x || column[index[i]] < comp
-	}
-
-	return nil
-}
-
 // TODO: Handle NaN in comparisons, etc.
+func gt(index index.Int, column []float64, comp float64, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = column[index[i]] > comp
+		}
+	}
+}
+
+func lt(index index.Int, column []float64, comp float64, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = column[index[i]] < comp
+		}
+	}
+}

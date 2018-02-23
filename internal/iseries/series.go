@@ -107,8 +107,6 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 	}
 }
 
-// TODO: Some kind of code generation for all the below functions for all supported types
-
 func gt(index index.Int, column []int, comp int, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {

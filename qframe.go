@@ -859,6 +859,7 @@ func (qf QFrame) ByteSize() int {
 // - Also allow custom filtering by allowing functions "fn(type) bool" to be passed to filter.
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
+// - Filtering by comparing to values in other columns
 
 // TODO:
 // - Make it possible to implement custom Series and use as input to QFrame constructor (this could probably
@@ -869,18 +870,20 @@ func (qf QFrame) ByteSize() int {
 //   as starting point for column based format and by refining type detection for the record based
 //   read. That would also allow proper parsing of integers for record format rather than making them
 //   floats.
-// - Support access by x, y (to support GoNum matrix interface)
-// - Column cast from one type to another by arbitrary function, int -> float, float -> int, float->string, ...
-// - Built in Apply functions by named strings to allow performance boosts for most common functions?
+// - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
+//   interface.
 // - Handle float NaN in filtering
-// - AppendBytesString support to add columns to DF (in addition to project). Should produce a new df, no mutation!
+// - Support to add columns to DF (in addition to project). Should produce a new df, no mutation!
 //   To be used with standin columns.
 // - Possibility to run operations on two or more columns that result in a new column (addition for example).
-//   Lower priority.
 // - Benchmarks comparing performance with Pandas
 // - Documentation
 // - Use https://goreportcard.com
 // - More serialization and deserialization tests
 // - Perhaps make a special case for distinct with only one column involved that simply calls distinct on
 //   a series for that specific column. Should be quite a bit faster than current sort based implementation.
-// - Fix aggregation for string columns
+// - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
+// - Apply2 for strings and enums
+// - Split series files into different files (aggregations, filters, apply funcs, etc.)
+// - Start documenting public functions
+// - Switch to using vgo for dependencies?
