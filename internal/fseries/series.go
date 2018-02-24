@@ -3,7 +3,6 @@ package fseries
 import (
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
-	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
@@ -11,23 +10,6 @@ import (
 	"reflect"
 	"strconv"
 )
-
-func sum(values []float64) float64 {
-	result := 0.0
-	for _, v := range values {
-		result += v
-	}
-	return result
-}
-
-var aggregations = map[string]func([]float64) float64{
-	"sum": sum,
-}
-
-var filterFuncs = map[string]func(index.Int, []float64, float64, index.Bool){
-	filter.Gt: gt,
-	filter.Lt: lt,
-}
 
 func (s Series) StringAt(i uint32, naRep string) string {
 	value := s.data[i]
@@ -95,46 +77,60 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
+func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+	switch t := comparatee.(type) {
+	case float64:
+		compFunc, ok := filterFuncs[comparator]
+		if !ok {
+			return errors.New("filter float", "invalid comparison operator, %v", comparator)
+		}
+		compFunc(index, s.data, t, bIndex)
+	case Series:
+		compFunc, ok := filterFuncs2[comparator]
+		if !ok {
+			return errors.New("filter float", "invalid comparison operator, %v", comparator)
+		}
+		compFunc(index, s.data, t.data, bIndex)
+	default:
+		return errors.New("filter float", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+	}
+	return nil
+}
+
+func (s Series) filterCustom1(index index.Int, fn func(float64) bool, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.data[index[i]])
+		}
+	}
+}
+
+func (s Series) filterCustom2(index index.Int, fn func(float64, float64) bool, comparatee interface{}, bIndex index.Bool) error {
+	otherS, ok := comparatee.(Series)
+	if !ok {
+		return errors.New("filter float", "expected comparatee to be float series, was %v", reflect.TypeOf(comparatee))
+	}
+
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.data[index[i]], otherS.data[index[i]])
+		}
+	}
+
+	return nil
+}
+
 func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Also make it possible to compare to values in other column
+	var err error
 	switch t := comparator.(type) {
 	case string:
-		comp, ok := comparatee.(float64)
-		if !ok {
-			return errors.New("filter float", "invalid comparison value type %v", reflect.TypeOf(comparatee))
-		}
-
-		compFunc, ok := filterFuncs[t]
-		if !ok {
-			return errors.New("filter float", "invalid comparison operator for float64, %v", comparator)
-		}
-		compFunc(index, s.data, comp, bIndex)
-		return nil
+		err = s.filterBuiltIn(index, t, comparatee, bIndex)
 	case func(float64) bool:
-		for i, x := range bIndex {
-			if !x {
-				bIndex[i] = t(s.data[index[i]])
-			}
-		}
-		return nil
+		s.filterCustom1(index, t, bIndex)
+	case func(float64, float64) bool:
+		err = s.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		return errors.New("filter float", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = errors.New("filter float", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
-}
-
-// TODO: Handle NaN in comparisons, etc.
-func gt(index index.Int, column []float64, comp float64, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] > comp
-		}
-	}
-}
-
-func lt(index index.Int, column []float64, comp float64, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] < comp
-		}
-	}
+	return err
 }

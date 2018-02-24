@@ -109,6 +109,16 @@ func TestQFrame_FilterAgainstSeries(t *testing.T) {
 			func(a, b bool) bool { return a == b },
 			map[string]interface{}{"COL1": []bool{true, false, false}, "COL2": []bool{true, true, false}},
 			map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, false}}},
+		{
+			"built in float compare",
+			"<",
+			map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
+			map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
+		{
+			"built in float compare",
+			func(a, b float64) bool { return a < b },
+			map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
+			map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
 	}
 
 	for i, tc := range table {
