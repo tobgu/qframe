@@ -93,7 +93,7 @@ func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee int
 	return nil
 }
 
-func (s Series) filterCustom1(index index.Int, bIndex index.Bool, fn func(int) bool) {
+func (s Series) filterCustom1(index index.Int, fn func(int) bool, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = fn(s.data[index[i]])
@@ -101,7 +101,7 @@ func (s Series) filterCustom1(index index.Int, bIndex index.Bool, fn func(int) b
 	}
 }
 
-func (s Series) filterCustom2(index index.Int, bIndex index.Bool, comparatee interface{}, fn func(int, int) bool) error {
+func (s Series) filterCustom2(index index.Int, fn func(int, int) bool, comparatee interface{}, bIndex index.Bool) error {
 	otherS, ok := comparatee.(Series)
 	if !ok {
 		return errors.New("filter int", "expected comparatee to be int series, was %v", reflect.TypeOf(comparatee))
@@ -117,15 +117,16 @@ func (s Series) filterCustom2(index index.Int, bIndex index.Bool, comparatee int
 }
 
 func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+	var err error
 	switch t := comparator.(type) {
 	case string:
-		return s.filterBuiltIn(index, t, comparatee, bIndex)
+		err = s.filterBuiltIn(index, t, comparatee, bIndex)
 	case func(int) bool:
-		s.filterCustom1(index, bIndex, t)
-		return nil
+		s.filterCustom1(index, t, bIndex)
 	case func(int, int) bool:
-		return s.filterCustom2(index, bIndex, comparatee, t)
+		err = s.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		return errors.New("filter int", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = errors.New("filter int", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
+	return err
 }

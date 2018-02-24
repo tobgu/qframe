@@ -9,7 +9,7 @@ import "fmt"
 const (
 	Gt  = ">"
 	Gte = ">="
-	Eq  = "=="
+	Eq  = "="
 	Neq = "!="
 	Lt  = "<"
 	Lte = "<="

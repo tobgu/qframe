@@ -184,6 +184,10 @@ func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 			return qf.withErr(errors.New("Filter", `column does not exist, "%s"`, f.Column))
 		}
 
+		//TODO: If comparing against a series verify that they have the same length
+		//      Perhaps we should not expose the series but instead create a new string
+		//      based type that is only used to denote this?
+
 		var err error
 		if f.Inverse {
 			// This is a small optimization, if the inverse operation is implemented

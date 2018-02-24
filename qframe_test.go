@@ -99,6 +99,16 @@ func TestQFrame_FilterAgainstSeries(t *testing.T) {
 			func(a, b int) bool { return a > b },
 			map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
 			map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
+		{
+			"built in bool compare",
+			"=",
+			map[string]interface{}{"COL1": []bool{true, false, false}, "COL2": []bool{true, true, false}},
+			map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, false}}},
+		{
+			"custom bool compare",
+			func(a, b bool) bool { return a == b },
+			map[string]interface{}{"COL1": []bool{true, false, false}, "COL2": []bool{true, true, false}},
+			map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, false}}},
 	}
 
 	for i, tc := range table {

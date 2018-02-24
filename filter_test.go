@@ -35,7 +35,7 @@ func TestFilter_Success(t *testing.T) {
 	})
 
 	eq := func(x int) qframe.FilterClause {
-		return f("COL1", "==", x)
+		return f("COL1", "=", x)
 	}
 
 	table := []struct {

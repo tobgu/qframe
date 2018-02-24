@@ -10,11 +10,6 @@ import (
 	"strconv"
 )
 
-// TODO: Probably need a more general aggregation pattern, int -> float (average for example)
-var aggregations = map[string]func([]bool) bool{}
-
-var filterFuncs = map[string]func(index.Int, []bool, interface{}, index.Bool) error{}
-
 func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	x, y := c.data[i], c.data[j]
 	if x == y {
@@ -60,24 +55,60 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	return true
 }
 
-func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Also make it possible to compare to values in other column
-	switch t := comparator.(type) {
-	case string:
-		compFunc, ok := filterFuncs[t]
+func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+	switch t := comparatee.(type) {
+	case bool:
+		compFunc, ok := filterFuncs[comparator]
 		if !ok {
 			return errors.New("filter bool", "invalid comparison operator for bool, %v", comparator)
 		}
-		compFunc(index, s.data, comparatee, bIndex)
-		return nil
-	case func(bool) bool:
-		for i, x := range bIndex {
-			if !x {
-				bIndex[i] = t(s.data[index[i]])
-			}
+		compFunc(index, s.data, t, bIndex)
+	case Series:
+		compFunc, ok := filterFuncs2[comparator]
+		if !ok {
+			return errors.New("filter bool", "invalid comparison operator for bool, %v", comparator)
 		}
-		return nil
+		compFunc(index, s.data, t.data, bIndex)
 	default:
-		return errors.New("filter bool", "invalid filter type %v", reflect.TypeOf(comparator))
+		return errors.New("filter bool", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
+	return nil
+}
+
+func (s Series) filterCustom1(index index.Int, fn func(bool) bool, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.data[index[i]])
+		}
+	}
+}
+
+func (s Series) filterCustom2(index index.Int, fn func(bool, bool) bool, comparatee interface{}, bIndex index.Bool) error {
+	otherS, ok := comparatee.(Series)
+	if !ok {
+		return errors.New("filter bool", "expected comparatee to be bool series, was %v", reflect.TypeOf(comparatee))
+	}
+
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.data[index[i]], otherS.data[index[i]])
+		}
+	}
+
+	return nil
+}
+
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+	var err error
+	switch t := comparator.(type) {
+	case string:
+		err = s.filterBuiltIn(index, t, comparatee, bIndex)
+	case func(bool) bool:
+		s.filterCustom1(index, t, bIndex)
+	case func(bool, bool) bool:
+		err = s.filterCustom2(index, t, comparatee, bIndex)
+	default:
+		err = errors.New("filter bool", "invalid filter type %v", reflect.TypeOf(comparator))
+	}
+	return err
 }
