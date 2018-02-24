@@ -3,41 +3,12 @@ package iseries
 import (
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
-	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/series"
 	"reflect"
 	"strconv"
 )
-
-func sum(values []int) int {
-	result := 0
-	for _, v := range values {
-		result += v
-	}
-	return result
-}
-
-var aggregations = map[string]func([]int) int{
-	"sum": sum,
-}
-
-// Series - constant
-var filterFuncs = map[string]func(index.Int, []int, int, index.Bool){
-	filter.Gt:  gt,
-	filter.Gte: gte,
-	filter.Lt:  lt,
-	filter.Eq:  eq,
-}
-
-// Series - Series
-var filterFuncs2 = map[string]func(index.Int, []int, []int, index.Bool){
-	filter.Gt:  gt2,
-	filter.Gte: gte2,
-	filter.Lt:  lt2,
-	filter.Eq:  eq2,
-}
 
 func (s Series) StringAt(i uint32, _ string) string {
 	return strconv.FormatInt(int64(s.data[i]), 10)
@@ -156,73 +127,5 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 		return s.filterCustom2(index, bIndex, comparatee, t)
 	default:
 		return errors.New("filter int", "invalid filter type %v", reflect.TypeOf(comparator))
-	}
-}
-
-func gt(index index.Int, column []int, comp int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] > comp
-		}
-	}
-}
-
-func gte(index index.Int, column []int, comp int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] >= comp
-		}
-	}
-}
-
-func lt(index index.Int, column []int, comp int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] < comp
-		}
-	}
-}
-
-func eq(index index.Int, column []int, comp int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] == comp
-		}
-	}
-}
-
-func gt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			pos := index[i]
-			bIndex[i] = column[pos] > compCol[pos]
-		}
-	}
-}
-
-func gte2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			pos := index[i]
-			bIndex[i] = column[pos] >= compCol[pos]
-		}
-	}
-}
-
-func lt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			pos := index[i]
-			bIndex[i] = column[pos] < compCol[pos]
-		}
-	}
-}
-
-func eq2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			pos := index[i]
-			bIndex[i] = column[pos] == compCol[pos]
-		}
 	}
 }
