@@ -393,16 +393,16 @@ func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		if f, ok := stringApplyFuncs[t]; ok {
 			return f(ix, s)
 		}
-		return nil, errors.New("string.Apply1", "unknown built in function %s", t)
+		return nil, errors.New("string.apply1", "unknown built in function %s", t)
 	default:
-		return nil, errors.New("string.Apply1", "cannot apply type %#v to column", fn)
+		return nil, errors.New("string.apply1", "cannot apply type %#v to column", fn)
 	}
 }
 
 func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
 	s2S, ok := s2.(Series)
 	if !ok {
-		return nil, errors.New("string.Apply2", "invalid column type %v", reflect.TypeOf(s2))
+		return nil, errors.New("string.apply2", "invalid column type %v", reflect.TypeOf(s2))
 	}
 
 	switch t := fn.(type) {
@@ -417,9 +417,9 @@ func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.S
 		return New(result), nil
 	case string:
 		// No built in functions for strings at this stage
-		return nil, errors.New("string.Apply2", "unknown built in function %s", t)
+		return nil, errors.New("string.apply2", "unknown built in function %s", t)
 	default:
-		return nil, errors.New("string.Apply2", "cannot apply type %#v to column", fn)
+		return nil, errors.New("string.apply2", "cannot apply type %#v to column", fn)
 	}
 }
 

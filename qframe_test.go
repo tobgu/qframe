@@ -969,7 +969,7 @@ func TestQFrame_ApplySingleArgIntToInt(t *testing.T) {
 		"COL1": []int{6, 4},
 	})
 
-	assertEquals(t, expectedNew, input.Apply1(func(a int) (int, error) { return 2 * a, nil }, "COL1", "COL1"))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: func(a int) (int, error) { return 2 * a, nil }, DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
 func TestQFrame_ApplySingleArgStringToBool(t *testing.T) {
@@ -982,7 +982,7 @@ func TestQFrame_ApplySingleArgStringToBool(t *testing.T) {
 		"IS_LONG": []bool{false, false, true},
 	})
 
-	assertEquals(t, expectedNew, input.Apply1(func(x *string) (bool, error) { return len(*x) > 2, nil }, "IS_LONG", "COL1"))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: func(x *string) (bool, error) { return len(*x) > 2, nil }, DstCol: "IS_LONG", SrcCol1: "COL1"}))
 }
 
 func toUpper(x *string) (*string, error) {
@@ -1005,10 +1005,10 @@ func TestQFrame_ApplySingleArgString(t *testing.T) {
 	})
 
 	// General function
-	assertEquals(t, expectedNew, input.Apply1(toUpper, "COL1", "COL1"))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: toUpper, DstCol: "COL1", SrcCol1: "COL1"}))
 
 	// Built in function
-	assertEquals(t, expectedNew, input.Apply1("ToUpper", "COL1", "COL1"))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: "ToUpper", DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
 func TestQFrame_ApplySingleArgEnum(t *testing.T) {
@@ -1023,10 +1023,10 @@ func TestQFrame_ApplySingleArgEnum(t *testing.T) {
 	expectedNewBuiltIn := qframe.New(expectedData, qframe.Enums(map[string][]string{"COL1": nil}))
 
 	// General function
-	assertEquals(t, expectedNewGeneral, input.Apply1(toUpper, "COL1", "COL1"))
+	assertEquals(t, expectedNewGeneral, input.Apply(qframe.Instruction{Fn: toUpper, DstCol: "COL1", SrcCol1: "COL1"}))
 
 	// Builtin function
-	assertEquals(t, expectedNewBuiltIn, input.Apply1("ToUpper", "COL1", "COL1"))
+	assertEquals(t, expectedNewBuiltIn, input.Apply(qframe.Instruction{Fn: "ToUpper", DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
 func TestQFrame_ApplyDoubleArg(t *testing.T) {
@@ -1060,7 +1060,46 @@ func TestQFrame_ApplyDoubleArg(t *testing.T) {
 			in := qframe.New(tc.input, qframe.Enums(tc.enums))
 			tc.input["COL3"] = tc.expected
 			expected := qframe.New(tc.input, qframe.Enums(tc.enums))
-			out := in.Apply2(tc.fn, "COL3", "COL1", "COL2")
+			out := in.Apply(qframe.Instruction{Fn: tc.fn, DstCol: "COL3", SrcCol1: "COL1", SrcCol2: "COL2"})
+			assertEquals(t, expected, out)
+		})
+	}
+}
+
+func TestQFrame_FilteredApply(t *testing.T) {
+	plus1 := func(a int) (int, error) { return a + 1, nil }
+	table := []struct {
+		name         string
+		input        map[string]interface{}
+		expected     map[string]interface{}
+		instructions []qframe.Instruction
+		clauses      qframe.FilterClause
+	}{
+		{
+			name:         "null fills for rows that dont match filter when destination column is new",
+			input:        map[string]interface{}{"COL1": []int{3, 2, 1}},
+			instructions: []qframe.Instruction{{Fn: plus1, DstCol: "COL3", SrcCol1: "COL1"}, {Fn: plus1, DstCol: "COL3", SrcCol1: "COL3"}},
+			expected:     map[string]interface{}{"COL1": []int{3, 2, 1}, "COL3": []int{5, 4, 0}},
+			clauses:      qframe.Filter{Comparator: ">", Column: "COL1", Arg: 1}},
+		{
+			// One could question whether this is the desired behaviour or not. The alternative
+			// would be to preserve the existing values but that would cause a lot of inconsistencies
+			// when the result column type differs from the source column type for example. What would
+			// the preserved value be in that case? Preserving the existing behaviour could be achieved
+			// by using a temporary column that indexes which columns to modify and not. Perhaps this
+			// should be built in at some point.
+			name:         "null fills rows that dont match filter when destination column is existing",
+			input:        map[string]interface{}{"COL1": []int{3, 2, 1}},
+			instructions: []qframe.Instruction{{Fn: plus1, DstCol: "COL1", SrcCol1: "COL1"}},
+			expected:     map[string]interface{}{"COL1": []int{4, 3, 0}},
+			clauses:      qframe.Filter{Comparator: ">", Column: "COL1", Arg: 1}},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			in := qframe.New(tc.input)
+			expected := qframe.New(tc.expected)
+			out := in.FilteredApply(tc.clauses, tc.instructions...)
 			assertEquals(t, expected, out)
 		})
 	}

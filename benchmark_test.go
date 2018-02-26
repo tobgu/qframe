@@ -61,10 +61,10 @@ func BenchmarkDataFrame_Filter(b *testing.B) {
 
 func exampleIntFrame(size int) qf.QFrame {
 	return qf.New(map[string]interface{}{
-		"S1": genInts(seed1, frameSize),
-		"S2": genInts(seed2, frameSize),
-		"S3": genInts(seed3, frameSize),
-		"S4": genInts(seed4, frameSize)})
+		"S1": genInts(seed1, size),
+		"S2": genInts(seed2, size),
+		"S3": genInts(seed3, size),
+		"S4": genInts(seed4, size)})
 }
 
 func BenchmarkQFrame_FilterIntBuiltIn(b *testing.B) {
@@ -560,9 +560,9 @@ func benchApply(b *testing.B, name string, input qf.QFrame, fn interface{}) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			result := input.Apply1(fn, "COL.1", "COL.1")
+			result := input.Apply(qf.Instruction{Fn: fn, DstCol: "COL.1", SrcCol1: "COL.1"})
 			if result.Err != nil {
-				b.Errorf("Err: %s", result.Len(), result.Err)
+				b.Errorf("Err: %s, %s", result.Len(), result.Err)
 			}
 		}
 	})
@@ -576,8 +576,8 @@ func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
 	r := bytes.NewReader(input)
 	df := qf.ReadCsv(r)
 
-	benchApply(b, "Apply with custom function", df, toUpper)
-	benchApply(b, "Apply with builtin function", df, "ToUpper")
+	benchApply(b, "Instruction with custom function", df, toUpper)
+	benchApply(b, "Instruction with builtin function", df, "ToUpper")
 }
 
 func BenchmarkQFrame_ApplyEnum(b *testing.B) {
@@ -587,9 +587,9 @@ func BenchmarkQFrame_ApplyEnum(b *testing.B) {
 	r := bytes.NewReader(input)
 	df := qf.ReadCsv(r, qf.Types(map[string]string{"COL.1": "enum"}))
 
-	benchApply(b, "Apply with custom function", df, toUpper)
-	benchApply(b, "Apply with built in function", df, "ToUpper")
-	benchApply(b, "Apply int function (for reference)", df, func(x *string) (int, error) { return len(*x), nil })
+	benchApply(b, "Instruction with custom function", df, toUpper)
+	benchApply(b, "Instruction with built in function", df, "ToUpper")
+	benchApply(b, "Instruction int function (for reference)", df, func(x *string) (int, error) { return len(*x), nil })
 }
 
 /*
@@ -753,7 +753,7 @@ BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       
 // Inverse (not) filtering:
 BenchmarkQFrame_FilterNot-2   	    2000	    810831 ns/op	  147459 B/op	       2 allocs/op
 
-// Performance tweak for single, simple, clause statements to put them on par with calling the
+// Performance tweak for single, simple, clauses statements to put them on par with calling the
 // Qframe Filter function directly
 
 // Before

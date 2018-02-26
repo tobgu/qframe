@@ -7,25 +7,25 @@ import (
 	"testing"
 )
 
-func f(column string, comparator string, arg interface{}) qframe.FilterClause {
+func f(column string, comparator string, arg interface{}) qframe.Filter {
 	return qframe.Filter(filter.Filter{Column: column, Comparator: comparator, Arg: arg})
 }
 
-func notf(column string, comparator string, arg interface{}) qframe.FilterClause {
+func notf(column string, comparator string, arg interface{}) qframe.Filter {
 	filter := f(column, comparator, arg)
 	filter.Inverse = true
 	return filter
 }
 
-func and(clauses ...qframe.Clause) qframe.AndClause {
+func and(clauses ...qframe.FilterClause) qframe.AndClause {
 	return qframe.And(clauses...)
 }
 
-func or(clauses ...qframe.Clause) qframe.OrClause {
+func or(clauses ...qframe.FilterClause) qframe.OrClause {
 	return qframe.Or(clauses...)
 }
 
-func not(clause qframe.Clause) qframe.NotClause {
+func not(clause qframe.FilterClause) qframe.NotClause {
 	return qframe.Not(clause)
 }
 
@@ -40,7 +40,7 @@ func TestFilter_Success(t *testing.T) {
 
 	table := []struct {
 		name     string
-		clause   qframe.Clause
+		clause   qframe.FilterClause
 		expected []int
 	}{
 		{
@@ -66,7 +66,7 @@ func TestFilter_Success(t *testing.T) {
 			[]int{2, 5},
 		},
 		{
-			"Or with nested and, reverse clause",
+			"Or with nested and, reverse clauses",
 			or(eq(5),
 				and(f("COL1", "<", 3), f("COL1", ">", 1))),
 			[]int{2, 5},
@@ -77,7 +77,7 @@ func TestFilter_Success(t *testing.T) {
 			[]int{1, 3, 4, 5},
 		},
 		{
-			"Nested single clause",
+			"Nested single clauses",
 			or(and(eq(4))),
 			[]int{4},
 		},
@@ -126,7 +126,7 @@ func TestFilter_ErrorColumnDoesNotExist(t *testing.T) {
 	colGt3 := f("COL", ">", 3)
 	col1Gt3 := f("COL1", ">", 3)
 
-	table := []qframe.Clause{
+	table := []qframe.FilterClause{
 		colGt3,
 		or(col1Gt3, colGt3),
 		and(col1Gt3, colGt3),
@@ -145,7 +145,7 @@ func TestFilter_ErrorColumnDoesNotExist(t *testing.T) {
 
 func TestFilter_String(t *testing.T) {
 	table := []struct {
-		clause   qframe.Clause
+		clause   qframe.FilterClause
 		expected string
 	}{
 		{f("COL1", ">", 3), `[">", "COL1", 3]`},

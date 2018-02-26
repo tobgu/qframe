@@ -8,17 +8,17 @@ import (
 	"strings"
 )
 
-type Clause interface {
+type FilterClause interface {
 	fmt.Stringer
 	Filter(qf QFrame) QFrame
 	Err() error
 }
 
-type FilterClause filter.Filter
+type Filter filter.Filter
 
 type comboClause struct {
 	err        error
-	subClauses []Clause
+	subClauses []FilterClause
 }
 
 type AndClause comboClause
@@ -26,13 +26,13 @@ type AndClause comboClause
 type OrClause comboClause
 
 type NotClause struct {
-	subClause Clause
+	subClause FilterClause
 }
 
 // Convenience type to simplify clients when no filtering is to be done.
 type NullClause struct{}
 
-func anyFilterErr(clauses []Clause) error {
+func anyFilterErr(clauses []FilterClause) error {
 	for _, c := range clauses {
 		if c.Err() != nil {
 			return c.Err()
@@ -41,7 +41,7 @@ func anyFilterErr(clauses []Clause) error {
 	return nil
 }
 
-func And(clauses ...Clause) AndClause {
+func And(clauses ...FilterClause) AndClause {
 	if len(clauses) == 0 {
 		return AndClause{err: errors.New("new and clause", "zero subclauses not allowed")}
 	}
@@ -49,7 +49,7 @@ func And(clauses ...Clause) AndClause {
 	return AndClause{subClauses: clauses, err: anyFilterErr(clauses)}
 }
 
-func clauseString(clauses []Clause) string {
+func clauseString(clauses []FilterClause) string {
 	reps := make([]string, 0, len(clauses))
 	for _, c := range clauses {
 		reps = append(reps, c.String())
@@ -83,7 +83,7 @@ func (c AndClause) Err() error {
 	return c.err
 }
 
-func Or(clauses ...Clause) OrClause {
+func Or(clauses ...FilterClause) OrClause {
 	if len(clauses) == 0 {
 		return OrClause{err: errors.New("new or clause", "zero subclauses not allowed")}
 	}
@@ -147,7 +147,7 @@ func (c OrClause) Filter(qf QFrame) QFrame {
 	var filteredQf *QFrame
 
 	for _, c := range c.subClauses {
-		if f, ok := c.(FilterClause); ok {
+		if f, ok := c.(Filter); ok {
 			filters = append(filters, filter.Filter(f))
 		} else {
 			if len(filters) > 0 {
@@ -173,11 +173,7 @@ func (c OrClause) Err() error {
 	return c.err
 }
 
-func Filter(f filter.Filter) FilterClause {
-	return FilterClause(f)
-}
-
-func (c FilterClause) String() string {
+func (c Filter) String() string {
 	if c.Err() != nil {
 		return c.Err().Error()
 	}
@@ -185,15 +181,15 @@ func (c FilterClause) String() string {
 	return filter.Filter(c).String()
 }
 
-func (c FilterClause) Filter(qf QFrame) QFrame {
+func (c Filter) Filter(qf QFrame) QFrame {
 	return qf.Filter(filter.Filter(c))
 }
 
-func (c FilterClause) Err() error {
+func (c Filter) Err() error {
 	return nil
 }
 
-func Not(c Clause) NotClause {
+func Not(c FilterClause) NotClause {
 	return NotClause{subClause: c}
 }
 
@@ -210,7 +206,7 @@ func (c NotClause) Filter(qf QFrame) QFrame {
 		return qf.withErr(c.Err())
 	}
 
-	if fc, ok := c.subClause.(FilterClause); ok {
+	if fc, ok := c.subClause.(Filter); ok {
 		f := filter.Filter(fc)
 		f.Inverse = !f.Inverse
 		return qf.Filter(f)

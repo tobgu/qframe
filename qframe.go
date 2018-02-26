@@ -589,27 +589,27 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 
 	namedSeries, ok := qf.seriesByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("Apply", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("Instruction", "no such column: %s", srcCol))
 	}
 
 	return qf.setSeries(dstCol, namedSeries.Series)
 }
 
-func (qf QFrame) Apply1(fn interface{}, dstCol, srcCol string) QFrame {
+func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	namedSeries, ok := qf.seriesByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("Apply1", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("apply1", "no such column: %s", srcCol))
 	}
 
 	srcSeries := namedSeries.Series
 
 	sliceResult, err := srcSeries.Apply1(fn, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("Apply1", err))
+		return qf.withErr(errors.Propagate("apply1", err))
 	}
 
 	var resultSeries series.Series
@@ -625,38 +625,79 @@ func (qf QFrame) Apply1(fn interface{}, dstCol, srcCol string) QFrame {
 	case series.Series:
 		resultSeries = t
 	default:
-		return qf.withErr(errors.New("Apply1", "unexpected type of new series %#v", t))
+		return qf.withErr(errors.New("apply1", "unexpected type of new series %#v", t))
 	}
 
 	return qf.setSeries(dstCol, resultSeries)
 }
 
-func (qf QFrame) Apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
+func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	namedSrcSeries1, ok := qf.seriesByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("Apply2", "no such column: %s", srcCol1))
+		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol1))
 	}
 	srcSeries1 := namedSrcSeries1.Series
 
 	namedSrcSeries2, ok := qf.seriesByName[srcCol2]
 	if !ok {
-		return qf.withErr(errors.New("Apply2", "no such column: %s", srcCol2))
+		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol2))
 	}
 	srcSeries2 := namedSrcSeries2.Series
 
 	resultSeries, err := srcSeries1.Apply2(fn, srcSeries2, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("Apply2", err))
+		return qf.withErr(errors.Propagate("apply2", err))
 	}
 
 	return qf.setSeries(dstCol, resultSeries)
 }
 
+type Instruction struct {
+	Fn      interface{}
+	DstCol  string
+	SrcCol1 string
+
+	// Optional field
+	SrcCol2 string
+}
+
+func (qf QFrame) Apply(instructions ...Instruction) QFrame {
+	result := qf
+	for _, a := range instructions {
+		if a.SrcCol2 == "" {
+			result = result.apply1(a.Fn, a.DstCol, a.SrcCol1)
+		} else {
+			result = result.apply2(a.Fn, a.DstCol, a.SrcCol1, a.SrcCol2)
+		}
+	}
+
+	return result
+}
+
+func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	filteredQf := clause.Filter(qf)
+	if filteredQf.Err != nil {
+		return filteredQf
+	}
+
+	// Use the filtered index when applying instructions then restore it to the original index.
+	newQf := qf
+	newQf.index = filteredQf.index
+	newQf = newQf.Apply(instructions...)
+	newQf.index = qf.index
+	return newQf
+}
+
 func (qf QFrame) GetSeries(name string) (series.Series, error) {
+	// TODO: Remove this function?
 	if qf.Err != nil {
 		return nil, qf.Err
 	}
@@ -873,7 +914,7 @@ func (qf QFrame) ByteSize() int {
 //   an additional, new, boolean slice that is kept in isolation and inverted before being
 //   merged with the current slice? Also consider "(not (or ....))".
 // - Change == to = for equality
-// - Also allow custom filtering by allowing functions "fn(type) bool" to be passed to filter.
+// - Also allow custom filtering by allowing functions "Fn(type) bool" to be passed to filter.
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
 // - Filtering by comparing to values in other columns
@@ -903,4 +944,4 @@ func (qf QFrame) ByteSize() int {
 // - Split series files into different files (aggregations, filters, apply funcs, etc.)
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
-// - Apply2 enum + string, convert enum to string automatically to allow it or are we fine with explicit casts?
+// - apply2 enum + string, convert enum to string automatically to allow it or are we fine with explicit casts?

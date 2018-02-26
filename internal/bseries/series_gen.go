@@ -68,12 +68,12 @@ func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
 	ss2, ok := s2.(Series)
 	if !ok {
-		return Series{}, fmt.Errorf("Apply2: invalid series type: %#v", s2)
+		return Series{}, fmt.Errorf("apply2: invalid series type: %#v", s2)
 	}
 
 	t, ok := fn.(func(bool, bool) (bool, error))
 	if !ok {
-		return Series{}, fmt.Errorf("Apply2: invalid function type: %#v", fn)
+		return Series{}, fmt.Errorf("apply2: invalid function type: %#v", fn)
 	}
 
 	result := make([]bool, len(s.data))
