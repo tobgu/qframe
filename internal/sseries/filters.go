@@ -105,7 +105,7 @@ func gt2(index index.Int, s, s2 Series, bIndex index.Bool) error {
 			if !isNull && !isNull2 {
 				bIndex[i] = str > str2
 			} else {
-				bIndex[i] = !isNull && isNull2
+				bIndex[i] = !isNull
 			}
 		}
 	}

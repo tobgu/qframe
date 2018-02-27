@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
-	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
 	"github.com/tobgu/qframe/internal/sseries"
@@ -20,6 +19,16 @@ const nullValue = maxCardinality
 
 func (v enumVal) isNull() bool {
 	return v == nullValue
+}
+
+func (v enumVal) compVal() int {
+	// Convenience function to be able to compare null and non null values
+	// in a straight forward way. Null is considered smaller than all other values.
+	if v == nullValue {
+		return -1
+	}
+
+	return int(v)
 }
 
 type Series struct {
@@ -117,16 +126,6 @@ func (f *Factory) ToSeries() Series {
 	return f.s
 }
 
-var filterFuncs = map[string]func(index.Int, []enumVal, enumVal, index.Bool){
-	filter.Gt: gt,
-	filter.Lt: lt,
-}
-
-var multiFilterFuncs = map[string]func(comparatee interface{}, values []string) (*bitset, error){
-	"like":  like,
-	"ilike": ilike,
-}
-
 var enumApplyFuncs = map[string]func(index.Int, Series) (interface{}, error){
 	"ToUpper": toUpper,
 }
@@ -218,7 +217,6 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 			if enumVal == oEnumVal {
 				continue
 			}
-
 			return false
 		}
 
@@ -257,17 +255,24 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
-func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
-	// TODO: Also make it possible to compare to values in other column
-	switch t := comparator.(type) {
-	case string:
-		compFunc, ok := filterFuncs[t]
-		if ok {
-			comp, ok := comparatee.(string)
-			if !ok {
-				return errors.New("Filter enum", "invalid comparison type, %s, expected string", comp)
-			}
+func equalTypes(s1, s2 Series) bool {
+	if len(s1.values) != len(s2.values) || len(s1.data) != len(s2.data) {
+		return false
+	}
 
+	for i, val := range s1.values {
+		if val != s2.values[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+	switch comp := comparatee.(type) {
+	case string:
+		if compFunc, ok := filterFuncs[comparator]; ok {
 			for i, value := range s.values {
 				if value == comp {
 					compFunc(index, s.data, enumVal(i), bIndex)
@@ -278,9 +283,8 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 			return errors.New("Filter enum", "Unknown enum value in filter argument: %s", comp)
 		}
 
-		multiFunc, ok := multiFilterFuncs[t]
-		if ok {
-			bset, err := multiFunc(comparatee, s.values)
+		if multiFunc, ok := multiFilterFuncs[comparator]; ok {
+			bset, err := multiFunc(comp, s.values)
 			if err != nil {
 				return errors.Propagate("Filter enum", err)
 			}
@@ -296,16 +300,59 @@ func (s Series) Filter(index index.Int, comparator interface{}, comparatee inter
 		}
 
 		return errors.New("Filter enum", "unknown comparison operator, %v", comparator)
-	case func(*string) bool:
-		for i, x := range bIndex {
-			if !x {
-				bIndex[i] = t(s.stringPtrAt(index[i]))
-			}
+	case Series:
+		if ok := equalTypes(s, comp); !ok {
+			return errors.New("Filter enum", "cannot compare enums of different types")
 		}
+
+		compFunc, ok := filterFuncs2[comparator]
+		if !ok {
+			return errors.New("Filter enum", "unknown comparison operator, %v", comparator)
+		}
+
+		compFunc(index, s.data, comp.data, bIndex)
 		return nil
 	default:
-		return errors.New("filter float", "invalid filter type %v", reflect.TypeOf(comparator))
+		return errors.New("Filter enum", "invalid comparison type, %s, expected string or other enum series", reflect.TypeOf(comparatee))
 	}
+}
+
+func (s Series) filterCustom1(index index.Int, fn func(*string) bool, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.stringPtrAt(index[i]))
+		}
+	}
+}
+
+func (s Series) filterCustom2(index index.Int, fn func(*string, *string) bool, comparatee interface{}, bIndex index.Bool) error {
+	otherS, ok := comparatee.(Series)
+	if !ok {
+		return errors.New("filter string", "expected comparatee to be string series, was %v", reflect.TypeOf(comparatee))
+	}
+
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(s.stringPtrAt(index[i]), otherS.stringPtrAt(index[i]))
+		}
+	}
+
+	return nil
+}
+
+func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+	var err error
+	switch t := comparator.(type) {
+	case string:
+		err = s.filterBuiltIn(index, t, comparatee, bIndex)
+	case func(*string) bool:
+		s.filterCustom1(index, t, bIndex)
+	case func(*string, *string) bool:
+		err = s.filterCustom2(index, t, comparatee, bIndex)
+	default:
+		err = errors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
+	}
+	return err
 }
 
 func (s Series) subset(index index.Int) Series {
@@ -464,53 +511,4 @@ type Comparable struct {
 	s       Series
 	ltValue series.CompareResult
 	gtValue series.CompareResult
-}
-
-func gt(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			enum := column[index[i]]
-			if !enum.isNull() {
-				bIndex[i] = enum > comparatee
-			}
-		}
-	}
-}
-
-func lt(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			enum := column[index[i]]
-			bIndex[i] = enum.isNull() || enum < comparatee
-		}
-	}
-}
-
-func like(comparatee interface{}, values []string) (*bitset, error) {
-	return filterLike(comparatee, values, true)
-}
-
-func ilike(comparatee interface{}, values []string) (*bitset, error) {
-	return filterLike(comparatee, values, false)
-}
-
-func filterLike(comparatee interface{}, values []string, caseSensitive bool) (*bitset, error) {
-	comp, ok := comparatee.(string)
-	if !ok {
-		return nil, errors.New("enum like", "invalid comparator type %v", comparatee)
-	}
-
-	matcher, err := qfstrings.NewMatcher(comp, caseSensitive)
-	if err != nil {
-		return nil, errors.Propagate("enum like", err)
-	}
-
-	bset := &bitset{}
-	for i, v := range values {
-		if matcher.Matches(v) {
-			bset.set(enumVal(i))
-		}
-	}
-
-	return bset, nil
 }

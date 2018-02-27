@@ -88,54 +88,70 @@ func TestQFrame_FilterAgainstSeries(t *testing.T) {
 		comparator interface{}
 		input      map[string]interface{}
 		expected   map[string]interface{}
+		configs    []qframe.ConfigFunc
 	}{
 		{
-			"built in int compare",
-			">",
-			map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
-			map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
+			name:       "built in int compare",
+			comparator: ">",
+			input:      map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
+			expected:   map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
 		{
-			"custom int compare",
-			func(a, b int) bool { return a > b },
-			map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
-			map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
+			name:       "custom int compare",
+			comparator: func(a, b int) bool { return a > b },
+			input:      map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
+			expected:   map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
 		{
-			"built in bool compare",
-			"=",
-			map[string]interface{}{"COL1": []bool{true, false, false}, "COL2": []bool{true, true, false}},
-			map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, false}}},
+			name:       "built in bool compare",
+			comparator: "=",
+			input:      map[string]interface{}{"COL1": []bool{true, false, false}, "COL2": []bool{true, true, false}},
+			expected:   map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, false}}},
 		{
-			"custom bool compare",
-			func(a, b bool) bool { return a == b },
-			map[string]interface{}{"COL1": []bool{true, false, false}, "COL2": []bool{true, true, false}},
-			map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, false}}},
+			name:       "custom bool compare",
+			comparator: func(a, b bool) bool { return a == b },
+			input:      map[string]interface{}{"COL1": []bool{true, false, false}, "COL2": []bool{true, true, false}},
+			expected:   map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, false}}},
 		{
-			"built in float compare",
-			"<",
-			map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
-			map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
+			name:       "built in float compare",
+			comparator: "<",
+			input:      map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
+			expected:   map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
 		{
-			"custon float compare",
-			func(a, b float64) bool { return a < b },
-			map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
-			map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
+			name:       "custon float compare",
+			comparator: func(a, b float64) bool { return a < b },
+			input:      map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
+			expected:   map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
 		{
-			"built in string compare",
-			"<",
-			map[string]interface{}{"COL1": []string{"a", "b", "c"}, "COL2": []string{"o", "a", "q"}},
-			map[string]interface{}{"COL1": []string{"b"}, "COL2": []string{"a"}}},
+			name:       "built in string compare",
+			comparator: "<",
+			input:      map[string]interface{}{"COL1": []string{"a", "b", "c"}, "COL2": []string{"o", "a", "q"}},
+			expected:   map[string]interface{}{"COL1": []string{"b"}, "COL2": []string{"a"}}},
 		{
-			"custom string compare",
-			func(a, b *string) bool { return *a < *b },
-			map[string]interface{}{"COL1": []string{"a", "b", "c"}, "COL2": []string{"o", "a", "q"}},
-			map[string]interface{}{"COL1": []string{"b"}, "COL2": []string{"a"}}},
+			name:       "custom string compare",
+			comparator: func(a, b *string) bool { return *a < *b },
+			input:      map[string]interface{}{"COL1": []string{"a", "b", "c"}, "COL2": []string{"o", "a", "q"}},
+			expected:   map[string]interface{}{"COL1": []string{"b"}, "COL2": []string{"a"}}},
+		{
+			name:       "built in enum compare",
+			comparator: "<",
+			input:      map[string]interface{}{"COL1": []string{"a", "b", "c"}, "COL2": []string{"o", "a", "q"}},
+			expected:   map[string]interface{}{"COL1": []string{"b"}, "COL2": []string{"a"}}},
+		{
+			name:       "custom enum compare",
+			comparator: func(a, b *string) bool { return *a < *b },
+			input:      map[string]interface{}{"COL1": []string{"a", "b", "c"}, "COL2": []string{"o", "a", "q"}},
+			expected:   map[string]interface{}{"COL1": []string{"b"}, "COL2": []string{"a"}},
+			configs: []qframe.ConfigFunc{qframe.Enums(map[string][]string{
+				"COL1": {"a", "b", "c", "o", "q"},
+				"COL2": {"a", "b", "c", "o", "q"},
+			})}},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
-			input := qframe.New(tc.input)
+			input := qframe.New(tc.input, tc.configs...)
 			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.SeriesName("COL1")})
-			assertEquals(t, qframe.New(tc.expected), output)
+			expected := qframe.New(tc.expected, tc.configs...)
+			assertEquals(t, expected, output)
 		})
 	}
 }
