@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
-	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/series"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
@@ -15,15 +14,6 @@ import (
 
 //easyjson:json
 type JsonString []*string
-
-var stringFilterFuncs = map[string]func(index.Int, Series, string, index.Bool) error{
-	filter.Gt:  gt,
-	filter.Lt:  lt,
-	filter.Eq:  eq,
-	filter.Neq: neq,
-	"like":     like,
-	"ilike":    ilike,
-}
 
 var stringApplyFuncs = map[string]func(index.Int, Series) (interface{}, error){
 	"ToUpper": toUpper,
@@ -146,109 +136,66 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 	return series.Equal
 }
 
+func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+	stringC, ok := comparatee.(string)
+	if ok {
+		filterFn, ok := filterFuncs[comparator]
+		if !ok {
+			return errors.New("filter string", "unknown filter operator %v", comparatee)
+		}
+		filterFn(index, s, stringC, bIndex)
+	} else {
+		seriesC, ok := comparatee.(Series)
+		if !ok {
+			return errors.New("filter string", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+		}
+
+		filterFn, ok := filterFuncs2[comparator]
+		if !ok {
+			return errors.New("filter string", "unknown filter operator %v", comparatee)
+		}
+		filterFn(index, s, seriesC, bIndex)
+	}
+
+	return nil
+}
+
+func (s Series) filterCustom1(index index.Int, fn func(*string) bool, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(stringToPtr(s.stringAt(index[i])))
+		}
+	}
+}
+
+func (s Series) filterCustom2(index index.Int, fn func(*string, *string) bool, comparatee interface{}, bIndex index.Bool) error {
+	otherS, ok := comparatee.(Series)
+	if !ok {
+		return errors.New("filter string", "expected comparatee to be string series, was %v", reflect.TypeOf(comparatee))
+	}
+
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = fn(stringToPtr(s.stringAt(index[i])), stringToPtr(otherS.stringAt(index[i])))
+		}
+	}
+
+	return nil
+}
+
 func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+	var err error
 	switch t := comparator.(type) {
 	case string:
-		if compFunc, ok := stringFilterFuncs[t]; ok {
-			sComp, ok := comparatee.(string)
-			if !ok {
-				return errors.New("filter string column", "invalid filter type, expected string")
-			}
-
-			return compFunc(index, s, sComp, bIndex)
-		}
-		return errors.New("filter string column", "Unknown filter %s", comparator)
+		err = s.filterBuiltIn(index, t, comparatee, bIndex)
 	case func(*string) bool:
-		for i, x := range bIndex {
-			if !x {
-				str, isNull := s.stringAt(index[i])
-				if isNull {
-					bIndex[i] = t(nil)
-				} else {
-					bIndex[i] = t(&str)
-				}
-			}
-		}
-		return nil
+		s.filterCustom1(index, t, bIndex)
+	case func(*string, *string) bool:
+		err = s.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		return errors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = errors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
-}
-
-func gt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = s > comparatee
-			}
-		}
-	}
-
-	return nil
-}
-
-func lt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			p := s.pointers[index[i]]
-			bIndex[i] = p.IsNull() || qfstrings.UnsafeBytesToString(s.data[p.Offset():p.Offset()+p.Len()]) < comparatee
-		}
-	}
-
-	return nil
-}
-
-func eq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = s == comparatee
-			}
-		}
-	}
-
-	return nil
-}
-
-func neq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = s != comparatee
-			}
-		}
-	}
-
-	return nil
-}
-
-func like(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
-	return regexFilter(index, s, comparatee, bIndex, true)
-}
-
-func ilike(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
-	return regexFilter(index, s, comparatee, bIndex, false)
-}
-
-func regexFilter(index index.Int, s Series, comparatee string, bIndex index.Bool, caseSensitive bool) error {
-	matcher, err := qfstrings.NewMatcher(comparatee, caseSensitive)
-	if err != nil {
-		return errors.Propagate("Regex filter", err)
-	}
-
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = matcher.Matches(s)
-			}
-		}
-	}
-
-	return nil
+	return err
 }
 
 type Series struct {
