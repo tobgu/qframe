@@ -124,9 +124,7 @@ func TestQFrame_FilterAgainstSeries(t *testing.T) {
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
 			input := qframe.New(tc.input)
-			arg, err := input.GetSeries("COL1")
-			assertNotErr(t, err)
-			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: arg})
+			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.SeriesName("COL1")})
 			assertEquals(t, qframe.New(tc.expected), output)
 		})
 	}

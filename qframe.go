@@ -184,6 +184,14 @@ func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 			return qf.withErr(errors.New("Filter", `column does not exist, "%s"`, f.Column))
 		}
 
+		if name, ok := f.Arg.(filter.SeriesName); ok {
+			argS, ok := qf.seriesByName[string(name)]
+			if !ok {
+				return qf.withErr(errors.New("Filter", `argument column does not exist, "%s"`, name))
+			}
+			f.Arg = argS.Series
+		}
+
 		//TODO: If comparing against a series verify that they have the same length
 		//      Perhaps we should not expose the series but instead create a new string
 		//      based type that is only used to denote this?
@@ -696,20 +704,6 @@ func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction)
 	return newQf
 }
 
-func (qf QFrame) GetSeries(name string) (series.Series, error) {
-	// TODO: Remove this function?
-	if qf.Err != nil {
-		return nil, qf.Err
-	}
-
-	s, ok := qf.seriesByName[name]
-	if !ok {
-		return nil, errors.New("GetSeries", "No such series in QFrame, %s", name)
-	}
-
-	return s.Series, nil
-}
-
 ////////////
 //// IO ////
 ////////////
@@ -917,7 +911,7 @@ func (qf QFrame) ByteSize() int {
 // - Also allow custom filtering by allowing functions "Fn(type) bool" to be passed to filter.
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
-// - Filtering by comparing to values in other columns
+// - Filtering by comparing to values in other columns for strings and enums
 
 // TODO:
 // - Make it possible to implement custom Series and use as input to QFrame constructor (this could probably
