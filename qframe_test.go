@@ -60,6 +60,16 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
 			qframe.New(map[string]interface{}{"COL1": []int{4, 5}})},
 		{
+			"built in 'in' with int",
+			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []int{3, 5}}},
+			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			qframe.New(map[string]interface{}{"COL1": []int{3, 5}})},
+		{
+			"built in 'in' with float (truncated to int)",
+			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []float64{3.4, 5.1}}},
+			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			qframe.New(map[string]interface{}{"COL1": []int{3, 5}})},
+		{
 			"combined with OR",
 			[]filter.Filter{
 				{Column: "COL1", Comparator: ">", Arg: 4},

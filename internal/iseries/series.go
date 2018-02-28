@@ -69,25 +69,52 @@ func intComp(comparatee interface{}) (int, bool) {
 	return comp, true
 }
 
+type intSet map[int]struct{}
+
+func newIntSet(input interface{}) (intSet, bool) {
+	var result intSet
+	var ok bool
+	switch t := input.(type) {
+	case []int:
+		result, ok = make(intSet, len(t)), true
+		for _, v := range t {
+			result[v] = struct{}{}
+		}
+	case []float64:
+		result, ok = make(intSet, len(t)), true
+		for _, v := range t {
+			result[int(v)] = struct{}{}
+		}
+	}
+	return result, ok
+}
+
+func (is intSet) Contains(x int) bool {
+	_, ok := is[x]
+	return ok
+}
+
 func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
-	intC, ok := intComp(comparatee)
-	if ok {
+	if intC, ok := intComp(comparatee); ok {
 		filterFn, ok := filterFuncs[comparator]
 		if !ok {
 			return errors.New("filter int", "unknown filter operator %v", comparatee)
 		}
 		filterFn(index, s.data, intC, bIndex)
-	} else {
-		seriesC, ok := comparatee.(Series)
+	} else if set, ok := newIntSet(comparatee); ok {
+		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
-			return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+			return errors.New("filter int", "unknown filter operator %v", comparatee)
 		}
-
+		filterFn(index, s.data, set, bIndex)
+	} else if seriesC, ok := comparatee.(Series); ok {
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
 			return errors.New("filter int", "unknown filter operator %v", comparatee)
 		}
 		filterFn(index, s.data, seriesC.data, bIndex)
+	} else {
+		return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
 
 	return nil

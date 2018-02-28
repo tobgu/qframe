@@ -13,6 +13,10 @@ var filterFuncs = map[string]func(index.Int, []int, int, index.Bool){
 	filter.Eq:  eq,
 }
 
+var multiInputFilterFuncs = map[string]func(index.Int, []int, intSet, index.Bool){
+	filter.In: in,
+}
+
 // Series - Series
 var filterFuncs2 = map[string]func(index.Int, []int, []int, index.Bool){
 	filter.Gt:  gt2,
@@ -85,6 +89,14 @@ func eq2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
 		if !x {
 			pos := index[i]
 			bIndex[i] = column[pos] == compCol[pos]
+		}
+	}
+}
+
+func in(index index.Int, column []int, comp intSet, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = comp.Contains(column[index[i]])
 		}
 	}
 }
