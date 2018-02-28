@@ -137,24 +137,28 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 }
 
 func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
-	stringC, ok := comparatee.(string)
-	if ok {
+	switch t := comparatee.(type) {
+	case string:
 		filterFn, ok := filterFuncs[comparator]
 		if !ok {
 			return errors.New("filter string", "unknown filter operator %v", comparatee)
 		}
-		filterFn(index, s, stringC, bIndex)
-	} else {
-		seriesC, ok := comparatee.(Series)
+		filterFn(index, s, t, bIndex)
+	case []string:
+		filterFn, ok := multiFilterFuncs[comparator]
 		if !ok {
-			return errors.New("filter string", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+			return errors.New("filter string", "unknown filter operator %v", comparatee)
 		}
 
+		filterFn(index, s, qfstrings.NewStringSet(t), bIndex)
+	case Series:
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
 			return errors.New("filter string", "unknown filter operator %v", comparatee)
 		}
-		filterFn(index, s, seriesC, bIndex)
+		filterFn(index, s, t, bIndex)
+	default:
+		return errors.New("filter string", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
 
 	return nil

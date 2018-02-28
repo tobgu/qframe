@@ -856,6 +856,11 @@ func TestQFrame_FilterString(t *testing.T) {
 			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: "b"}},
 			map[string]interface{}{"COL1": []*string{&b}},
 		},
+		{
+			withNil,
+			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []string{"a", "b"}}},
+			map[string]interface{}{"COL1": []*string{&b, &a}},
+		},
 	}
 
 	for i, tc := range table {

@@ -16,6 +16,10 @@ var filterFuncs = map[string]func(index.Int, Series, string, index.Bool) error{
 	"ilike":    ilike,
 }
 
+var multiFilterFuncs = map[string]func(index.Int, Series, qfstrings.StringSet, index.Bool) error{
+	filter.In: in,
+}
+
 var filterFuncs2 = map[string]func(index.Int, Series, Series, index.Bool) error{
 	filter.Gt: gt2,
 	filter.Lt: lt2,
@@ -77,6 +81,19 @@ func like(index index.Int, s Series, comparatee string, bIndex index.Bool) error
 
 func ilike(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	return regexFilter(index, s, comparatee, bIndex, false)
+}
+
+func in(index index.Int, s Series, comparatee qfstrings.StringSet, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			s, isNull := s.stringAt(index[i])
+			if !isNull {
+				bIndex[i] = comparatee.Contains(s)
+			}
+		}
+	}
+
+	return nil
 }
 
 func regexFilter(index index.Int, s Series, comparatee string, bIndex index.Bool, caseSensitive bool) error {
