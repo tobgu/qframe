@@ -109,6 +109,52 @@ func BenchmarkQFrame_FilterIntGeneral(b *testing.B) {
 	}
 }
 
+func rangeSlice(size int) []int {
+	result := make([]int, size)
+	for i := 0; i < size; i++ {
+		result[i] = i
+	}
+	return result
+}
+
+func BenchmarkQFrame_FilterIntBuiltinIn(b *testing.B) {
+	data := exampleIntFrame(frameSize)
+	slice := rangeSlice(frameSize / 100)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		newData := data.Filter(filter.Filter{Column: "S1", Comparator: "in", Arg: slice})
+		if newData.Err != nil {
+			b.Errorf("Length was Err: %s", newData.Err)
+		}
+	}
+}
+
+func intInFilter(input []int) func(int) bool {
+	set := make(map[int]struct{}, len(input))
+	for _, x := range input {
+		set[x] = struct{}{}
+	}
+
+	return func(x int) bool {
+		_, ok := set[x]
+		return ok
+	}
+}
+
+func BenchmarkQFrame_FilterIntGeneralIn(b *testing.B) {
+	data := exampleIntFrame(frameSize)
+	slice := rangeSlice(frameSize / 100)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		newData := data.Filter(filter.Filter{Column: "S1", Comparator: intInFilter(slice)})
+		if newData.Err != nil {
+			b.Errorf("Length was Err: %s", newData.Err)
+		}
+	}
+}
+
 func BenchmarkQFrame_FilterNot(b *testing.B) {
 	data := qf.New(map[string]interface{}{
 		"S1": genInts(seed1, frameSize)})
@@ -789,4 +835,8 @@ BenchmarkQFrame_ApplyEnum/Apply_int_function_(for_reference)-2 	    1000	   1550
 BenchmarkQFrame_FilterIntBuiltIn-2   	    1000	   1685483 ns/op	  221184 B/op	       2 allocs/op
 BenchmarkQFrame_FilterIntGeneral-2   	     500	   2631678 ns/op	  221239 B/op	       5 allocs/op
 
+// Only minor difference in performance between built in and general filtering here. Map access dominates
+// the execution time.
+BenchmarkQFrame_FilterIntGeneralIn-2   	     500	   3321307 ns/op	  132571 B/op	      10 allocs/op
+BenchmarkQFrame_FilterIntBuiltinIn-2   	     500	   3055410 ns/op	  132591 B/op	      10 allocs/op
 */

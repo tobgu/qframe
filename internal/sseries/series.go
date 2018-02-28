@@ -141,20 +141,20 @@ func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee int
 	case string:
 		filterFn, ok := filterFuncs[comparator]
 		if !ok {
-			return errors.New("filter string", "unknown filter operator %v", comparatee)
+			return errors.New("filter string", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, s, t, bIndex)
 	case []string:
 		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
-			return errors.New("filter string", "unknown filter operator %v", comparatee)
+			return errors.New("filter string", "unknown filter operator %v", comparator)
 		}
 
 		filterFn(index, s, qfstrings.NewStringSet(t), bIndex)
 	case Series:
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter string", "unknown filter operator %v", comparatee)
+			return errors.New("filter string", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, s, t, bIndex)
 	default:

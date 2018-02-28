@@ -98,19 +98,19 @@ func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee int
 	if intC, ok := intComp(comparatee); ok {
 		filterFn, ok := filterFuncs[comparator]
 		if !ok {
-			return errors.New("filter int", "unknown filter operator %v", comparatee)
+			return errors.New("filter int", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, s.data, intC, bIndex)
 	} else if set, ok := newIntSet(comparatee); ok {
 		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
-			return errors.New("filter int", "unknown filter operator %v", comparatee)
+			return errors.New("filter int", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, s.data, set, bIndex)
 	} else if seriesC, ok := comparatee.(Series); ok {
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter int", "unknown filter operator %v", comparatee)
+			return errors.New("filter int", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, s.data, seriesC.data, bIndex)
 	} else {
