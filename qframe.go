@@ -902,16 +902,12 @@ func (qf QFrame) ByteSize() int {
 
 // TODO filter
 // - Complete basic filtering for all types
-// - Implement "in"
 // - Bitwise filters for int (and their inverse/not?), or can we handle not in a more general
 //   way where no complementary functions are implemented by adding an extra step involving
 //   an additional, new, boolean slice that is kept in isolation and inverted before being
 //   merged with the current slice? Also consider "(not (or ....))".
-// - Change == to = for equality
-// - Also allow custom filtering by allowing functions "Fn(type) bool" to be passed to filter.
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
-// - Filtering by comparing to values in other columns for strings and enums
 
 // TODO:
 // - Make it possible to implement custom Series and use as input to QFrame constructor (this could probably
