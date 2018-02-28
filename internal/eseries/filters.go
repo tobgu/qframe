@@ -22,6 +22,10 @@ var multiFilterFuncs = map[string]func(comparatee string, values []string) (*bit
 	"ilike": ilike,
 }
 
+var multiInputFilterFuncs = map[string]func(comparatee qfstrings.StringSet, values []string) *bitset{
+	"in": in,
+}
+
 func gt(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
@@ -78,4 +82,15 @@ func lt2(index index.Int, col []enumVal, col2 []enumVal, bIndex index.Bool) {
 			bIndex[i] = col[index[i]].compVal() < col2[index[i]].compVal()
 		}
 	}
+}
+
+func in(comp qfstrings.StringSet, values []string) *bitset {
+	bset := &bitset{}
+	for i, v := range values {
+		if comp.Contains(v) {
+			bset.set(enumVal(i))
+		}
+	}
+
+	return bset
 }

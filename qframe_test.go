@@ -818,8 +818,8 @@ func TestQFrame_FilterEnum(t *testing.T) {
 			map[string]interface{}{"COL1": []*string{&c, &e, &d}},
 		},
 		{
-			[]filter.Filter{{Column: "COL1", Comparator: "<", Arg: "b"}},
-			map[string]interface{}{"COL1": []*string{&a, nil, nil}},
+			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []string{"a", "b"}}},
+			map[string]interface{}{"COL1": []*string{&b, &a}},
 		},
 	}
 

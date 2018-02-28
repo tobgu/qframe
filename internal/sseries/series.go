@@ -145,7 +145,7 @@ func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee int
 		}
 		filterFn(index, s, t, bIndex)
 	case []string:
-		filterFn, ok := multiFilterFuncs[comparator]
+		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
 			return errors.New("filter string", "unknown filter operator %v", comparatee)
 		}

@@ -16,7 +16,7 @@ var filterFuncs = map[string]func(index.Int, Series, string, index.Bool) error{
 	"ilike":    ilike,
 }
 
-var multiFilterFuncs = map[string]func(index.Int, Series, qfstrings.StringSet, index.Bool) error{
+var multiInputFilterFuncs = map[string]func(index.Int, Series, qfstrings.StringSet, index.Bool) error{
 	filter.In: in,
 }
 

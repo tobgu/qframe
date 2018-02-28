@@ -269,6 +269,15 @@ func equalTypes(s1, s2 Series) bool {
 	return true
 }
 
+func (s Series) filterWithBitset(index index.Int, bset *bitset, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			enum := s.data[index[i]]
+			bIndex[i] = bset.isSet(enum)
+		}
+	}
+}
+
 func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
 	switch comp := comparatee.(type) {
 	case string:
@@ -289,13 +298,15 @@ func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee int
 				return errors.Propagate("Filter enum", err)
 			}
 
-			for i, x := range bIndex {
-				if !x {
-					enum := s.data[index[i]]
-					bIndex[i] = bset.isSet(enum)
-				}
-			}
+			s.filterWithBitset(index, bset, bIndex)
+			return nil
+		}
 
+		return errors.New("Filter enum", "unknown comparison operator, %v", comparator)
+	case []string:
+		if multiFunc, ok := multiInputFilterFuncs[comparator]; ok {
+			bset := multiFunc(qfstrings.NewStringSet(comp), s.values)
+			s.filterWithBitset(index, bset, bIndex)
 			return nil
 		}
 
