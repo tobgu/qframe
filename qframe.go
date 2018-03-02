@@ -230,6 +230,11 @@ func (qf QFrame) AddColumn(name string, data interface{}, fns ...ConfigFunc) QFr
 	return qf.setSeries(name, localS)
 }
 
+func (qf QFrame) Contains(colName string) bool {
+	_, ok := qf.seriesByName[colName]
+	return ok
+}
+
 func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -994,4 +999,3 @@ func (qf QFrame) ByteSize() int {
 // - Switch to using vgo for dependencies?
 // - apply2 enum + string, convert enum to string automatically to allow it or are we fine with explicit casts?
 // - Make it possible to access columns and individual elements in the QFrame.
-// - Contains(colName string) bool method to check if a column is present in the QFrame.
