@@ -1213,3 +1213,36 @@ func TestQFrame_InitWithConstantVal(t *testing.T) {
 		})
 	}
 }
+
+func TestQFrame_AddColumn(t *testing.T) {
+	table := []struct {
+		name  string
+		input interface{}
+		added interface{}
+		enums map[string][]string
+	}{
+		{
+			name:  "int",
+			input: []int{1, 2},
+			added: []int{3, 4}},
+		{
+			name:  "enum",
+			input: []string{"a", "b"},
+			added: []string{"c", "d"},
+			enums: map[string][]string{"COL2": nil}},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			in := qframe.New(map[string]interface{}{"COL1": tc.input})
+			original := qframe.New(map[string]interface{}{"COL1": tc.input})
+			inAdded := in.AddColumn("COL2", tc.added, qframe.Enums(tc.enums))
+			expected := qframe.New(map[string]interface{}{"COL1": tc.input, "COL2": tc.added}, qframe.Enums(tc.enums))
+			assertEquals(t, expected, inAdded)
+
+			// Original input not modified
+			assertEquals(t, original, in)
+
+		})
+	}
+}

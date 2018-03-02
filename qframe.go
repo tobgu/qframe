@@ -45,6 +45,14 @@ type Config struct {
 
 type ConfigFunc func(c *Config)
 
+func newConfig(fns []ConfigFunc) *Config {
+	config := &Config{}
+	for _, fn := range fns {
+		fn(config)
+	}
+	return config
+}
+
 func ColumnOrder(columns ...string) ConfigFunc {
 	return func(c *Config) {
 		c.columnOrder = make([]string, len(columns))
@@ -155,11 +163,7 @@ func createSeries(name string, column interface{}, config *Config) (series.Serie
 }
 
 func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
-	config := &Config{}
-	for _, fn := range fns {
-		fn(config)
-	}
-
+	config := newConfig(fns)
 	if len(config.columnOrder) == 0 {
 		config.columnOrder = make([]string, 0, len(data))
 		for name := range data {
@@ -210,6 +214,20 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	}
 
 	return QFrame{series: s, seriesByName: sByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
+}
+
+func (qf QFrame) AddColumn(name string, data interface{}, fns ...ConfigFunc) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	config := newConfig(fns)
+	localS, err := createSeries(name, data, config)
+	if err != nil {
+		return QFrame{Err: err}
+	}
+
+	return qf.setSeries(name, localS)
 }
 
 func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
@@ -975,6 +993,5 @@ func (qf QFrame) ByteSize() int {
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
 // - apply2 enum + string, convert enum to string automatically to allow it or are we fine with explicit casts?
-// - Make it possible to create columns with fixed or generated values
-// - Make it possible to "add" (creating a new QFrame) column to an existing QFrame
-// - Make it possible to access columns and individual elements in the dataframe.
+// - Make it possible to access columns and individual elements in the QFrame.
+// - Contains(colName string) bool method to check if a column is present in the QFrame.
