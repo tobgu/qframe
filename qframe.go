@@ -73,6 +73,87 @@ func (qf QFrame) withIndex(ix index.Int) QFrame {
 	return QFrame{Err: qf.Err, series: qf.series, seriesByName: qf.seriesByName, index: ix}
 }
 
+type ConstString struct {
+	Val   *string
+	Count int
+}
+
+type ConstInt struct {
+	Val   int
+	Count int
+}
+
+type ConstFloat struct {
+	Val   float64
+	Count int
+}
+
+type ConstBool struct {
+	Val   bool
+	Count int
+}
+
+func createSeries(name string, column interface{}, config *Config) (series.Series, error) {
+	var localS series.Series
+
+	// TODO: Change this case to use strings directly for strings and enums
+	if sc, ok := column.([]string); ok {
+		// Convenience conversion to support string slices in addition
+		// to string pointer slices.
+		sp := make([]*string, len(sc))
+		for i := range sc {
+			sp[i] = &sc[i]
+		}
+		column = sp
+	}
+
+	var err error
+	switch c := column.(type) {
+	case []int:
+		localS = iseries.New(c)
+	case ConstInt:
+		localS = iseries.NewConst(c.Val, c.Count)
+	case []float64:
+		localS = fseries.New(c)
+	case ConstFloat:
+		localS = fseries.NewConst(c.Val, c.Count)
+	case []*string:
+		if values, ok := config.enumColumns[name]; ok {
+			localS, err = eseries.New(c, values)
+			if err != nil {
+				return nil, errors.Propagate(fmt.Sprintf("New column %s", name), err)
+			}
+			// Book keeping
+			delete(config.enumColumns, name)
+		} else {
+			localS = sseries.New(c)
+		}
+	case ConstString:
+		if values, ok := config.enumColumns[name]; ok {
+			localS, err = eseries.NewConst(c.Val, c.Count, values)
+			if err != nil {
+				return nil, errors.Propagate(fmt.Sprintf("New column %s", name), err)
+			}
+			// Book keeping
+			delete(config.enumColumns, name)
+		} else {
+			localS = sseries.NewConst(c.Val, c.Count)
+		}
+
+	case []bool:
+		localS = bseries.New(c)
+	case ConstBool:
+		localS = bseries.NewConst(c.Val, c.Count)
+	case eseries.Series:
+		localS = c
+	case qfstrings.StringBlob:
+		localS = sseries.NewBytes(c.Pointers, c.Data)
+	default:
+		return nil, errors.New("New", "unknown column format of: %v", c)
+	}
+	return localS, nil
+}
+
 func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	config := &Config{}
 	for _, fn := range fns {
@@ -101,56 +182,15 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	sByName := make(map[string]namedSeries, len(data))
 	firstLen, currentLen := 0, 0
 	for i, name := range config.columnOrder {
-		var localS series.Series
 		column := data[name]
-
-		// TODO: Change this case to use strings directly for strings and enums
-		if sc, ok := column.([]string); ok {
-			// Convenience conversion to support string slices in addition
-			// to string pointer slices.
-			sp := make([]*string, len(sc))
-			for i := range sc {
-				sp[i] = &sc[i]
-			}
-			column = sp
-		}
-
-		var err error
-		switch c := column.(type) {
-		case []int:
-			localS = iseries.New(c)
-			currentLen = len(c)
-		case []float64:
-			localS = fseries.New(c)
-			currentLen = len(c)
-		case []*string:
-			if values, ok := config.enumColumns[name]; ok {
-				localS, err = eseries.New(c, values)
-				if err != nil {
-					return QFrame{Err: errors.Propagate(fmt.Sprintf("New column %s", name), err)}
-				}
-				// Book keeping
-				delete(config.enumColumns, name)
-			} else {
-				localS = sseries.New(c)
-			}
-			currentLen = len(c)
-		case []bool:
-			localS = bseries.New(c)
-			currentLen = len(c)
-		case eseries.Series:
-			localS = c
-			currentLen = c.Len()
-		case qfstrings.StringBlob:
-			localS = sseries.NewBytes(c.Pointers, c.Data)
-			currentLen = len(c.Pointers)
-		default:
-			return QFrame{Err: errors.New("New", "unknown column format of: %v", c)}
+		localS, err := createSeries(name, column, config)
+		if err != nil {
+			return QFrame{Err: err}
 		}
 
 		s[i] = namedSeries{name: name, Series: localS, pos: i}
 		sByName[name] = s[i]
-
+		currentLen = localS.Len()
 		if firstLen == 0 {
 			firstLen = currentLen
 		}
@@ -935,3 +975,6 @@ func (qf QFrame) ByteSize() int {
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
 // - apply2 enum + string, convert enum to string automatically to allow it or are we fine with explicit casts?
+// - Make it possible to create columns with fixed or generated values
+// - Make it possible to "add" (creating a new QFrame) column to an existing QFrame
+// - Make it possible to access columns and individual elements in the dataframe.

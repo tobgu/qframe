@@ -24,6 +24,18 @@ func New(d []dataType) Series {
 	return Series{data: d}
 }
 
+func NewConst(val dataType, count int) Series {
+	var nullVal dataType
+	data := make([]dataType, count)
+	if val != nullVal {
+		for i := range data {
+			data[i] = val
+		}
+	}
+
+	return Series{data: data}
+}
+
 // Apply single argument function. The result may be a column
 // of a different type than the current series.
 func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
@@ -113,6 +125,10 @@ func (s Series) Comparable(reverse bool) series.Comparable {
 
 func (s Series) String() string {
 	return fmt.Sprintf("%v", s.data)
+}
+
+func (s Series) Len() int {
+	return len(s.data)
 }
 
 func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, error) {

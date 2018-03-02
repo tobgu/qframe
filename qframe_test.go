@@ -1164,3 +1164,52 @@ func TestQFrame_AggregateStrings(t *testing.T) {
 		})
 	}
 }
+
+func TestQFrame_InitWithConstantVal(t *testing.T) {
+	a := "a"
+	table := []struct {
+		name     string
+		input    interface{}
+		expected interface{}
+		enums    map[string][]string
+	}{
+		{
+			name:     "int",
+			input:    qframe.ConstInt{Val: 33, Count: 2},
+			expected: []int{33, 33}},
+		{
+			name:     "float",
+			input:    qframe.ConstFloat{Val: 33.5, Count: 2},
+			expected: []float64{33.5, 33.5}},
+		{
+			name:     "bool",
+			input:    qframe.ConstBool{Val: true, Count: 2},
+			expected: []bool{true, true}},
+		{
+			name:     "string",
+			input:    qframe.ConstString{Val: &a, Count: 2},
+			expected: []string{"a", "a"}},
+		{
+			name:     "string null",
+			input:    qframe.ConstString{Val: nil, Count: 2},
+			expected: []*string{nil, nil}},
+		{
+			name:     "enum",
+			input:    qframe.ConstString{Val: &a, Count: 2},
+			expected: []string{"a", "a"},
+			enums:    map[string][]string{"COL1": nil}},
+		{
+			name:     "enum null",
+			input:    qframe.ConstString{Val: nil, Count: 2},
+			expected: []*string{nil, nil},
+			enums:    map[string][]string{"COL1": nil}},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			in := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(tc.enums))
+			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(tc.enums))
+			assertEquals(t, expected, in)
+		})
+	}
+}

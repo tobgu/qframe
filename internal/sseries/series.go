@@ -83,6 +83,10 @@ func (s Series) ByteSize() int {
 	return 8*len(s.pointers) + cap(s.data)
 }
 
+func (s Series) Len() int {
+	return len(s.pointers)
+}
+
 func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
 	otherS, ok := other.(Series)
 	if !ok {
@@ -236,6 +240,26 @@ func New(strings []*string) Series {
 			pointers[i] = qfstrings.NewPointer(offset, sLen, false)
 			offset += sLen
 			data = append(data, *s...)
+		}
+	}
+
+	return NewBytes(pointers, data)
+}
+
+func NewConst(val *string, count int) Series {
+	var data []byte
+	pointers := make([]qfstrings.Pointer, count)
+	if val == nil {
+		data = make([]byte, 0)
+		for i := range pointers {
+			pointers[i] = qfstrings.NewPointer(0, 0, true)
+		}
+	} else {
+		sLen := len(*val)
+		data = make([]byte, 0, count*sLen)
+		for i := range pointers {
+			pointers[i] = qfstrings.NewPointer(i*sLen, sLen, false)
+			data = append(data, *val...)
 		}
 	}
 

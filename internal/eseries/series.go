@@ -62,6 +62,24 @@ func New(data []*string, values []string) (Series, error) {
 	return f.ToSeries(), nil
 }
 
+func NewConst(val *string, count int, values []string) (Series, error) {
+	f, err := NewFactory(values, count)
+	if err != nil {
+		return Series{}, err
+	}
+
+	eV, err := f.enumVal(val)
+	if err != nil {
+		return Series{}, err
+	}
+
+	for i := 0; i < count; i++ {
+		f.AppendEnum(eV)
+	}
+
+	return f.ToSeries(), nil
+}
+
 func NewFactory(values []string, sizeHint int) (*Factory, error) {
 	if len(values) > maxCardinality {
 		return nil, errors.New("New enum", "too many unique values, max cardinality is %d", maxCardinality)
@@ -76,18 +94,23 @@ func NewFactory(values []string, sizeHint int) (*Factory, error) {
 		valToEnum[v] = enumVal(i)
 	}
 
-	return &Factory{s: Series{data: make([]enumVal, 0, sizeHint), values: values},
+	return &Factory{s: Series{
+		data: make([]enumVal, 0, sizeHint), values: values},
 		valToEnum: valToEnum,
 		strict:    len(values) > 0}, nil
 }
 
 func (f *Factory) AppendNil() {
-	f.s.data = append(f.s.data, nullValue)
+	f.AppendEnum(nullValue)
+}
+
+func (f *Factory) AppendEnum(val enumVal) {
+	f.s.data = append(f.s.data, val)
 }
 
 func (f *Factory) AppendByteString(str []byte) error {
 	if e, ok := f.valToEnum[string(str)]; ok {
-		f.s.data = append(f.s.data, e)
+		f.AppendEnum(e)
 		return nil
 	}
 
@@ -104,6 +127,33 @@ func (f *Factory) AppendString(str string) error {
 	return f.appendString(str)
 }
 
+func (f *Factory) newEnumVal(s string) enumVal {
+	ev := enumVal(len(f.s.values))
+	f.s.values = append(f.s.values, s)
+	f.valToEnum[s] = ev
+	return ev
+}
+
+func (f *Factory) enumVal(s *string) (enumVal, error) {
+	if s == nil {
+		return nullValue, nil
+	}
+
+	if e, ok := f.valToEnum[*s]; ok {
+		return e, nil
+	}
+
+	if f.strict {
+		return 0, errors.New("enum val", `unknown enum value "%s" using strict enum`, *s)
+	}
+
+	if len(f.s.values) >= maxCardinality {
+		return 0, errors.New("enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
+	}
+
+	return f.newEnumVal(*s), nil
+}
+
 func (f *Factory) appendString(str string) error {
 	if f.strict {
 		return errors.New("append enum val", `unknown enum value "%s" using strict enum`, str)
@@ -113,10 +163,8 @@ func (f *Factory) appendString(str string) error {
 		return errors.New("append enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
 	}
 
-	f.s.values = append(f.s.values, str)
-	ev := enumVal(len(f.s.values) - 1)
+	ev := f.newEnumVal(str)
 	f.s.data = append(f.s.data, ev)
-	f.valToEnum[str] = ev
 	return nil
 }
 
