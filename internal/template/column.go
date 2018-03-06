@@ -157,8 +157,36 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	return Column{data: data}, nil
 }
 
+func (c Column) View(ix index.Int) View {
+	return View{data: c.data, index: ix}
+}
+
 type Comparable struct {
 	data    []dataType
 	ltValue column.CompareResult
 	gtValue column.CompareResult
+}
+
+type View struct {
+	data  []dataType
+	index index.Int
+}
+
+func (v View) ItemAt(i int) dataType {
+	return v.data[v.index[i]]
+}
+
+func (v View) Len() int {
+	return len(v.index)
+}
+
+// TODO: This forces an alloc, as an alternative a slice could be taken
+//       as input that can be (re)used by the client. Are there use cases
+//       where this would actually make sense?
+func (v View) Slice() []dataType {
+	result := make([]dataType, v.Len())
+	for i, j := range v.index {
+		result[i] = v.data[j]
+	}
+	return result
 }

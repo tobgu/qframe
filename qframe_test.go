@@ -1242,3 +1242,19 @@ func TestQFrame_InitWithConstantVal(t *testing.T) {
 		})
 	}
 }
+
+func TestQFrame_FloatView(t *testing.T) {
+	input := qframe.New(map[string]interface{}{"COL1": []float64{1.5, 0.5, 3.0}})
+	input = input.Sort(qframe.Order{Column: "COL1"})
+	expected := []float64{0.5, 1.5, 3.0}
+
+	v, err := input.FloatView("COL1")
+	assertNotErr(t, err)
+
+	s := v.Slice()
+	assertTrue(t, v.Len() == len(expected))
+	assertTrue(t, len(s) == len(expected))
+	assertTrue(t, (v.ItemAt(0) == s[0]) && (s[0] == expected[0]))
+	assertTrue(t, (v.ItemAt(1) == s[1]) && (s[1] == expected[1]))
+	assertTrue(t, (v.ItemAt(2) == s[2]) && (s[2] == expected[2]))
+}

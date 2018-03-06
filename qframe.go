@@ -812,6 +812,27 @@ func (qf QFrame) FilteredAssign(clause FilterClause, instructions ...Instruction
 	return newQf
 }
 
+type FloatView struct {
+	fcolumn.View
+}
+
+func (qf QFrame) FloatView(name string) (FloatView, error) {
+	namedColumn, ok := qf.columnsByName[name]
+	if !ok {
+		return FloatView{}, errors.New("FloatView", "no such column: %s", name)
+	}
+
+	fCol, ok := namedColumn.Column.(fcolumn.Column)
+	if !ok {
+		return FloatView{}, errors.New(
+			"FloatView",
+			"invalid column typem, expected float, was: %v",
+			reflect.TypeOf(namedColumn.Column))
+	}
+
+	return FloatView{fCol.View(qf.index)}, nil
+}
+
 ////////////
 //// IO ////
 ////////////
@@ -1042,4 +1063,3 @@ func (qf QFrame) ByteSize() int {
 // - Switch to using vgo for dependencies?
 // - Make it possible to access columns and individual elements in the QFrame.
 // - AssingN?
-// - Rename columns -> columns(s)
