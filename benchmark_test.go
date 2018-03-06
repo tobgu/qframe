@@ -600,13 +600,13 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 }
 
-func benchApply(b *testing.B, name string, input qf.QFrame, fn interface{}) {
+func benchAssign(b *testing.B, name string, input qf.QFrame, fn interface{}) {
 	b.Helper()
 	b.Run(name, func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			result := input.Apply(qf.Instruction{Fn: fn, DstCol: "COL.1", SrcCol1: "COL.1"})
+			result := input.Assign(qf.Instruction{Fn: fn, DstCol: "COL.1", SrcCol1: "COL.1"})
 			if result.Err != nil {
 				b.Errorf("Err: %s, %s", result.Len(), result.Err)
 			}
@@ -615,27 +615,27 @@ func benchApply(b *testing.B, name string, input qf.QFrame, fn interface{}) {
 
 }
 
-func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
+func BenchmarkQFrame_AssignStringToString(b *testing.B) {
 	rowCount := 100000
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
 	df := qf.ReadCsv(r)
 
-	benchApply(b, "Instruction with custom function", df, toUpper)
-	benchApply(b, "Instruction with builtin function", df, "ToUpper")
+	benchAssign(b, "Instruction with custom function", df, toUpper)
+	benchAssign(b, "Instruction with builtin function", df, "ToUpper")
 }
 
-func BenchmarkQFrame_ApplyEnum(b *testing.B) {
+func BenchmarkQFrame_AssignEnum(b *testing.B) {
 	rowCount := 100000
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
 	df := qf.ReadCsv(r, qf.Types(map[string]string{"COL.1": "enum"}))
 
-	benchApply(b, "Instruction with custom function", df, toUpper)
-	benchApply(b, "Instruction with built in function", df, "ToUpper")
-	benchApply(b, "Instruction int function (for reference)", df, func(x *string) (int, error) { return len(*x), nil })
+	benchAssign(b, "Instruction with custom function", df, toUpper)
+	benchAssign(b, "Instruction with built in function", df, "ToUpper")
+	benchAssign(b, "Instruction int function (for reference)", df, func(x *string) (int, error) { return len(*x), nil })
 }
 
 /*
@@ -822,13 +822,13 @@ BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_false-2      
 BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       	    2000	    691971 ns/op	  155824 B/op	       9 allocs/op
 
 // Compare string to upper, first as general custom function, second as specialized built in function.
-BenchmarkQFrame_ApplyStringToString/Apply_with_custom_function-2         	      30	  42895890 ns/op	17061043 B/op	  400020 allocs/op
-BenchmarkQFrame_ApplyStringToString/Apply_with_built_in_function-2       	     100	  12163217 ns/op	 2107024 B/op	       7 allocs/op
+BenchmarkQFrame_AssignStringToString/Assign_with_custom_function-2         	      30	  42895890 ns/op	17061043 B/op	  400020 allocs/op
+BenchmarkQFrame_AssignStringToString/Assign_with_built_in_function-2       	     100	  12163217 ns/op	 2107024 B/op	       7 allocs/op
 
-// Compare apply for enums
-BenchmarkQFrame_ApplyEnum/Apply_with_custom_function-2         	      50	  38505068 ns/op	15461041 B/op	  300020 allocs/op
-BenchmarkQFrame_ApplyEnum/Apply_with_built_in_function-2       	  300000	      3566 ns/op	    1232 B/op	      23 allocs/op
-BenchmarkQFrame_ApplyEnum/Apply_int_function_(for_reference)-2 	    1000	   1550604 ns/op	  803491 B/op	       6 allocs/op
+// Compare assign for enums
+BenchmarkQFrame_AssignEnum/Assign_with_custom_function-2         	      50	  38505068 ns/op	15461041 B/op	  300020 allocs/op
+BenchmarkQFrame_AssignEnum/Assign_with_built_in_function-2       	  300000	      3566 ns/op	    1232 B/op	      23 allocs/op
+BenchmarkQFrame_AssignEnum/Assign_int_function_(for_reference)-2 	    1000	   1550604 ns/op	  803491 B/op	       6 allocs/op
 
 // The difference in using built in filter vs general filter func passed as argument. Basically the overhead of a function
 // call for each row. Smaller than I would have thought actually.

@@ -653,7 +653,7 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 	return qf.setSeries(dstCol, namedSeries.Series)
 }
 
-func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
+func (qf QFrame) assign0(fn interface{}, dstCol string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -698,7 +698,7 @@ func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 	case *string:
 		data = ConstString{Val: t, Count: colLen}
 	default:
-		return qf.withErr(errors.New("apply 0", "unknown assign type: %v", reflect.TypeOf(fn)))
+		return qf.withErr(errors.New("assign0", "unknown assign type: %v", reflect.TypeOf(fn)))
 	}
 
 	c, err := createSeries(dstCol, data, newConfig(nil))
@@ -709,21 +709,21 @@ func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 	return qf.setSeries(dstCol, c)
 }
 
-func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
+func (qf QFrame) assign1(fn interface{}, dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	namedSeries, ok := qf.seriesByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("apply1", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("assign1", "no such column: %s", srcCol))
 	}
 
 	srcSeries := namedSeries.Series
 
 	sliceResult, err := srcSeries.Apply1(fn, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("apply1", err))
+		return qf.withErr(errors.Propagate("assign1", err))
 	}
 
 	var resultSeries series.Series
@@ -739,62 +739,62 @@ func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
 	case series.Series:
 		resultSeries = t
 	default:
-		return qf.withErr(errors.New("apply1", "unexpected type of new series %#v", t))
+		return qf.withErr(errors.New("assign1", "unexpected type of new series %#v", t))
 	}
 
 	return qf.setSeries(dstCol, resultSeries)
 }
 
-func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
+func (qf QFrame) assign2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	namedSrcSeries1, ok := qf.seriesByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol1))
+		return qf.withErr(errors.New("assign2", "no such column: %s", srcCol1))
 	}
 	srcSeries1 := namedSrcSeries1.Series
 
 	namedSrcSeries2, ok := qf.seriesByName[srcCol2]
 	if !ok {
-		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol2))
+		return qf.withErr(errors.New("assign2", "no such column: %s", srcCol2))
 	}
 	srcSeries2 := namedSrcSeries2.Series
 
 	resultSeries, err := srcSeries1.Apply2(fn, srcSeries2, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("apply2", err))
+		return qf.withErr(errors.Propagate("assign2", err))
 	}
 
 	return qf.setSeries(dstCol, resultSeries)
 }
 
 type Instruction struct {
-	Fn      interface{}
-	DstCol  string
-	SrcCol1 string
+	Fn     interface{}
+	DstCol string
 
-	// Optional field
+	// Optional fields
+	SrcCol1 string
 	SrcCol2 string
 }
 
-func (qf QFrame) Apply(instructions ...Instruction) QFrame {
+func (qf QFrame) Assign(instructions ...Instruction) QFrame {
 	result := qf
 	for _, a := range instructions {
 		if a.SrcCol1 == "" {
-			result = result.apply0(a.Fn, a.DstCol)
+			result = result.assign0(a.Fn, a.DstCol)
 		} else if a.SrcCol2 == "" {
-			result = result.apply1(a.Fn, a.DstCol, a.SrcCol1)
+			result = result.assign1(a.Fn, a.DstCol, a.SrcCol1)
 		} else {
-			result = result.apply2(a.Fn, a.DstCol, a.SrcCol1, a.SrcCol2)
+			result = result.assign2(a.Fn, a.DstCol, a.SrcCol1, a.SrcCol2)
 		}
 	}
 
 	return result
 }
 
-func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
+func (qf QFrame) FilteredAssign(clause FilterClause, instructions ...Instruction) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -807,7 +807,7 @@ func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction)
 	// Use the filtered index when applying instructions then restore it to the original index.
 	newQf := qf
 	newQf.index = filteredQf.index
-	newQf = newQf.Apply(instructions...)
+	newQf = newQf.Assign(instructions...)
 	newQf.index = qf.index
 	return newQf
 }
@@ -1043,7 +1043,6 @@ func (qf QFrame) ByteSize() int {
 // - Make it possible to access columns and individual elements in the QFrame.
 // - Fix addition of columns when the index has been resorted or filtered. Do we need to set the length in this
 //   case?
-// - Apply -> Assign?
-// - Add Assign0 to be able to generate new columns from passed functions?
-// - Experiment with an AssignN version where the function takes a variadic argument and the source cols
-//   are made a variadic argument? Performance vs. fixed size? Usability?
+// - Assign -> Assign?
+// - AssingN?
+// - Rename series -> column(s)
