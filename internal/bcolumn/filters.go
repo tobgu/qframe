@@ -1,4 +1,4 @@
-package bseries
+package bcolumn
 
 import (
 	"github.com/tobgu/qframe/filter"

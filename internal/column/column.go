@@ -1,4 +1,4 @@
-package series
+package column
 
 import (
 	"encoding/json"
@@ -7,13 +7,13 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-type Series interface {
+type Column interface {
 	fmt.Stringer
 	Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error
-	Subset(index index.Int) Series
-	Equals(index index.Int, other Series, otherIndex index.Int) bool
+	Subset(index index.Int) Column
+	Equals(index index.Int, other Column, otherIndex index.Int) bool
 	Comparable(reverse bool) Comparable
-	Aggregate(indices []index.Int, fn interface{}) (Series, error)
+	Aggregate(indices []index.Int, fn interface{}) (Column, error)
 	StringAt(i uint32, naRep string) string
 	AppendByteStringAt(buf []byte, i uint32) []byte
 	Marshaler(index index.Int) json.Marshaler
@@ -21,7 +21,7 @@ type Series interface {
 	Len() int
 
 	Apply1(fn interface{}, ix index.Int) (interface{}, error)
-	Apply2(fn interface{}, s2 Series, ix index.Int) (Series, error)
+	Apply2(fn interface{}, s2 Column, ix index.Int) (Column, error)
 }
 
 // TODO: Change to byte

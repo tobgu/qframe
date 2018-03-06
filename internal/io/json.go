@@ -11,7 +11,7 @@ import (
 
 type JsonRecords []map[string]interface{}
 
-type JsonSeries map[string]json.RawMessage
+type JsonColumns map[string]json.RawMessage
 
 func fillInts(col []int, records JsonRecords, colName string) error {
 	for i := range col {
@@ -153,15 +153,15 @@ func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
 	}
 
 	if bytes[0] == []byte(`{`)[0] {
-		var series JsonSeries
+		var columns JsonColumns
 		decoder := json.NewDecoder(br)
-		err = decoder.Decode(&series)
+		err = decoder.Decode(&columns)
 		if err != nil {
 			return nil, err
 		}
 
-		result := make(map[string]interface{}, len(series))
-		for colName, rawValue := range series {
+		result := make(map[string]interface{}, len(columns))
+		for colName, rawValue := range columns {
 			intDest := &JsonInt{}
 			if err = intDest.UnmarshalJSON(rawValue); err == nil {
 				result[colName] = []int(*intDest)

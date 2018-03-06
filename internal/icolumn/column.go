@@ -1,40 +1,40 @@
-package iseries
+package icolumn
 
 import (
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
-	"github.com/tobgu/qframe/internal/series"
 	"reflect"
 	"strconv"
 )
 
-func (s Series) StringAt(i uint32, _ string) string {
-	return strconv.FormatInt(int64(s.data[i]), 10)
+func (c Column) StringAt(i uint32, _ string) string {
+	return strconv.FormatInt(int64(c.data[i]), 10)
 }
 
-func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
-	return strconv.AppendInt(buf, int64(s.data[i]), 10)
+func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
+	return strconv.AppendInt(buf, int64(c.data[i]), 10)
 }
 
-func (s Series) Marshaler(index index.Int) json.Marshaler {
-	return io.JsonInt(s.subset(index).data)
+func (c Column) Marshaler(index index.Int) json.Marshaler {
+	return io.JsonInt(c.subset(index).data)
 }
 
-func (s Series) ByteSize() int {
+func (c Column) ByteSize() int {
 	// Slice header + data
-	return 2*8 + 8*len(s.data)
+	return 2*8 + 8*len(c.data)
 }
 
-func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
-	otherI, ok := other.(Series)
+func (c Column) Equals(index index.Int, other column.Column, otherIndex index.Int) bool {
+	otherI, ok := other.(Column)
 	if !ok {
 		return false
 	}
 
 	for ix, x := range index {
-		if s.data[x] != otherI.data[otherIndex[ix]] {
+		if c.data[x] != otherI.data[otherIndex[ix]] {
 			return false
 		}
 	}
@@ -42,7 +42,7 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	return true
 }
 
-func (c Comparable) Compare(i, j uint32) series.CompareResult {
+func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	x, y := c.data[i], c.data[j]
 	if x < y {
 		return c.ltValue
@@ -52,7 +52,7 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 		return c.gtValue
 	}
 
-	return series.Equal
+	return column.Equal
 }
 
 func intComp(comparatee interface{}) (int, bool) {
@@ -94,25 +94,25 @@ func (is intSet) Contains(x int) bool {
 	return ok
 }
 
-func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
 	if intC, ok := intComp(comparatee); ok {
 		filterFn, ok := filterFuncs[comparator]
 		if !ok {
 			return errors.New("filter int", "unknown filter operator %v", comparator)
 		}
-		filterFn(index, s.data, intC, bIndex)
+		filterFn(index, c.data, intC, bIndex)
 	} else if set, ok := newIntSet(comparatee); ok {
 		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
 			return errors.New("filter int", "unknown filter operator %v", comparator)
 		}
-		filterFn(index, s.data, set, bIndex)
-	} else if seriesC, ok := comparatee.(Series); ok {
+		filterFn(index, c.data, set, bIndex)
+	} else if columnC, ok := comparatee.(Column); ok {
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
 			return errors.New("filter int", "unknown filter operator %v", comparator)
 		}
-		filterFn(index, s.data, seriesC.data, bIndex)
+		filterFn(index, c.data, columnC.data, bIndex)
 	} else {
 		return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
@@ -120,38 +120,38 @@ func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee int
 	return nil
 }
 
-func (s Series) filterCustom1(index index.Int, fn func(int) bool, bIndex index.Bool) {
+func (c Column) filterCustom1(index index.Int, fn func(int) bool, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = fn(s.data[index[i]])
+			bIndex[i] = fn(c.data[index[i]])
 		}
 	}
 }
 
-func (s Series) filterCustom2(index index.Int, fn func(int, int) bool, comparatee interface{}, bIndex index.Bool) error {
-	otherS, ok := comparatee.(Series)
+func (c Column) filterCustom2(index index.Int, fn func(int, int) bool, comparatee interface{}, bIndex index.Bool) error {
+	otherC, ok := comparatee.(Column)
 	if !ok {
-		return errors.New("filter int", "expected comparatee to be int series, was %v", reflect.TypeOf(comparatee))
+		return errors.New("filter int", "expected comparatee to be int column, was %v", reflect.TypeOf(comparatee))
 	}
 
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = fn(s.data[index[i]], otherS.data[index[i]])
+			bIndex[i] = fn(c.data[index[i]], otherC.data[index[i]])
 		}
 	}
 
 	return nil
 }
 
-func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+func (c Column) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
 	var err error
 	switch t := comparator.(type) {
 	case string:
-		err = s.filterBuiltIn(index, t, comparatee, bIndex)
+		err = c.filterBuiltIn(index, t, comparatee, bIndex)
 	case func(int) bool:
-		s.filterCustom1(index, t, bIndex)
+		c.filterCustom1(index, t, bIndex)
 	case func(int, int) bool:
-		err = s.filterCustom2(index, t, comparatee, bIndex)
+		err = c.filterCustom2(index, t, comparatee, bIndex)
 	default:
 		err = errors.New("filter int", "invalid filter type %v", reflect.TypeOf(comparator))
 	}

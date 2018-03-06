@@ -92,7 +92,7 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 	}
 }
 
-func TestQFrame_FilterAgainstSeries(t *testing.T) {
+func TestQFrame_FilterAgainstColumn(t *testing.T) {
 	table := []struct {
 		name       string
 		comparator interface{}
@@ -159,7 +159,7 @@ func TestQFrame_FilterAgainstSeries(t *testing.T) {
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
 			input := qframe.New(tc.input, tc.configs...)
-			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.SeriesName("COL1")})
+			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.ColumnName("COL1")})
 			expected := qframe.New(tc.expected, tc.configs...)
 			assertEquals(t, expected, output)
 		})

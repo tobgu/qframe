@@ -3,7 +3,7 @@ package io
 import (
 	"bitbucket.org/weberc2/fastcsv"
 	"github.com/tobgu/qframe/errors"
-	"github.com/tobgu/qframe/internal/eseries"
+	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"io"
@@ -158,7 +158,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf Csv
 	if dataType == types.Enum {
 		values := conf.EnumVals[colName]
 		delete(conf.EnumVals, colName)
-		factory, err := eseries.NewFactory(values, len(pointers))
+		factory, err := ecolumn.NewFactory(values, len(pointers))
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf Csv
 			}
 		}
 
-		return factory.ToSeries(), nil
+		return factory.ToColumn(), nil
 	}
 
 	return nil, errors.New("Create column", "unknown data type: %s", dataType)

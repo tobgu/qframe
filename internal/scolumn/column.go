@@ -1,11 +1,11 @@
-package sseries
+package scolumn
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
-	"github.com/tobgu/qframe/internal/series"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"reflect"
 )
@@ -15,7 +15,7 @@ import (
 //easyjson:json
 type JsonString []*string
 
-var stringApplyFuncs = map[string]func(index.Int, Series) (interface{}, error){
+var stringApplyFuncs = map[string]func(index.Int, Column) (interface{}, error){
 	"ToUpper": toUpper,
 }
 
@@ -25,7 +25,7 @@ var stringApplyFuncs = map[string]func(index.Int, Series) (interface{}, error){
 // generic function based API.
 // This function is roughly 3 - 4 times faster than applying the corresponding
 // general function (depending on the input size, etc. of course).
-func toUpper(ix index.Int, source Series) (interface{}, error) {
+func toUpper(ix index.Int, source Column) (interface{}, error) {
 	if len(source.pointers) == 0 {
 		return source, nil
 	}
@@ -43,18 +43,18 @@ func toUpper(ix index.Int, source Series) (interface{}, error) {
 	return NewBytes(pointers, data), nil
 }
 
-func (s Series) StringAt(i uint32, naRep string) string {
-	if s, isNull := s.stringAt(i); !isNull {
+func (c Column) StringAt(i uint32, naRep string) string {
+	if s, isNull := c.stringAt(i); !isNull {
 		return s
 	}
 
 	return naRep
 }
 
-func (s Series) stringSlice(index index.Int) []*string {
+func (c Column) stringSlice(index index.Int) []*string {
 	result := make([]*string, len(index))
 	for i, ix := range index {
-		s, isNull := s.stringAt(ix)
+		s, isNull := c.stringAt(ix)
 		if isNull {
 			result[i] = nil
 		} else {
@@ -65,37 +65,37 @@ func (s Series) stringSlice(index index.Int) []*string {
 	return result
 }
 
-func (s Series) AppendByteStringAt(buf []byte, i uint32) []byte {
-	p := s.pointers[i]
+func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
+	p := c.pointers[i]
 	if p.IsNull() {
 		return append(buf, "null"...)
 	}
-	str := qfstrings.UnsafeBytesToString(s.data[p.Offset() : p.Offset()+p.Len()])
+	str := qfstrings.UnsafeBytesToString(c.data[p.Offset() : p.Offset()+p.Len()])
 	return qfstrings.AppendQuotedString(buf, str)
 }
 
-func (s Series) Marshaler(index index.Int) json.Marshaler {
+func (c Column) Marshaler(index index.Int) json.Marshaler {
 	// TODO: This is a very inefficient way of marshalling to JSON
-	return JsonString(s.stringSlice(index))
+	return JsonString(c.stringSlice(index))
 }
 
-func (s Series) ByteSize() int {
-	return 8*len(s.pointers) + cap(s.data)
+func (c Column) ByteSize() int {
+	return 8*len(c.pointers) + cap(c.data)
 }
 
-func (s Series) Len() int {
-	return len(s.pointers)
+func (c Column) Len() int {
+	return len(c.pointers)
 }
 
-func (s Series) Equals(index index.Int, other series.Series, otherIndex index.Int) bool {
-	otherS, ok := other.(Series)
+func (c Column) Equals(index index.Int, other column.Column, otherIndex index.Int) bool {
+	otherC, ok := other.(Column)
 	if !ok {
 		return false
 	}
 
 	for ix, x := range index {
-		s, sNull := s.stringAt(x)
-		os, osNull := otherS.stringAt(otherIndex[ix])
+		s, sNull := c.stringAt(x)
+		os, osNull := otherC.stringAt(otherIndex[ix])
 		if sNull || osNull {
 			if sNull && osNull {
 				continue
@@ -112,9 +112,9 @@ func (s Series) Equals(index index.Int, other series.Series, otherIndex index.In
 	return true
 }
 
-func (c Comparable) Compare(i, j uint32) series.CompareResult {
-	x, xNull := c.series.stringAt(i)
-	y, yNull := c.series.stringAt(j)
+func (c Comparable) Compare(i, j uint32) column.CompareResult {
+	x, xNull := c.column.stringAt(i)
+	y, yNull := c.column.stringAt(j)
 	if xNull || yNull {
 		if !xNull {
 			return c.gtValue
@@ -126,7 +126,7 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 
 		// Consider nil == nil, this means that we can group
 		// by null values for example (this differs from Pandas)
-		return series.Equal
+		return column.Equal
 	}
 
 	if x < y {
@@ -137,30 +137,30 @@ func (c Comparable) Compare(i, j uint32) series.CompareResult {
 		return c.gtValue
 	}
 
-	return series.Equal
+	return column.Equal
 }
 
-func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
 	switch t := comparatee.(type) {
 	case string:
 		filterFn, ok := filterFuncs[comparator]
 		if !ok {
 			return errors.New("filter string", "unknown filter operator %v", comparator)
 		}
-		filterFn(index, s, t, bIndex)
+		filterFn(index, c, t, bIndex)
 	case []string:
 		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
 			return errors.New("filter string", "unknown filter operator %v", comparator)
 		}
 
-		filterFn(index, s, qfstrings.NewStringSet(t), bIndex)
-	case Series:
+		filterFn(index, c, qfstrings.NewStringSet(t), bIndex)
+	case Column:
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
 			return errors.New("filter string", "unknown filter operator %v", comparator)
 		}
-		filterFn(index, s, t, bIndex)
+		filterFn(index, c, t, bIndex)
 	default:
 		return errors.New("filter string", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
@@ -168,54 +168,54 @@ func (s Series) filterBuiltIn(index index.Int, comparator string, comparatee int
 	return nil
 }
 
-func (s Series) filterCustom1(index index.Int, fn func(*string) bool, bIndex index.Bool) {
+func (c Column) filterCustom1(index index.Int, fn func(*string) bool, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = fn(stringToPtr(s.stringAt(index[i])))
+			bIndex[i] = fn(stringToPtr(c.stringAt(index[i])))
 		}
 	}
 }
 
-func (s Series) filterCustom2(index index.Int, fn func(*string, *string) bool, comparatee interface{}, bIndex index.Bool) error {
-	otherS, ok := comparatee.(Series)
+func (c Column) filterCustom2(index index.Int, fn func(*string, *string) bool, comparatee interface{}, bIndex index.Bool) error {
+	otherC, ok := comparatee.(Column)
 	if !ok {
-		return errors.New("filter string", "expected comparatee to be string series, was %v", reflect.TypeOf(comparatee))
+		return errors.New("filter string", "expected comparatee to be string column, was %v", reflect.TypeOf(comparatee))
 	}
 
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = fn(stringToPtr(s.stringAt(index[i])), stringToPtr(otherS.stringAt(index[i])))
+			bIndex[i] = fn(stringToPtr(c.stringAt(index[i])), stringToPtr(otherC.stringAt(index[i])))
 		}
 	}
 
 	return nil
 }
 
-func (s Series) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
+func (c Column) Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error {
 	var err error
 	switch t := comparator.(type) {
 	case string:
-		err = s.filterBuiltIn(index, t, comparatee, bIndex)
+		err = c.filterBuiltIn(index, t, comparatee, bIndex)
 	case func(*string) bool:
-		s.filterCustom1(index, t, bIndex)
+		c.filterCustom1(index, t, bIndex)
 	case func(*string, *string) bool:
-		err = s.filterCustom2(index, t, comparatee, bIndex)
+		err = c.filterCustom2(index, t, comparatee, bIndex)
 	default:
 		err = errors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 	return err
 }
 
-type Series struct {
+type Column struct {
 	pointers []qfstrings.Pointer
 	data     []byte
 }
 
-func NewBytes(pointers []qfstrings.Pointer, bytes []byte) Series {
-	return Series{pointers: pointers, data: bytes}
+func NewBytes(pointers []qfstrings.Pointer, bytes []byte) Column {
+	return Column{pointers: pointers, data: bytes}
 }
 
-func NewStrings(strings []string) Series {
+func NewStrings(strings []string) Column {
 	data := make([]byte, 0, len(strings))
 	pointers := make([]qfstrings.Pointer, len(strings))
 	offset := 0
@@ -228,7 +228,7 @@ func NewStrings(strings []string) Series {
 	return NewBytes(pointers, data)
 }
 
-func New(strings []*string) Series {
+func New(strings []*string) Column {
 	data := make([]byte, 0, len(strings))
 	pointers := make([]qfstrings.Pointer, len(strings))
 	offset := 0
@@ -246,7 +246,7 @@ func New(strings []*string) Series {
 	return NewBytes(pointers, data)
 }
 
-func NewConst(val *string, count int) Series {
+func NewConst(val *string, count int) Column {
 	var data []byte
 	pointers := make([]qfstrings.Pointer, count)
 	if val == nil {
@@ -266,55 +266,55 @@ func NewConst(val *string, count int) Series {
 	return NewBytes(pointers, data)
 }
 
-func (s Series) stringAt(i uint32) (string, bool) {
-	p := s.pointers[i]
+func (c Column) stringAt(i uint32) (string, bool) {
+	p := c.pointers[i]
 	if p.IsNull() {
 		return "", true
 	}
-	return qfstrings.UnsafeBytesToString(s.data[p.Offset() : p.Offset()+p.Len()]), false
+	return qfstrings.UnsafeBytesToString(c.data[p.Offset() : p.Offset()+p.Len()]), false
 }
 
-func (s Series) subset(index index.Int) Series {
+func (c Column) subset(index index.Int) Column {
 	data := make([]byte, 0, len(index))
 	pointers := make([]qfstrings.Pointer, len(index))
 	offset := 0
 	for i, ix := range index {
-		p := s.pointers[ix]
+		p := c.pointers[ix]
 		pointers[i] = qfstrings.NewPointer(offset, p.Len(), p.IsNull())
 		if !p.IsNull() {
-			data = append(data, s.data[p.Offset():p.Offset()+p.Len()]...)
+			data = append(data, c.data[p.Offset():p.Offset()+p.Len()]...)
 			offset += p.Len()
 		}
 	}
 
-	return Series{data: data, pointers: pointers}
+	return Column{data: data, pointers: pointers}
 }
 
-func (s Series) Subset(index index.Int) series.Series {
-	return s.subset(index)
+func (c Column) Subset(index index.Int) column.Column {
+	return c.subset(index)
 }
 
-func (s Series) Comparable(reverse bool) series.Comparable {
+func (c Column) Comparable(reverse bool) column.Comparable {
 	if reverse {
-		return Comparable{series: s, ltValue: series.GreaterThan, gtValue: series.LessThan}
+		return Comparable{column: c, ltValue: column.GreaterThan, gtValue: column.LessThan}
 	}
 
-	return Comparable{series: s, ltValue: series.LessThan, gtValue: series.GreaterThan}
+	return Comparable{column: c, ltValue: column.LessThan, gtValue: column.GreaterThan}
 }
 
-func (s Series) String() string {
-	return fmt.Sprintf("%v", s.data)
+func (c Column) String() string {
+	return fmt.Sprintf("%v", c.data)
 }
 
-func (s Series) Aggregate(indices []index.Int, fn interface{}) (series.Series, error) {
+func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, error) {
 	switch t := fn.(type) {
 	case string:
 		// There are currently no build in aggregations for strings
-		return nil, errors.New("enum aggregate", "aggregation function %s is not defined for string series", fn)
+		return nil, errors.New("enum aggregate", "aggregation function %c is not defined for string column", fn)
 	case func([]*string) *string:
 		data := make([]*string, 0, len(indices))
 		for _, ix := range indices {
-			data = append(data, t(s.stringSlice(ix)))
+			data = append(data, t(c.stringSlice(ix)))
 		}
 		return New(data), nil
 	default:
@@ -329,53 +329,53 @@ func stringToPtr(s string, isNull bool) *string {
 	return &s
 }
 
-func (s Series) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
+func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 	var err error
 	switch t := fn.(type) {
 	case func(*string) (int, error):
-		result := make([]int, len(s.pointers))
+		result := make([]int, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
 				return nil, err
 			}
 		}
 		return result, nil
 	case func(*string) (float64, error):
-		result := make([]float64, len(s.pointers))
+		result := make([]float64, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
 				return nil, err
 			}
 		}
 		return result, nil
 	case func(*string) (bool, error):
-		result := make([]bool, len(s.pointers))
+		result := make([]bool, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
 				return nil, err
 			}
 		}
 		return result, nil
 	case func(*string) (*string, error):
-		result := make([]*string, len(s.pointers))
+		result := make([]*string, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(s.stringAt(i))); err != nil {
+			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
 				return nil, err
 			}
 		}
 		return result, nil
 	case string:
 		if f, ok := stringApplyFuncs[t]; ok {
-			return f(ix, s)
+			return f(ix, c)
 		}
-		return nil, errors.New("string.apply1", "unknown built in function %s", t)
+		return nil, errors.New("string.apply1", "unknown built in function %c", t)
 	default:
 		return nil, errors.New("string.apply1", "cannot apply type %#v to column", fn)
 	}
 }
 
-func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.Series, error) {
-	s2S, ok := s2.(Series)
+func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
+	s2S, ok := s2.(Column)
 	if !ok {
 		return nil, errors.New("string.apply2", "invalid column type %v", reflect.TypeOf(s2))
 	}
@@ -383,23 +383,23 @@ func (s Series) Apply2(fn interface{}, s2 series.Series, ix index.Int) (series.S
 	switch t := fn.(type) {
 	case func(*string, *string) (*string, error):
 		var err error
-		result := make([]*string, len(s.pointers))
+		result := make([]*string, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(s.stringAt(i)), stringToPtr(s2S.stringAt(i))); err != nil {
+			if result[i], err = t(stringToPtr(c.stringAt(i)), stringToPtr(s2S.stringAt(i))); err != nil {
 				return nil, err
 			}
 		}
 		return New(result), nil
 	case string:
 		// No built in functions for strings at this stage
-		return nil, errors.New("string.apply2", "unknown built in function %s", t)
+		return nil, errors.New("string.apply2", "unknown built in function %c", t)
 	default:
 		return nil, errors.New("string.apply2", "cannot apply type %#v to column", fn)
 	}
 }
 
 type Comparable struct {
-	series  Series
-	ltValue series.CompareResult
-	gtValue series.CompareResult
+	column  Column
+	ltValue column.CompareResult
+	gtValue column.CompareResult
 }

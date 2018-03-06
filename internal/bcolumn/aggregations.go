@@ -1,4 +1,4 @@
-package bseries
+package bcolumn
 
 var aggregations = map[string]func([]bool) bool{
 	"majority": majority,

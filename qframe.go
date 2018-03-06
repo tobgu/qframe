@@ -6,14 +6,14 @@ import (
 	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
-	"github.com/tobgu/qframe/internal/bseries"
-	"github.com/tobgu/qframe/internal/eseries"
-	"github.com/tobgu/qframe/internal/fseries"
+	"github.com/tobgu/qframe/internal/bcolumn"
+	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/ecolumn"
+	"github.com/tobgu/qframe/internal/fcolumn"
+	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
-	"github.com/tobgu/qframe/internal/iseries"
-	"github.com/tobgu/qframe/internal/series"
-	"github.com/tobgu/qframe/internal/sseries"
+	"github.com/tobgu/qframe/internal/scolumn"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"io"
@@ -22,21 +22,21 @@ import (
 	"strings"
 )
 
-type namedSeries struct {
-	series.Series
+type namedColumn struct {
+	column.Column
 	name string
 	pos  int
 }
 
-func (ns namedSeries) ByteSize() int {
-	return ns.Series.ByteSize() + 2*8 + 8 + len(ns.name)
+func (ns namedColumn) ByteSize() int {
+	return ns.Column.ByteSize() + 2*8 + 8 + len(ns.name)
 }
 
 type QFrame struct {
-	series       []namedSeries
-	seriesByName map[string]namedSeries
-	index        index.Int
-	Err          error
+	columns       []namedColumn
+	columnsByName map[string]namedColumn
+	index         index.Int
+	Err           error
 }
 
 type Config struct {
@@ -62,9 +62,9 @@ func ColumnOrder(columns ...string) ConfigFunc {
 }
 
 // If columns should be considered enums. The map key specifies the
-// column name, the value if there is a fixed set of values and their
+// columns name, the value if there is a fixed set of values and their
 // internal ordering. If value is nil or empty list the values will be
-// derived from the column content and the ordering unspecified.
+// derived from the columns content and the ordering unspecified.
 func Enums(columns map[string][]string) ConfigFunc {
 	return func(c *Config) {
 		c.enumColumns = make(map[string][]string)
@@ -75,11 +75,11 @@ func Enums(columns map[string][]string) ConfigFunc {
 }
 
 func (qf QFrame) withErr(err error) QFrame {
-	return QFrame{Err: err, series: qf.series, seriesByName: qf.seriesByName, index: qf.index}
+	return QFrame{Err: err, columns: qf.columns, columnsByName: qf.columnsByName, index: qf.index}
 }
 
 func (qf QFrame) withIndex(ix index.Int) QFrame {
-	return QFrame{Err: qf.Err, series: qf.series, seriesByName: qf.seriesByName, index: ix}
+	return QFrame{Err: qf.Err, columns: qf.columns, columnsByName: qf.columnsByName, index: ix}
 }
 
 type ConstString struct {
@@ -102,63 +102,63 @@ type ConstBool struct {
 	Count int
 }
 
-func createSeries(name string, column interface{}, config *Config) (series.Series, error) {
-	var localS series.Series
+func createColumn(name string, data interface{}, config *Config) (column.Column, error) {
+	var localS column.Column
 
 	// TODO: Change this case to use strings directly for strings and enums
-	if sc, ok := column.([]string); ok {
+	if sc, ok := data.([]string); ok {
 		// Convenience conversion to support string slices in addition
 		// to string pointer slices.
 		sp := make([]*string, len(sc))
 		for i := range sc {
 			sp[i] = &sc[i]
 		}
-		column = sp
+		data = sp
 	}
 
 	var err error
-	switch c := column.(type) {
+	switch t := data.(type) {
 	case []int:
-		localS = iseries.New(c)
+		localS = icolumn.New(t)
 	case ConstInt:
-		localS = iseries.NewConst(c.Val, c.Count)
+		localS = icolumn.NewConst(t.Val, t.Count)
 	case []float64:
-		localS = fseries.New(c)
+		localS = fcolumn.New(t)
 	case ConstFloat:
-		localS = fseries.NewConst(c.Val, c.Count)
+		localS = fcolumn.NewConst(t.Val, t.Count)
 	case []*string:
 		if values, ok := config.enumColumns[name]; ok {
-			localS, err = eseries.New(c, values)
+			localS, err = ecolumn.New(t, values)
 			if err != nil {
-				return nil, errors.Propagate(fmt.Sprintf("New column %s", name), err)
+				return nil, errors.Propagate(fmt.Sprintf("New columns %s", name), err)
 			}
 			// Book keeping
 			delete(config.enumColumns, name)
 		} else {
-			localS = sseries.New(c)
+			localS = scolumn.New(t)
 		}
 	case ConstString:
 		if values, ok := config.enumColumns[name]; ok {
-			localS, err = eseries.NewConst(c.Val, c.Count, values)
+			localS, err = ecolumn.NewConst(t.Val, t.Count, values)
 			if err != nil {
-				return nil, errors.Propagate(fmt.Sprintf("New column %s", name), err)
+				return nil, errors.Propagate(fmt.Sprintf("New columns %s", name), err)
 			}
 			// Book keeping
 			delete(config.enumColumns, name)
 		} else {
-			localS = sseries.NewConst(c.Val, c.Count)
+			localS = scolumn.NewConst(t.Val, t.Count)
 		}
 
 	case []bool:
-		localS = bseries.New(c)
+		localS = bcolumn.New(t)
 	case ConstBool:
-		localS = bseries.NewConst(c.Val, c.Count)
-	case eseries.Series:
-		localS = c
+		localS = bcolumn.NewConst(t.Val, t.Count)
+	case ecolumn.Column:
+		localS = t
 	case qfstrings.StringBlob:
-		localS = sseries.NewBytes(c.Pointers, c.Data)
+		localS = scolumn.NewBytes(t.Pointers, t.Data)
 	default:
-		return nil, errors.New("New", "unknown column format of: %v", c)
+		return nil, errors.New("New", "unknown columns format of: %v", t)
 	}
 	return localS, nil
 }
@@ -174,7 +174,7 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	}
 
 	if len(config.columnOrder) != len(data) {
-		return QFrame{Err: errors.New("New", "columns and column order length do not match")}
+		return QFrame{Err: errors.New("New", "columns and columns order length do not match")}
 	}
 
 	for _, name := range config.columnOrder {
@@ -183,17 +183,17 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 		}
 	}
 
-	s := make([]namedSeries, len(data))
-	sByName := make(map[string]namedSeries, len(data))
+	s := make([]namedColumn, len(data))
+	sByName := make(map[string]namedColumn, len(data))
 	firstLen, currentLen := 0, 0
 	for i, name := range config.columnOrder {
-		column := data[name]
-		localS, err := createSeries(name, column, config)
+		col := data[name]
+		localS, err := createColumn(name, col, config)
 		if err != nil {
 			return QFrame{Err: err}
 		}
 
-		s[i] = namedSeries{name: name, Series: localS, pos: i}
+		s[i] = namedColumn{name: name, Column: localS, pos: i}
 		sByName[name] = s[i]
 		currentLen = localS.Len()
 		if firstLen == 0 {
@@ -214,11 +214,11 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 		return QFrame{Err: errors.New("New", "unknown enum columns: %v", colNames)}
 	}
 
-	return QFrame{series: s, seriesByName: sByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
+	return QFrame{columns: s, columnsByName: sByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
 }
 
 func (qf QFrame) Contains(colName string) bool {
-	_, ok := qf.seriesByName[colName]
+	_, ok := qf.columnsByName[colName]
 	return ok
 }
 
@@ -229,27 +229,27 @@ func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
 
 	bIndex := index.NewBool(qf.index.Len())
 	for _, f := range filters {
-		s, ok := qf.seriesByName[f.Column]
+		s, ok := qf.columnsByName[f.Column]
 		if !ok {
 			return qf.withErr(errors.New("Filter", `column does not exist, "%s"`, f.Column))
 		}
 
-		if name, ok := f.Arg.(filter.SeriesName); ok {
-			argS, ok := qf.seriesByName[string(name)]
+		if name, ok := f.Arg.(filter.ColumnName); ok {
+			argC, ok := qf.columnsByName[string(name)]
 			if !ok {
 				return qf.withErr(errors.New("Filter", `argument column does not exist, "%s"`, name))
 			}
-			f.Arg = argS.Series
+			f.Arg = argC.Column
 		}
 
-		//TODO: If comparing against a series verify that they have the same length
-		//      Perhaps we should not expose the series but instead create a new string
+		//TODO: If comparing against a columns verify that they have the same length
+		//      Perhaps we should not expose the columns but instead create a new string
 		//      based type that is only used to denote this?
 
 		var err error
 		if f.Inverse {
 			// This is a small optimization, if the inverse operation is implemented
-			// as built in on the series use that directly to avoid building an inverse boolean
+			// as built in on the columns use that directly to avoid building an inverse boolean
 			// index further below.
 			done := false
 			if sComp, ok := f.Comparator.(string); ok {
@@ -292,17 +292,17 @@ func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 		return false, "Different length"
 	}
 
-	if len(qf.series) != len(other.series) {
+	if len(qf.columns) != len(other.columns) {
 		return false, "Different number of columns"
 	}
 
-	for i, s := range qf.series {
-		otherS := other.series[i]
-		if s.name != otherS.name {
-			return false, fmt.Sprintf("Column name difference at %d, %s != %s", i, s.name, otherS.name)
+	for i, s := range qf.columns {
+		otherCol := other.columns[i]
+		if s.name != otherCol.name {
+			return false, fmt.Sprintf("Column name difference at %d, %s != %s", i, s.name, otherCol.name)
 		}
 
-		if !s.Equals(qf.index, otherS.Series, other.index) {
+		if !s.Equals(qf.index, otherCol.Column, other.index) {
 			return false, fmt.Sprintf("Content of columns %s differ", s.name)
 		}
 	}
@@ -332,26 +332,26 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 		return qf
 	}
 
-	comparables := make([]series.Comparable, 0, len(orders))
+	comparables := make([]column.Comparable, 0, len(orders))
 	for _, o := range orders {
-		s, ok := qf.seriesByName[o.Column]
+		s, ok := qf.columnsByName[o.Column]
 		if !ok {
-			return qf.withErr(errors.New("Sort", "unknown column: %s", o.Column))
+			return qf.withErr(errors.New("Sort", "unknown columns: %s", o.Column))
 		}
 
 		comparables = append(comparables, s.Comparable(o.Reverse))
 	}
 
 	newDf := qf.withIndex(qf.index.Copy())
-	sorter := Sorter{index: newDf.index, series: comparables}
+	sorter := Sorter{index: newDf.index, columns: comparables}
 	sortDf(sorter)
 
 	return newDf
 }
 
 func (qf QFrame) columnNames() []string {
-	result := make([]string, len(qf.series))
-	for i, s := range qf.series {
+	result := make([]string, len(qf.columns))
+	for i, s := range qf.columns {
 		result[i] = s.name
 	}
 
@@ -368,19 +368,19 @@ func (qf QFrame) columnsOrAll(columns []string) []string {
 
 func (qf QFrame) orders(columns []string) []Order {
 	orders := make([]Order, len(columns))
-	for i, column := range columns {
-		orders[i] = Order{Column: column}
+	for i, col := range columns {
+		orders[i] = Order{Column: col}
 	}
 
 	return orders
 }
 
-func (qf QFrame) reverseComparables(columns []string, orders []Order) []series.Comparable {
+func (qf QFrame) reverseComparables(columns []string, orders []Order) []column.Comparable {
 	// Compare the columns in reverse order compared to the sort order
 	// since it's likely to produce differences with fewer comparisons.
-	comparables := make([]series.Comparable, 0, len(columns))
+	comparables := make([]column.Comparable, 0, len(columns))
 	for i := len(columns) - 1; i >= 0; i-- {
-		comparables = append(comparables, qf.seriesByName[orders[i].Column].Comparable(false))
+		comparables = append(comparables, qf.columnsByName[orders[i].Column].Comparable(false))
 	}
 	return comparables
 }
@@ -394,9 +394,9 @@ func (qf QFrame) Distinct(columns ...string) QFrame {
 		return qf
 	}
 
-	for _, c := range columns {
-		if _, ok := qf.seriesByName[c]; !ok {
-			return qf.withErr(errors.New("Distinct", `unknown column "%s"`, c))
+	for _, col := range columns {
+		if _, ok := qf.columnsByName[col]; !ok {
+			return qf.withErr(errors.New("Distinct", `unknown columns "%s"`, col))
 		}
 	}
 
@@ -414,7 +414,7 @@ func (qf QFrame) Distinct(columns ...string) QFrame {
 	for i := 1; i < sortedDf.Len(); i++ {
 		prevPos, currPos = currPos, sortedDf.index[i]
 		for _, c := range comparables {
-			if c.Compare(prevPos, currPos) != series.Equal {
+			if c.Compare(prevPos, currPos) != column.Equal {
 				newIx = append(newIx, currPos)
 				break
 			}
@@ -425,9 +425,9 @@ func (qf QFrame) Distinct(columns ...string) QFrame {
 }
 
 func (qf QFrame) checkColumns(operation string, columns []string) error {
-	for _, c := range columns {
-		if _, ok := qf.seriesByName[c]; !ok {
-			return errors.New("operation", `unknown column "%s"`, c)
+	for _, col := range columns {
+		if _, ok := qf.columnsByName[col]; !ok {
+			return errors.New("operation", `unknown columns "%s"`, col)
 		}
 	}
 
@@ -447,23 +447,23 @@ func (qf QFrame) Select(columns ...string) QFrame {
 		return QFrame{}
 	}
 
-	newSeriesByName := make(map[string]namedSeries, len(columns))
-	newSeries := make([]namedSeries, len(columns))
-	for i, c := range columns {
-		s := qf.seriesByName[c]
+	newColumnsByName := make(map[string]namedColumn, len(columns))
+	newColumns := make([]namedColumn, len(columns))
+	for i, col := range columns {
+		s := qf.columnsByName[col]
 		s.pos = i
-		newSeriesByName[c] = s
-		newSeries[i] = s
+		newColumnsByName[col] = s
+		newColumns[i] = s
 	}
 
-	return QFrame{series: newSeries, seriesByName: newSeriesByName, index: qf.index}
+	return QFrame{columns: newColumns, columnsByName: newColumnsByName, index: qf.index}
 }
 
 type Grouper struct {
 	indices        []index.Int
 	groupedColumns []string
-	series         []namedSeries
-	seriesByName   map[string]namedSeries
+	columns        []namedColumn
+	columnsByName  map[string]namedColumn
 	Err            error
 }
 
@@ -473,7 +473,7 @@ func (qf QFrame) GroupBy(columns ...string) Grouper {
 		return Grouper{Err: err}
 	}
 
-	grouper := Grouper{series: qf.series, seriesByName: qf.seriesByName, groupedColumns: columns}
+	grouper := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: columns}
 	if qf.Len() == 0 {
 		return grouper
 	}
@@ -495,7 +495,7 @@ func (qf QFrame) GroupBy(columns ...string) Grouper {
 	for i := 1; i < sortedDf.Len(); i++ {
 		currPos := sortedDf.index[i]
 		for _, c := range comparables {
-			if c.Compare(groupStartPos, currPos) != series.Equal {
+			if c.Compare(groupStartPos, currPos) != column.Equal {
 				indices = append(indices, sortedDf.index[groupStart:i])
 				groupStart, groupStartPos = i, sortedDf.index[i]
 				break
@@ -507,7 +507,7 @@ func (qf QFrame) GroupBy(columns ...string) Grouper {
 	return grouper
 }
 
-// fnsAndCols is a list of alternating function names and column names
+// fnsAndCols is a list of alternating function names and columns names
 func (g Grouper) Aggregate(aggs ...aggregation.Aggregation) QFrame {
 	if g.Err != nil {
 		return QFrame{Err: g.Err}
@@ -522,29 +522,29 @@ func (g Grouper) Aggregate(aggs ...aggregation.Aggregation) QFrame {
 		firstElementIx[i] = ix[0]
 	}
 
-	newSeriesByName := make(map[string]namedSeries, len(g.groupedColumns)+len(aggs))
-	newSeries := make([]namedSeries, 0, len(g.groupedColumns)+len(aggs))
-	for i, col := range g.groupedColumns {
-		s := g.seriesByName[col]
-		s.pos = i
-		s.Series = s.Subset(firstElementIx)
-		newSeriesByName[col] = s
-		newSeries = append(newSeries, s)
+	newColumnsByName := make(map[string]namedColumn, len(g.groupedColumns)+len(aggs))
+	newColumns := make([]namedColumn, 0, len(g.groupedColumns)+len(aggs))
+	for i, colName := range g.groupedColumns {
+		col := g.columnsByName[colName]
+		col.pos = i
+		col.Column = col.Subset(firstElementIx)
+		newColumnsByName[colName] = col
+		newColumns = append(newColumns, col)
 	}
 
 	var err error
 	for _, agg := range aggs {
-		s := g.seriesByName[agg.Column]
-		s.Series, err = s.Aggregate(g.indices, agg.Fn)
+		col := g.columnsByName[agg.Column]
+		col.Column, err = col.Aggregate(g.indices, agg.Fn)
 		if err != nil {
 			return QFrame{Err: errors.Propagate("Aggregate", err)}
 		}
 
-		newSeriesByName[agg.Column] = s
-		newSeries = append(newSeries, s)
+		newColumnsByName[agg.Column] = col
+		newColumns = append(newColumns, col)
 	}
 
-	return QFrame{series: newSeries, seriesByName: newSeriesByName, index: index.NewAscending(uint32(len(g.indices)))}
+	return QFrame{columns: newColumns, columnsByName: newColumnsByName, index: index.NewAscending(uint32(len(g.indices)))}
 }
 
 func fixLengthString(s string, pad string, desiredLen int) string {
@@ -572,22 +572,22 @@ func (qf QFrame) String() string {
 	}
 
 	result := make([]string, 0, len(qf.index))
-	row := make([]string, len(qf.series))
-	colWidths := make([]int, len(qf.series))
+	row := make([]string, len(qf.columns))
+	colWidths := make([]int, len(qf.columns))
 	minColWidth := 5
-	for i, s := range qf.series {
+	for i, s := range qf.columns {
 		colWidths[i] = intMax(len(s.name), minColWidth)
 		row[i] = fixLengthString(s.name, " ", colWidths[i])
 	}
 	result = append(result, strings.Join(row, " "))
 
-	for i := range qf.series {
+	for i := range qf.columns {
 		row[i] = fixLengthString("", "-", colWidths[i])
 	}
 	result = append(result, strings.Join(row, " "))
 
 	for i := 0; i < qf.Len(); i++ {
-		for j, s := range qf.series {
+		for j, s := range qf.columns {
 			row[j] = fixLengthString(s.StringAt(qf.index[i], "NaN"), " ", colWidths[j])
 		}
 		result = append(result, strings.Join(row, " "))
@@ -616,10 +616,10 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	return qf.withIndex(qf.index[start:end])
 }
 
-func (qf QFrame) setSeries(name string, s series.Series) QFrame {
+func (qf QFrame) setColumn(name string, c column.Column) QFrame {
 	newF := qf.withIndex(qf.index)
-	existingS, overwrite := qf.seriesByName[name]
-	newColCount := len(qf.series)
+	existingS, overwrite := qf.columnsByName[name]
+	newColCount := len(qf.columns)
 	pos := newColCount
 	if overwrite {
 		pos = existingS.pos
@@ -627,16 +627,16 @@ func (qf QFrame) setSeries(name string, s series.Series) QFrame {
 		newColCount++
 	}
 
-	newF.series = make([]namedSeries, newColCount)
-	newF.seriesByName = make(map[string]namedSeries, newColCount)
-	copy(newF.series, qf.series)
-	for k, v := range qf.seriesByName {
-		newF.seriesByName[k] = v
+	newF.columns = make([]namedColumn, newColCount)
+	newF.columnsByName = make(map[string]namedColumn, newColCount)
+	copy(newF.columns, qf.columns)
+	for k, v := range qf.columnsByName {
+		newF.columnsByName[k] = v
 	}
 
-	newS := namedSeries{Series: s, name: name, pos: pos}
-	newF.seriesByName[name] = newS
-	newF.series[pos] = newS
+	newS := namedColumn{Column: c, name: name, pos: pos}
+	newF.columnsByName[name] = newS
+	newF.columns[pos] = newS
 	return newF
 }
 
@@ -645,12 +645,12 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 		return qf
 	}
 
-	namedSeries, ok := qf.seriesByName[srcCol]
+	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("Instruction", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("Instruction", "no such columns: %s", srcCol))
 	}
 
-	return qf.setSeries(dstCol, namedSeries.Series)
+	return qf.setColumn(dstCol, namedColumn.Column)
 }
 
 func (qf QFrame) assign0(fn interface{}, dstCol string) QFrame {
@@ -659,8 +659,8 @@ func (qf QFrame) assign0(fn interface{}, dstCol string) QFrame {
 	}
 
 	colLen := 0
-	if len(qf.series) > 0 {
-		colLen = qf.series[0].Len()
+	if len(qf.columns) > 0 {
+		colLen = qf.columns[0].Len()
 	}
 
 	var data interface{}
@@ -701,12 +701,12 @@ func (qf QFrame) assign0(fn interface{}, dstCol string) QFrame {
 		return qf.withErr(errors.New("assign0", "unknown assign type: %v", reflect.TypeOf(fn)))
 	}
 
-	c, err := createSeries(dstCol, data, newConfig(nil))
+	c, err := createColumn(dstCol, data, newConfig(nil))
 	if err != nil {
 		return qf.withErr(err)
 	}
 
-	return qf.setSeries(dstCol, c)
+	return qf.setColumn(dstCol, c)
 }
 
 func (qf QFrame) assign1(fn interface{}, dstCol, srcCol string) QFrame {
@@ -714,35 +714,35 @@ func (qf QFrame) assign1(fn interface{}, dstCol, srcCol string) QFrame {
 		return qf
 	}
 
-	namedSeries, ok := qf.seriesByName[srcCol]
+	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("assign1", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("assign1", "no such columns: %s", srcCol))
 	}
 
-	srcSeries := namedSeries.Series
+	srcColumn := namedColumn.Column
 
-	sliceResult, err := srcSeries.Apply1(fn, qf.index)
+	sliceResult, err := srcColumn.Apply1(fn, qf.index)
 	if err != nil {
 		return qf.withErr(errors.Propagate("assign1", err))
 	}
 
-	var resultSeries series.Series
+	var resultColumn column.Column
 	switch t := sliceResult.(type) {
 	case []int:
-		resultSeries = iseries.New(t)
+		resultColumn = icolumn.New(t)
 	case []float64:
-		resultSeries = fseries.New(t)
+		resultColumn = fcolumn.New(t)
 	case []bool:
-		resultSeries = bseries.New(t)
+		resultColumn = bcolumn.New(t)
 	case []*string:
-		resultSeries = sseries.New(t)
-	case series.Series:
-		resultSeries = t
+		resultColumn = scolumn.New(t)
+	case column.Column:
+		resultColumn = t
 	default:
-		return qf.withErr(errors.New("assign1", "unexpected type of new series %#v", t))
+		return qf.withErr(errors.New("assign1", "unexpected type of new columns %#v", t))
 	}
 
-	return qf.setSeries(dstCol, resultSeries)
+	return qf.setColumn(dstCol, resultColumn)
 }
 
 func (qf QFrame) assign2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
@@ -750,24 +750,24 @@ func (qf QFrame) assign2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame
 		return qf
 	}
 
-	namedSrcSeries1, ok := qf.seriesByName[srcCol1]
+	namedSrcColumn1, ok := qf.columnsByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("assign2", "no such column: %s", srcCol1))
+		return qf.withErr(errors.New("assign2", "no such columns: %s", srcCol1))
 	}
-	srcSeries1 := namedSrcSeries1.Series
+	srcColumn1 := namedSrcColumn1.Column
 
-	namedSrcSeries2, ok := qf.seriesByName[srcCol2]
+	namedSrcColumn2, ok := qf.columnsByName[srcCol2]
 	if !ok {
-		return qf.withErr(errors.New("assign2", "no such column: %s", srcCol2))
+		return qf.withErr(errors.New("assign2", "no such columns: %s", srcCol2))
 	}
-	srcSeries2 := namedSrcSeries2.Series
+	srcColumn2 := namedSrcColumn2.Column
 
-	resultSeries, err := srcSeries1.Apply2(fn, srcSeries2, qf.index)
+	resultColumn, err := srcColumn1.Apply2(fn, srcColumn2, qf.index)
 	if err != nil {
 		return qf.withErr(errors.Propagate("assign2", err))
 	}
 
-	return qf.setSeries(dstCol, resultSeries)
+	return qf.setColumn(dstCol, resultColumn)
 }
 
 type Instruction struct {
@@ -874,14 +874,14 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 		return errors.Propagate("ToCsv", qf.Err)
 	}
 
-	row := make([]string, 0, len(qf.series))
-	for _, s := range qf.series {
+	row := make([]string, 0, len(qf.columns))
+	for _, s := range qf.columns {
 		row = append(row, s.name)
 	}
 
-	columns := make([]series.Series, 0, len(qf.series))
+	columns := make([]column.Column, 0, len(qf.columns))
 	for _, name := range row {
-		columns = append(columns, qf.seriesByName[name])
+		columns = append(columns, qf.columnsByName[name])
 	}
 
 	w := csv.NewWriter(writer)
@@ -892,8 +892,8 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 
 	for i := 0; i < qf.Len(); i++ {
 		row = row[:0]
-		for _, c := range columns {
-			row = append(row, c.StringAt(qf.index[i], ""))
+		for _, col := range columns {
+			row = append(row, col.StringAt(qf.index[i], ""))
 		}
 		w.Write(row)
 	}
@@ -907,10 +907,10 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 		return errors.Propagate("ToJson", qf.Err)
 	}
 
-	colByteNames := make([][]byte, 0, len(qf.series))
-	columns := make([]series.Series, 0, len(qf.series))
-	for name, column := range qf.seriesByName {
-		columns = append(columns, column)
+	colByteNames := make([][]byte, 0, len(qf.columns))
+	columns := make([]column.Column, 0, len(qf.columns))
+	for name, col := range qf.columnsByName {
+		columns = append(columns, col)
 		colByteNames = append(colByteNames, qfstrings.QuotedBytes(name))
 	}
 
@@ -930,10 +930,10 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 
 			jsonBuf = append(jsonBuf, byte('{'))
 
-			for j, c := range columns {
+			for j, col := range columns {
 				jsonBuf = append(jsonBuf, colByteNames[j]...)
 				jsonBuf = append(jsonBuf, byte(':'))
-				jsonBuf = c.AppendByteStringAt(jsonBuf, ix)
+				jsonBuf = col.AppendByteStringAt(jsonBuf, ix)
 				jsonBuf = append(jsonBuf, byte(','))
 			}
 
@@ -953,14 +953,14 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 		return err
 	}
 
-	// Series/column orientation
+	// Column/columns orientation
 	jsonBuf := []byte{'{'}
 	_, err := writer.Write(jsonBuf)
 	if err != nil {
 		return err
 	}
 
-	for i, column := range columns {
+	for i, col := range columns {
 		jsonBuf = jsonBuf[:0]
 		if i > 0 {
 			jsonBuf = append(jsonBuf, ',')
@@ -973,7 +973,7 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 			return err
 		}
 
-		m := column.Marshaler(qf.index)
+		m := col.Marshaler(qf.index)
 		b, err := m.MarshalJSON()
 		if err != nil {
 			return err
@@ -993,14 +993,14 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 // the underlying data.
 func (qf QFrame) ByteSize() int {
 	totalSize := 0
-	for k, v := range qf.seriesByName {
+	for k, v := range qf.columnsByName {
 		totalSize += len(k)
 		totalSize += 40 // Estimate of map entry overhead
 		totalSize += 16 // String header map key
 
-		// Series both in map and slice, hence 2 x, but don't double count the space
-		// occupied by the series itself.
-		totalSize += 2*v.ByteSize() - v.Series.ByteSize()
+		// Column both in map and slice, hence 2 x, but don't double count the space
+		// occupied by the columns itself.
+		totalSize += 2*v.ByteSize() - v.Column.ByteSize()
 	}
 
 	totalSize += qf.index.ByteSize()
@@ -1018,31 +1018,28 @@ func (qf QFrame) ByteSize() int {
 //   than the stdlib version.
 
 // TODO:
-// - Make it possible to implement custom Series and use as input to QFrame constructor (this could probably
-//   be extended to allow custom series to be created from JSON, CSV, etc. as well, this is not in scope at the
+// - Make it possible to implement custom Column and use as input to QFrame constructor (this could probably
+//   be extended to allow custom columns to be created from JSON, CSV, etc. as well, this is not in scope at the
 //   moment though).
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
 //   null could be interpreted as NaN. Should not be impossible using the generated easyjson code
-//   as starting point for column based format and by refining type detection for the record based
+//   as starting point for columns based format and by refining type detection for the record based
 //   read. That would also allow proper parsing of integers for record format rather than making them
 //   floats.
 // - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
 //   interface.
 // - Handle float NaN in filtering
-// - Possibility to run operations on two or more columns that result in a new column (addition for example).
+// - Possibility to run operations on two or more columns that result in a new columns (addition for example).
 // - Benchmarks comparing performance with Pandas
 // - Documentation
 // - Use https://goreportcard.com
 // - More serialization and deserialization tests
-// - Perhaps make a special case for distinct with only one column involved that simply calls distinct on
-//   a series for that specific column. Should be quite a bit faster than current sort based implementation.
+// - Perhaps make a special case for distinct with only one columns involved that simply calls distinct on
+//   a columns for that specific columns. Should be quite a bit faster than current sort based implementation.
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
-// - Split series files into different files (aggregations, filters, apply funcs, etc.)
+// - Split columns files into different files (aggregations, filters, apply funcs, etc.)
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
 // - Make it possible to access columns and individual elements in the QFrame.
-// - Fix addition of columns when the index has been resorted or filtered. Do we need to set the length in this
-//   case?
-// - Assign -> Assign?
 // - AssingN?
-// - Rename series -> column(s)
+// - Rename columns -> columns(s)

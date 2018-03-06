@@ -1,4 +1,4 @@
-package iseries
+package icolumn
 
 func sum(values []int) int {
 	result := 0

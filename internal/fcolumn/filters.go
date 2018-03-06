@@ -1,4 +1,4 @@
-package fseries
+package fcolumn
 
 import (
 	"github.com/tobgu/qframe/filter"

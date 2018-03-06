@@ -1,4 +1,4 @@
-package sseries
+package scolumn
 
 import (
 	"github.com/tobgu/qframe/errors"
@@ -7,7 +7,7 @@ import (
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 )
 
-var filterFuncs = map[string]func(index.Int, Series, string, index.Bool) error{
+var filterFuncs = map[string]func(index.Int, Column, string, index.Bool) error{
 	filter.Gt:  gt,
 	filter.Lt:  lt,
 	filter.Eq:  eq,
@@ -16,16 +16,16 @@ var filterFuncs = map[string]func(index.Int, Series, string, index.Bool) error{
 	"ilike":    ilike,
 }
 
-var multiInputFilterFuncs = map[string]func(index.Int, Series, qfstrings.StringSet, index.Bool) error{
+var multiInputFilterFuncs = map[string]func(index.Int, Column, qfstrings.StringSet, index.Bool) error{
 	filter.In: in,
 }
 
-var filterFuncs2 = map[string]func(index.Int, Series, Series, index.Bool) error{
+var filterFuncs2 = map[string]func(index.Int, Column, Column, index.Bool) error{
 	filter.Gt: gt2,
 	filter.Lt: lt2,
 }
 
-func gt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+func gt(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			s, isNull := s.stringAt(index[i])
@@ -38,7 +38,7 @@ func gt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	return nil
 }
 
-func lt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+func lt(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			str, isNull := s.stringAt(index[i])
@@ -49,7 +49,7 @@ func lt(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	return nil
 }
 
-func eq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+func eq(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			s, isNull := s.stringAt(index[i])
@@ -62,7 +62,7 @@ func eq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
 	return nil
 }
 
-func neq(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+func neq(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			s, isNull := s.stringAt(index[i])
@@ -75,15 +75,15 @@ func neq(index index.Int, s Series, comparatee string, bIndex index.Bool) error 
 	return nil
 }
 
-func like(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+func like(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	return regexFilter(index, s, comparatee, bIndex, true)
 }
 
-func ilike(index index.Int, s Series, comparatee string, bIndex index.Bool) error {
+func ilike(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	return regexFilter(index, s, comparatee, bIndex, false)
 }
 
-func in(index index.Int, s Series, comparatee qfstrings.StringSet, bIndex index.Bool) error {
+func in(index index.Int, s Column, comparatee qfstrings.StringSet, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			s, isNull := s.stringAt(index[i])
@@ -96,7 +96,7 @@ func in(index index.Int, s Series, comparatee qfstrings.StringSet, bIndex index.
 	return nil
 }
 
-func regexFilter(index index.Int, s Series, comparatee string, bIndex index.Bool, caseSensitive bool) error {
+func regexFilter(index index.Int, s Column, comparatee string, bIndex index.Bool, caseSensitive bool) error {
 	matcher, err := qfstrings.NewMatcher(comparatee, caseSensitive)
 	if err != nil {
 		return errors.Propagate("Regex filter", err)
@@ -114,7 +114,7 @@ func regexFilter(index index.Int, s Series, comparatee string, bIndex index.Bool
 	return nil
 }
 
-func gt2(index index.Int, s, s2 Series, bIndex index.Bool) error {
+func gt2(index index.Int, s, s2 Column, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			str, isNull := s.stringAt(index[i])
@@ -130,7 +130,7 @@ func gt2(index index.Int, s, s2 Series, bIndex index.Bool) error {
 	return nil
 }
 
-func lt2(index index.Int, s, s2 Series, bIndex index.Bool) error {
+func lt2(index index.Int, s, s2 Column, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			str, isNull := s.stringAt(index[i])

@@ -810,7 +810,7 @@ BenchmarkQFrame_FilterNot/filter-2         	    2000	   1158211 ns/op	  516161 B
 BenchmarkQFrame_FilterNot/qframe-2         	    2000	    713147 ns/op	  147465 B/op	       2 allocs/op
 BenchmarkQFrame_FilterNot/filter-2         	    2000	    726766 ns/op	  147521 B/op	       3 allocs/op
 
-// Restructure string series to use a byte blob with offsets and lengths
+// Restructure string column to use a byte blob with offsets and lengths
 BenchmarkQFrame_ReadCsv-2       	      20	  85906027 ns/op	84728656 B/op	     500 allocs/op
 
 // Fix string filters to make better use of the new string blob structure:

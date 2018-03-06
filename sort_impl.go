@@ -5,13 +5,13 @@
 package qframe
 
 import (
+	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
-	"github.com/tobgu/qframe/internal/series"
 )
 
 type Sorter struct {
-	index  index.Int
-	series []series.Comparable
+	index   index.Int
+	columns []column.Comparable
 }
 
 func (s Sorter) Len() int {
@@ -24,13 +24,13 @@ func (s Sorter) Swap(i, j int) {
 
 func (s Sorter) Less(i, j int) bool {
 	di, dj := s.index[i], s.index[j]
-	for _, s := range s.series {
+	for _, s := range s.columns {
 		r := s.Compare(di, dj)
-		if r == series.LessThan {
+		if r == column.LessThan {
 			return true
 		}
 
-		if r == series.GreaterThan {
+		if r == column.GreaterThan {
 			return false
 		}
 	}

@@ -1,11 +1,11 @@
-package iseries
+package icolumn
 
 import (
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 )
 
-// Series - constant
+// Column - constant
 var filterFuncs = map[string]func(index.Int, []int, int, index.Bool){
 	filter.Gt:  gt,
 	filter.Gte: gte,
@@ -17,7 +17,7 @@ var multiInputFilterFuncs = map[string]func(index.Int, []int, intSet, index.Bool
 	filter.In: in,
 }
 
-// Series - Series
+// Column - Column
 var filterFuncs2 = map[string]func(index.Int, []int, []int, index.Bool){
 	filter.Gt:  gt2,
 	filter.Gte: gte2,

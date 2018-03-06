@@ -1,4 +1,4 @@
-package fseries
+package fcolumn
 
 var aggregations = map[string]func([]float64) float64{
 	"sum": sum,

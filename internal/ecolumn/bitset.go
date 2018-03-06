@@ -1,4 +1,4 @@
-package eseries
+package ecolumn
 
 import "fmt"
 
