@@ -17,6 +17,7 @@ import (
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -214,20 +215,6 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	}
 
 	return QFrame{series: s, seriesByName: sByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
-}
-
-func (qf QFrame) AddColumn(name string, data interface{}, fns ...ConfigFunc) QFrame {
-	if qf.Err != nil {
-		return qf
-	}
-
-	config := newConfig(fns)
-	localS, err := createSeries(name, data, config)
-	if err != nil {
-		return QFrame{Err: err}
-	}
-
-	return qf.setSeries(name, localS)
 }
 
 func (qf QFrame) Contains(colName string) bool {
@@ -666,6 +653,62 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 	return qf.setSeries(dstCol, namedSeries.Series)
 }
 
+func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	colLen := 0
+	if len(qf.series) > 0 {
+		colLen = qf.series[0].Len()
+	}
+
+	var data interface{}
+	switch t := fn.(type) {
+	case func() int:
+		lData := make([]int, colLen)
+		for _, i := range qf.index {
+			lData[i] = t()
+		}
+		data = lData
+	case int:
+		data = ConstInt{Val: t, Count: colLen}
+	case func() float64:
+		lData := make([]float64, colLen)
+		for _, i := range qf.index {
+			lData[i] = t()
+		}
+		data = lData
+	case float64:
+		data = ConstFloat{Val: t, Count: colLen}
+	case func() bool:
+		lData := make([]bool, colLen)
+		for _, i := range qf.index {
+			lData[i] = t()
+		}
+		data = lData
+	case bool:
+		data = ConstBool{Val: t, Count: colLen}
+	case func() *string:
+		lData := make([]*string, colLen)
+		for _, i := range qf.index {
+			lData[i] = t()
+		}
+		data = lData
+	case *string:
+		data = ConstString{Val: t, Count: colLen}
+	default:
+		return qf.withErr(errors.New("apply 0", "unknown assign type: %v", reflect.TypeOf(fn)))
+	}
+
+	c, err := createSeries(dstCol, data, newConfig(nil))
+	if err != nil {
+		return qf.withErr(err)
+	}
+
+	return qf.setSeries(dstCol, c)
+}
+
 func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -739,7 +782,9 @@ type Instruction struct {
 func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	result := qf
 	for _, a := range instructions {
-		if a.SrcCol2 == "" {
+		if a.SrcCol1 == "" {
+			result = result.apply0(a.Fn, a.DstCol)
+		} else if a.SrcCol2 == "" {
 			result = result.apply1(a.Fn, a.DstCol, a.SrcCol1)
 		} else {
 			result = result.apply2(a.Fn, a.DstCol, a.SrcCol1, a.SrcCol2)
@@ -984,8 +1029,6 @@ func (qf QFrame) ByteSize() int {
 // - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
 //   interface.
 // - Handle float NaN in filtering
-// - Support to add columns to DF (in addition to project). Should produce a new df, no mutation!
-//   To be used with standin columns.
 // - Possibility to run operations on two or more columns that result in a new column (addition for example).
 // - Benchmarks comparing performance with Pandas
 // - Documentation
@@ -997,5 +1040,10 @@ func (qf QFrame) ByteSize() int {
 // - Split series files into different files (aggregations, filters, apply funcs, etc.)
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
-// - apply2 enum + string, convert enum to string automatically to allow it or are we fine with explicit casts?
 // - Make it possible to access columns and individual elements in the QFrame.
+// - Fix addition of columns when the index has been resorted or filtered. Do we need to set the length in this
+//   case?
+// - Apply -> Assign?
+// - Add Assign0 to be able to generate new columns from passed functions?
+// - Experiment with an AssignN version where the function takes a variadic argument and the source cols
+//   are made a variadic argument? Performance vs. fixed size? Usability?

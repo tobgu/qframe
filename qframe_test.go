@@ -999,6 +999,35 @@ func TestQFrame_CopyColumn(t *testing.T) {
 	assertEquals(t, expectedReplace, input.Copy("COL1", "COL2"))
 }
 
+func TestQFrame_ApplyZeroArg(t *testing.T) {
+	a, b := "a", "b"
+	table := []struct {
+		name     string
+		expected interface{}
+		fn       interface{}
+	}{
+		{name: "int fn", expected: []int{2, 2}, fn: func() int { return 2 }},
+		{name: "int const", expected: []int{3, 3}, fn: 3},
+		{name: "float fn", expected: []float64{2.5, 2.5}, fn: func() float64 { return 2.5 }},
+		{name: "float const", expected: []float64{3.5, 3.5}, fn: 3.5},
+		{name: "bool fn", expected: []bool{true, true}, fn: func() bool { return true }},
+		{name: "bool const", expected: []bool{false, false}, fn: false},
+		{name: "string fn", expected: []*string{&a, &a}, fn: func() *string { return &a }},
+		{name: "bool const", expected: []*string{&b, &b}, fn: &b},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			input := map[string]interface{}{"COL1": []int{3, 2}}
+			in := qframe.New(input)
+			input["COL2"] = tc.expected
+			expected := qframe.New(input)
+			out := in.Apply(qframe.Instruction{Fn: tc.fn, DstCol: "COL2"})
+			assertEquals(t, expected, out)
+		})
+	}
+}
+
 func TestQFrame_ApplySingleArgIntToInt(t *testing.T) {
 	input := qframe.New(map[string]interface{}{
 		"COL1": []int{3, 2},
@@ -1210,39 +1239,6 @@ func TestQFrame_InitWithConstantVal(t *testing.T) {
 			in := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(tc.enums))
 			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(tc.enums))
 			assertEquals(t, expected, in)
-		})
-	}
-}
-
-func TestQFrame_AddColumn(t *testing.T) {
-	table := []struct {
-		name  string
-		input interface{}
-		added interface{}
-		enums map[string][]string
-	}{
-		{
-			name:  "int",
-			input: []int{1, 2},
-			added: []int{3, 4}},
-		{
-			name:  "enum",
-			input: []string{"a", "b"},
-			added: []string{"c", "d"},
-			enums: map[string][]string{"COL2": nil}},
-	}
-
-	for _, tc := range table {
-		t.Run(tc.name, func(t *testing.T) {
-			in := qframe.New(map[string]interface{}{"COL1": tc.input})
-			original := qframe.New(map[string]interface{}{"COL1": tc.input})
-			inAdded := in.AddColumn("COL2", tc.added, qframe.Enums(tc.enums))
-			expected := qframe.New(map[string]interface{}{"COL1": tc.input, "COL2": tc.added}, qframe.Enums(tc.enums))
-			assertEquals(t, expected, inAdded)
-
-			// Original input not modified
-			assertEquals(t, original, in)
-
 		})
 	}
 }
