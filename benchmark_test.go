@@ -638,6 +638,47 @@ func BenchmarkQFrame_AssignEnum(b *testing.B) {
 	benchAssign(b, "Instruction int function (for reference)", df, func(x *string) (int, error) { return len(*x), nil })
 }
 
+func BenchmarkQFrame_IntView(b *testing.B) {
+	data := qf.New(map[string]interface{}{"S1": genInts(seed1, frameSize)}).Sort(qf.Order{Column: "S1"})
+	v, err := data.IntView("S1")
+	if err != nil {
+		b.Error(err)
+	}
+
+	b.Run("For loop", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			result := 0
+			for j := 0; j < v.Len(); j++ {
+				result += v.ItemAt(j)
+			}
+
+			// Don't allow the result to be optimized away
+			if result == 0 {
+				b.Fail()
+			}
+		}
+	})
+
+	b.Run("Slice", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			result := 0
+			for _, j := range v.Slice() {
+				result += j
+			}
+
+			// Don't allow the result to be optimized away
+			if result == 0 {
+				b.Fail()
+			}
+		}
+	})
+
+}
+
 /*
 Go 1.7
 
@@ -839,4 +880,10 @@ BenchmarkQFrame_FilterIntGeneral-2   	     500	   2631678 ns/op	  221239 B/op	  
 // the execution time.
 BenchmarkQFrame_FilterIntGeneralIn-2   	     500	   3321307 ns/op	  132571 B/op	      10 allocs/op
 BenchmarkQFrame_FilterIntBuiltinIn-2   	     500	   3055410 ns/op	  132591 B/op	      10 allocs/op
+
+// Without the sort the slice version is actually a bit faster even though it allocates a new slice and iterates
+// over the data twice.
+BenchmarkQFrame_IntView/For_loop-2         	    2000	    763169 ns/op	       0 B/op	       0 allocs/op
+BenchmarkQFrame_IntView/Slice-2            	    2000	    806672 ns/op	  802816 B/op	       1 allocs/op
+
 */

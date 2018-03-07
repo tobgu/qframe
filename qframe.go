@@ -826,11 +826,53 @@ func (qf QFrame) FloatView(name string) (FloatView, error) {
 	if !ok {
 		return FloatView{}, errors.New(
 			"FloatView",
-			"invalid column typem, expected float, was: %v",
+			"invalid column type, expected float, was: %v",
 			reflect.TypeOf(namedColumn.Column))
 	}
 
 	return FloatView{fCol.View(qf.index)}, nil
+}
+
+type IntView struct {
+	icolumn.View
+}
+
+func (qf QFrame) IntView(name string) (IntView, error) {
+	namedColumn, ok := qf.columnsByName[name]
+	if !ok {
+		return IntView{}, errors.New("IntView", "no such column: %s", name)
+	}
+
+	iCol, ok := namedColumn.Column.(icolumn.Column)
+	if !ok {
+		return IntView{}, errors.New(
+			"IntView",
+			"invalid column type, expected int, was: %v",
+			reflect.TypeOf(namedColumn.Column))
+	}
+
+	return IntView{iCol.View(qf.index)}, nil
+}
+
+type BoolView struct {
+	bcolumn.View
+}
+
+func (qf QFrame) BoolView(name string) (BoolView, error) {
+	namedColumn, ok := qf.columnsByName[name]
+	if !ok {
+		return BoolView{}, errors.New("BoolView", "no such column: %s", name)
+	}
+
+	bCol, ok := namedColumn.Column.(bcolumn.Column)
+	if !ok {
+		return BoolView{}, errors.New(
+			"BoolView",
+			"invalid column type, expected bool, was: %v",
+			reflect.TypeOf(namedColumn.Column))
+	}
+
+	return BoolView{bCol.View(qf.index)}, nil
 }
 
 ////////////
