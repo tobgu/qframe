@@ -896,6 +896,27 @@ func (qf QFrame) StringView(name string) (StringView, error) {
 	return StringView{sCol.View(qf.index)}, nil
 }
 
+type EnumView struct {
+	ecolumn.View
+}
+
+func (qf QFrame) EnumView(name string) (EnumView, error) {
+	namedColumn, ok := qf.columnsByName[name]
+	if !ok {
+		return EnumView{}, errors.New("EnumView", "no such column: %eCol", name)
+	}
+
+	eCol, ok := namedColumn.Column.(ecolumn.Column)
+	if !ok {
+		return EnumView{}, errors.New(
+			"EnumView",
+			"invalid column type, expected enum, was: %v",
+			reflect.TypeOf(namedColumn.Column))
+	}
+
+	return EnumView{View: eCol.View(qf.index)}, nil
+}
+
 ////////////
 //// IO ////
 ////////////

@@ -932,4 +932,9 @@ BenchmarkQFrame_IntView/Slice-2            	    2000	    806672 ns/op	  802816 B
 
 BenchmarkQFrame_StringView/For_loop-2         	     200	   6242471 ns/op	 1600000 B/op	  100000 allocs/op
 BenchmarkQFrame_StringView/Slice-2            	     100	  14006634 ns/op	 4002816 B/op	  200001 allocs/op
+
+// Same as above but modified to work with enums in COL.1
+BenchmarkQFrame_StringView/For_loop-2         	    1000	   1651190 ns/op	       0 B/op	       0 allocs/op
+BenchmarkQFrame_StringView/Slice-2            	     500	   2697675 ns/op	  802816 B/op	       1 allocs/op
+
 */

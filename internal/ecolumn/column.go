@@ -566,6 +566,10 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 	}
 }
 
+func (c Column) View(ix index.Int) View {
+	return View{column: c, index: ix}
+}
+
 type Comparable struct {
 	s       Column
 	ltValue column.CompareResult
