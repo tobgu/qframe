@@ -274,6 +274,15 @@ func (c Column) stringAt(i uint32) (string, bool) {
 	return qfstrings.UnsafeBytesToString(c.data[p.Offset() : p.Offset()+p.Len()]), false
 }
 
+func (c Column) stringCopyAt(i uint32) (string, bool) {
+	// Similar to stringAt but will allocate a new string and copy the content into it.
+	p := c.pointers[i]
+	if p.IsNull() {
+		return "", true
+	}
+	return string(c.data[p.Offset() : p.Offset()+p.Len()]), false
+}
+
 func (c Column) subset(index index.Int) Column {
 	data := make([]byte, 0, len(index))
 	pointers := make([]qfstrings.Pointer, len(index))
@@ -396,6 +405,10 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 	default:
 		return nil, errors.New("string.apply2", "cannot apply type %#v to column", fn)
 	}
+}
+
+func (c Column) View(ix index.Int) View {
+	return View{column: c, index: ix}
 }
 
 type Comparable struct {

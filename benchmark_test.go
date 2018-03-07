@@ -639,8 +639,8 @@ func BenchmarkQFrame_AssignEnum(b *testing.B) {
 }
 
 func BenchmarkQFrame_IntView(b *testing.B) {
-	data := qf.New(map[string]interface{}{"S1": genInts(seed1, frameSize)}).Sort(qf.Order{Column: "S1"})
-	v, err := data.IntView("S1")
+	f := qf.New(map[string]interface{}{"S1": genInts(seed1, frameSize)}).Sort(qf.Order{Column: "S1"})
+	v, err := f.IntView("S1")
 	if err != nil {
 		b.Error(err)
 	}
@@ -677,6 +677,50 @@ func BenchmarkQFrame_IntView(b *testing.B) {
 		}
 	})
 
+}
+
+func BenchmarkQFrame_StringView(b *testing.B) {
+	rowCount := 100000
+	cardinality := 9
+	input := csvEnumBytes(rowCount, cardinality)
+	r := bytes.NewReader(input)
+	f := qf.ReadCsv(r).Sort(qf.Order{Column: "COL.1"})
+	v, err := f.StringView("COL.1")
+	if err != nil {
+		b.Error(err)
+	}
+
+	b.Run("For loop", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			var last *string
+			for j := 0; j < v.Len(); j++ {
+				last = v.ItemAt(j)
+			}
+
+			// Don't allow the result to be optimized away
+			if len(*last) == 0 {
+				b.Fail()
+			}
+		}
+	})
+
+	b.Run("Slice", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			var last *string
+			for _, j := range v.Slice() {
+				last = j
+			}
+
+			// Don't allow the result to be optimized away
+			if len(*last) == 0 {
+				b.Fail()
+			}
+		}
+	})
 }
 
 /*
@@ -886,4 +930,6 @@ BenchmarkQFrame_FilterIntBuiltinIn-2   	     500	   3055410 ns/op	  132591 B/op	
 BenchmarkQFrame_IntView/For_loop-2         	    2000	    763169 ns/op	       0 B/op	       0 allocs/op
 BenchmarkQFrame_IntView/Slice-2            	    2000	    806672 ns/op	  802816 B/op	       1 allocs/op
 
+BenchmarkQFrame_StringView/For_loop-2         	     200	   6242471 ns/op	 1600000 B/op	  100000 allocs/op
+BenchmarkQFrame_StringView/Slice-2            	     100	  14006634 ns/op	 4002816 B/op	  200001 allocs/op
 */

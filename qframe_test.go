@@ -1258,3 +1258,24 @@ func TestQFrame_FloatView(t *testing.T) {
 	assertTrue(t, (v.ItemAt(1) == s[1]) && (s[1] == expected[1]))
 	assertTrue(t, (v.ItemAt(2) == s[2]) && (s[2] == expected[2]))
 }
+
+func TestQFrame_StringView(t *testing.T) {
+	a, b := "a", "b"
+	input := qframe.New(map[string]interface{}{"COL1": []*string{&a, nil, &b}})
+	input = input.Sort(qframe.Order{Column: "COL1"})
+	expected := []*string{nil, &a, &b}
+
+	v, err := input.StringView("COL1")
+	assertNotErr(t, err)
+
+	s := v.Slice()
+	assertTrue(t, v.Len() == len(expected))
+	assertTrue(t, len(s) == len(expected))
+
+	// Nil, check pointers
+	assertTrue(t, (v.ItemAt(0) == s[0]) && (s[0] == expected[0]))
+
+	// !Nil, check values
+	assertTrue(t, (*v.ItemAt(1) == *s[1]) && (*s[1] == *expected[1]))
+	assertTrue(t, (*v.ItemAt(2) == *s[2]) && (*s[2] == *expected[2]))
+}

@@ -2,6 +2,8 @@ package strings
 
 import "fmt"
 
+// Max individual string size 2^28 byte ~ 268 Mb
+// Max total size 2^35 byte ~ 34 Gb
 type Pointer uint64
 
 type StringBlob struct {

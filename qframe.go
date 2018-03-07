@@ -875,6 +875,27 @@ func (qf QFrame) BoolView(name string) (BoolView, error) {
 	return BoolView{bCol.View(qf.index)}, nil
 }
 
+type StringView struct {
+	scolumn.View
+}
+
+func (qf QFrame) StringView(name string) (StringView, error) {
+	namedColumn, ok := qf.columnsByName[name]
+	if !ok {
+		return StringView{}, errors.New("StringView", "no such column: %sCol", name)
+	}
+
+	sCol, ok := namedColumn.Column.(scolumn.Column)
+	if !ok {
+		return StringView{}, errors.New(
+			"StringView",
+			"invalid column type, expected string, was: %v",
+			reflect.TypeOf(namedColumn.Column))
+	}
+
+	return StringView{sCol.View(qf.index)}, nil
+}
+
 ////////////
 //// IO ////
 ////////////
