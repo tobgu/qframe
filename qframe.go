@@ -434,6 +434,26 @@ func (qf QFrame) checkColumns(operation string, columns []string) error {
 	return nil
 }
 
+func (qf QFrame) Drop(columns ...string) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	dropColums := make(map[string]struct{}, len(columns))
+	for _, c := range columns {
+		dropColums[c] = struct{}{}
+	}
+
+	selectColumns := make([]string, 0)
+	for _, c := range columns {
+		if _, ok := dropColums[c]; !ok {
+			selectColumns = append(selectColumns, c)
+		}
+	}
+
+	return qf.Select(selectColumns...)
+}
+
 func (qf QFrame) Select(columns ...string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -650,6 +670,11 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 		return qf.withErr(errors.New("Instruction", "no such columns: %s", srcCol))
 	}
 
+	if dstCol == srcCol {
+		// NOP
+		return qf
+	}
+
 	return qf.setColumn(dstCol, namedColumn.Column)
 }
 
@@ -812,6 +837,25 @@ func (qf QFrame) FilteredAssign(clause FilterClause, instructions ...Instruction
 	return newQf
 }
 
+func (qf QFrame) Eval(destCol string, expr Expression, ctx *ExprCtx) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	result, colName := expr.execute(qf, ctx)
+
+	// colName is often just a temporary name of a column created as a result of
+	// executing the expression. We want to rename this column to the requested
+	// destination columns name. Remove colName from the result if not present in
+	// the original frame to avoid poluting the frame with intermediate results.
+	result = result.Copy(destCol, colName)
+	if !qf.Contains(colName) {
+		result = result.Drop(colName)
+	}
+
+	return result
+}
+
 type FloatView struct {
 	fcolumn.View
 }
@@ -903,7 +947,7 @@ type EnumView struct {
 func (qf QFrame) EnumView(name string) (EnumView, error) {
 	namedColumn, ok := qf.columnsByName[name]
 	if !ok {
-		return EnumView{}, errors.New("EnumView", "no such column: %eCol", name)
+		return EnumView{}, errors.New("EnumView", "no such column: %s", name)
 	}
 
 	eCol, ok := namedColumn.Column.(ecolumn.Column)
@@ -915,6 +959,15 @@ func (qf QFrame) EnumView(name string) (EnumView, error) {
 	}
 
 	return EnumView{View: eCol.View(qf.index)}, nil
+}
+
+func (qf QFrame) functionType(name string) (types.FunctionType, error) {
+	namedColumn, ok := qf.columnsByName[name]
+	if !ok {
+		return types.FunctionTypeUndefined, errors.New("functionType", "no such column: %s", name)
+	}
+
+	return namedColumn.FunctionType(), nil
 }
 
 ////////////
@@ -1134,7 +1187,6 @@ func (qf QFrame) ByteSize() int {
 // - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
 //   interface.
 // - Handle float NaN in filtering
-// - Possibility to run operations on two or more columns that result in a new columns (addition for example).
 // - Benchmarks comparing performance with Pandas
 // - Documentation
 // - Use https://goreportcard.com
@@ -1142,8 +1194,7 @@ func (qf QFrame) ByteSize() int {
 // - Perhaps make a special case for distinct with only one columns involved that simply calls distinct on
 //   a columns for that specific columns. Should be quite a bit faster than current sort based implementation.
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
-// - Split columns files into different files (aggregations, filters, apply funcs, etc.)
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
-// - Make it possible to access columns and individual elements in the QFrame.
-// - AssingN?
+// - ApplyN?
+// - Revert Assign -> Apply?

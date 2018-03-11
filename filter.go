@@ -66,6 +66,10 @@ func (c AndClause) String() string {
 }
 
 func (c AndClause) Filter(qf QFrame) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	if c.Err() != nil {
 		return qf.withErr(c.Err())
 	}
@@ -139,6 +143,10 @@ func orFrames(original, lhs, rhs *QFrame) *QFrame {
 }
 
 func (c OrClause) Filter(qf QFrame) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	if c.Err() != nil {
 		return qf.withErr(c.Err())
 	}
@@ -202,6 +210,10 @@ func (c NotClause) String() string {
 }
 
 func (c NotClause) Filter(qf QFrame) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
 	if c.Err() != nil {
 		return qf.withErr(c.Err())
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
+	"github.com/tobgu/qframe/types"
 	"math"
 	"reflect"
 	"strconv"
@@ -133,4 +134,8 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 		err = errors.New("filter float", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 	return err
+}
+
+func (c Column) FunctionType() types.FunctionType {
+	return types.FunctionTypeFloat
 }

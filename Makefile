@@ -1,5 +1,5 @@
 generate:
-	go generate github.com/tobgu/qframe/internal/...
+	go generate github.com/tobgu/qframe/...
 
 test: generate
 	go test github.com/tobgu/qframe/

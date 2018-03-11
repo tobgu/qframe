@@ -5,6 +5,7 @@ import (
 	"fmt"
 	// TODO: Make index a public package?
 	"github.com/tobgu/qframe/internal/index"
+	"github.com/tobgu/qframe/types"
 )
 
 type Column interface {
@@ -22,6 +23,8 @@ type Column interface {
 
 	Apply1(fn interface{}, ix index.Int) (interface{}, error)
 	Apply2(fn interface{}, s2 Column, ix index.Int) (Column, error)
+
+	FunctionType() types.FunctionType
 }
 
 // TODO: Change to byte

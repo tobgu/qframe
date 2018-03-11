@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"github.com/tobgu/qframe/types"
 	"reflect"
 )
 
@@ -409,6 +410,10 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 
 func (c Column) View(ix index.Int) View {
 	return View{column: c, index: ix}
+}
+
+func (c Column) FunctionType() types.FunctionType {
+	return types.FunctionTypeString
 }
 
 type Comparable struct {
