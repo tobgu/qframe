@@ -445,9 +445,9 @@ func (qf QFrame) Drop(columns ...string) QFrame {
 	}
 
 	selectColumns := make([]string, 0)
-	for _, c := range columns {
-		if _, ok := dropColums[c]; !ok {
-			selectColumns = append(selectColumns, c)
+	for _, c := range qf.columns {
+		if _, ok := dropColums[c.name]; !ok {
+			selectColumns = append(selectColumns, c.name)
 		}
 	}
 
@@ -840,6 +840,10 @@ func (qf QFrame) FilteredAssign(clause FilterClause, instructions ...Instruction
 func (qf QFrame) Eval(destCol string, expr Expression, ctx *ExprCtx) QFrame {
 	if qf.Err != nil {
 		return qf
+	}
+
+	if ctx == nil {
+		ctx = NewDefaultExprCtx()
 	}
 
 	result, colName := expr.execute(qf, ctx)

@@ -2,14 +2,14 @@ package function
 
 import "strings"
 
-func nilSafe(f func(string) string) func(*string) *string {
-	return func(s *string) *string {
+func nilSafe(f func(string) string) func(*string) (*string, error) {
+	return func(s *string) (*string, error) {
 		if s == nil {
-			return nil
+			return nil, nil
 		}
 
 		result := f(*s)
-		return &result
+		return &result, nil
 	}
 }
 

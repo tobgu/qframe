@@ -35,7 +35,7 @@ type ExprCtx struct {
 	functions functionsByArgType
 }
 
-func DefaultExprCtx() *ExprCtx {
+func NewDefaultExprCtx() *ExprCtx {
 	// TODO: More functions and types
 	// TODO: Cast function Itoa, Atoi, ...
 	return &ExprCtx{
@@ -189,28 +189,29 @@ func getFunc(ctx *ExprCtx, ac argCount, qf QFrame, colName, funcName string) (QF
 
 type Expression interface {
 	execute(f QFrame, ctx *ExprCtx) (QFrame, string)
+	Err() error
 }
 
-func NewExpr(expr interface{}) (Expression, error) {
+func NewExpr(expr interface{}) Expression {
 	// Try, in turn, to decode expr into a valid expression type.
 	if e, ok := newColExpr(expr); ok {
-		return e, nil
+		return e
 	}
 
 	if e, ok := newConstExpr(expr); ok {
-		return e, nil
+		return e
 	}
 
 	if e, ok := newUnaryExpr(expr); ok {
-		return e, nil
+		return e
 	}
 
 	if e, ok := newColConstExpr(expr); ok {
-		return e, nil
+		return e
 	}
 
 	if e, ok := newColColExpr(expr); ok {
-		return e, nil
+		return e
 	}
 
 	return newExprExpr(expr)
@@ -247,6 +248,10 @@ func newColExpr(x interface{}) (colExpr, bool) {
 
 func (e colExpr) execute(qf QFrame, _ *ExprCtx) (QFrame, string) {
 	return qf, e.srcCol
+}
+
+func (e colExpr) Err() error {
+	return nil
 }
 
 func tempColName(qf QFrame, prefix string) string {
@@ -300,6 +305,10 @@ func (e constExpr) execute(qf QFrame, _ *ExprCtx) (QFrame, string) {
 	return qf.Assign(Instruction{Fn: e.value, DstCol: colName}), colName
 }
 
+func (e constExpr) Err() error {
+	return nil
+}
+
 // Use the content of a single column and nothing else as input (eg. abs(x))
 type unaryExpr struct {
 	operation string
@@ -326,6 +335,10 @@ func (e unaryExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
 
 	colName := tempColName(qf, "unary")
 	return qf.Assign(Instruction{Fn: fn, DstCol: colName, SrcCol1: e.srcCol}), colName
+}
+
+func (e unaryExpr) Err() error {
+	return nil
 }
 
 // Use the content of a single column and a constant as input (eg. age + 1)
@@ -370,6 +383,10 @@ func (e colConstExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
 	return result, colName
 }
 
+func (e colConstExpr) Err() error {
+	return nil
+}
+
 // Use the content of two columns as input (eg. weight / length)
 type colColExpr struct {
 	operation string
@@ -390,7 +407,7 @@ func newColColExpr(x interface{}) (colColExpr, bool) {
 }
 
 func (e colColExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
-	qf, fn := getFunc(ctx, argCountOne, qf, e.srcCol1, e.operation)
+	qf, fn := getFunc(ctx, argCountTwo, qf, e.srcCol1, e.operation)
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -403,6 +420,10 @@ func (e colColExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
 	return result, colName
 }
 
+func (e colColExpr) Err() error {
+	return nil
+}
+
 // Nested expressions
 type exprExpr struct {
 	operation string
@@ -410,7 +431,7 @@ type exprExpr struct {
 	rhs       Expression
 }
 
-func newExprExpr(x interface{}) (exprExpr, error) {
+func newExprExpr(x interface{}) Expression {
 	// In contrast to other expression constructors this one returns an error instead
 	// of a bool to denote success or failure. This is to be able to pinpoint the
 	// subexpression where the error occurred.
@@ -419,23 +440,23 @@ func newExprExpr(x interface{}) (exprExpr, error) {
 	if ok && len(l) == 3 {
 		operation, oOk := expressionString(l[0])
 		if !oOk {
-			return exprExpr{}, errors.New("newExprExpr", "invalid operation: %v", l[0])
+			return errorExpr{err: errors.New("newExprExpr", "invalid operation: %v", l[0])}
 		}
 
-		lhs, err := NewExpr(l[1])
-		if err != nil {
-			return exprExpr{}, err
+		lhs := NewExpr(l[1])
+		if lhs.Err() != nil {
+			return errorExpr{err: errors.Propagate("newExprExpr", lhs.Err())}
 		}
 
-		rhs, err := NewExpr(l[1])
-		if err != nil {
-			return exprExpr{}, err
+		rhs := NewExpr(l[2])
+		if rhs.Err() != nil {
+			return errorExpr{err: errors.Propagate("newExprExpr", rhs.Err())}
 		}
 
-		return exprExpr{operation: operation, lhs: lhs, rhs: rhs}, nil
+		return exprExpr{operation: operation, lhs: lhs, rhs: rhs}
 	}
 
-	return exprExpr{}, errors.New("newExprExpr", "Expected a list with three elements, was: %v", x)
+	return errorExpr{err: errors.New("newExprExpr", "Expected a list with three elements, was: %v", x)}
 }
 
 func (e exprExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
@@ -447,4 +468,36 @@ func (e exprExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
 	// Drop intermediate results
 	result = result.Drop(lColName, rColName)
 	return result, colName
+}
+
+func (e exprExpr) Err() error {
+	return nil
+}
+
+type errorExpr struct {
+	err error
+}
+
+func (e errorExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
+	if qf.Err != nil {
+		return qf, ""
+	}
+
+	return qf.withErr(e.err), ""
+}
+
+func (e errorExpr) Err() error {
+	return e.err
+}
+
+func Sym(value interface{}) Expression {
+	return NewExpr(value)
+}
+
+func Expr1(name, column string) Expression {
+	return NewExpr([]interface{}{name, column})
+}
+
+func Expr2(name, val1, val2 interface{}) Expression {
+	return NewExpr([]interface{}{name, val1, val2})
 }

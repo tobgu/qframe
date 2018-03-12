@@ -1300,3 +1300,34 @@ func TestQFrame_EnumView(t *testing.T) {
 	assertTrue(t, (*v.ItemAt(1) == *s[1]) && (*s[1] == *expected[1]))
 	assertTrue(t, (*v.ItemAt(2) == *s[2]) && (*s[2] == *expected[2]))
 }
+
+func TestQFrame_EvalSuccess(t *testing.T) {
+	table := []struct {
+		name     string
+		expr     qframe.Expression
+		dstCol   string
+		input    map[string]interface{}
+		expected interface{}
+	}{
+		{
+			name:     "int plus",
+			expr:     qframe.Expr2("+", "COL1", "COL2"),
+			input:    map[string]interface{}{"COL1": []int{1, 2}, "COL2": []int{3, 4}},
+			expected: []int{4, 6}},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.dstCol == "" {
+				tc.dstCol = "COL3"
+			}
+			in := qframe.New(tc.input)
+			tc.input[tc.dstCol] = tc.expected
+			expected := qframe.New(tc.input)
+
+			out := in.Eval(tc.dstCol, tc.expr, nil)
+
+			assertEquals(t, expected, out)
+		})
+	}
+}

@@ -6,6 +6,7 @@ package fcolumn
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
@@ -79,13 +80,14 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 // same type. The resulting column will have the same type as this column.
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	ss2, ok := s2.(Column)
+	var typ float64
 	if !ok {
-		return Column{}, fmt.Errorf("apply2: invalid column type: %#v", s2)
+		return Column{}, fmt.Errorf("%v apply2: invalid column type: %#v", reflect.TypeOf(typ), s2)
 	}
 
 	t, ok := fn.(func(float64, float64) (float64, error))
 	if !ok {
-		return Column{}, fmt.Errorf("apply2: invalid function type: %#v", fn)
+		return Column{}, fmt.Errorf("%v apply2: invalid function type: %#v", reflect.TypeOf(typ), fn)
 	}
 
 	result := make([]float64, len(c.data))

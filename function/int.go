@@ -1,24 +1,24 @@
 package function
 
-func AbsI(x int) int {
+func AbsI(x int) (int, error) {
 	if x < 0 {
-		return -x
+		return -x, nil
 	}
-	return x
+	return x, nil
 }
 
-func PlusI(x, y int) int {
-	return x + y
+func PlusI(x, y int) (int, error) {
+	return x + y, nil
 }
 
-func MinusI(x, y int) int {
-	return x - y
+func MinusI(x, y int) (int, error) {
+	return x - y, nil
 }
 
-func MulI(x, y int) int {
-	return x * y
+func MulI(x, y int) (int, error) {
+	return x * y, nil
 }
 
-func DivI(x, y int) int {
-	return x / y
+func DivI(x, y int) (int, error) {
+	return x / y, nil
 }
