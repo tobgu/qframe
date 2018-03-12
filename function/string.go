@@ -16,15 +16,15 @@ func nilSafe(f func(string) string) func(*string) (*string, error) {
 var UpperS = nilSafe(strings.ToUpper)
 var LowerS = nilSafe(strings.ToLower)
 
-func ConcatS(x, y *string) *string {
+func ConcatS(x, y *string) (*string, error) {
 	if x == nil {
-		return y
+		return y, nil
 	}
 
 	if y == nil {
-		return x
+		return x, nil
 	}
 
 	result := *x + *y
-	return &result
+	return &result, nil
 }

@@ -1303,21 +1303,53 @@ func TestQFrame_EnumView(t *testing.T) {
 
 func TestQFrame_EvalSuccess(t *testing.T) {
 	table := []struct {
-		name     string
-		expr     qframe.Expression
-		dstCol   string
-		input    map[string]interface{}
-		expected interface{}
+		name         string
+		expr         qframe.Expression
+		dstCol       string
+		input        map[string]interface{}
+		expected     interface{}
+		customFn     interface{}
+		customFnName string
 	}{
 		{
-			name:     "int plus",
+			name:     "int col plus col",
 			expr:     qframe.Expr2("+", "COL1", "COL2"),
 			input:    map[string]interface{}{"COL1": []int{1, 2}, "COL2": []int{3, 4}},
 			expected: []int{4, 6}},
+		{
+			name:     "int col plus const minus const",
+			expr:     qframe.Expr2("-", qframe.Expr2("+", "COL1", 10), qframe.Val(1)),
+			input:    map[string]interface{}{"COL1": []int{1, 2}},
+			expected: []int{10, 11}},
+		{
+			name:     "string plus itoa int",
+			expr:     qframe.Expr2("+", "COL1", qframe.Expr1("str", "COL2")),
+			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []int{1, 2}},
+			expected: []string{"a1", "b2"}},
+		{
+			name:     "string plus string literal",
+			expr:     qframe.Expr2("+", "COL1", qframe.Val("'A'")),
+			input:    map[string]interface{}{"COL1": []string{"a", "b"}},
+			expected: []string{"aA", "bA"}},
+		{
+			name:         "float custom func",
+			expr:         qframe.Expr2("pythagoras", "COL1", "COL2"),
+			input:        map[string]interface{}{"COL1": []float64{1, 2}, "COL2": []float64{1, 3}},
+			expected:     []float64{math.Sqrt(2), math.Sqrt(4 + 9)},
+			customFn:     func(x, y float64) (float64, error) { return math.Sqrt(x*x + y*y), nil },
+			customFnName: "pythagoras"},
+
+		// TODO: bool, string, float, JSON
 	}
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
+			var ctx *qframe.ExprCtx
+			if tc.customFn != nil {
+				ctx = qframe.NewDefaultExprCtx()
+				ctx.SetFunc(tc.customFnName, tc.customFn)
+			}
+
 			if tc.dstCol == "" {
 				tc.dstCol = "COL3"
 			}
@@ -1325,7 +1357,7 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			tc.input[tc.dstCol] = tc.expected
 			expected := qframe.New(tc.input)
 
-			out := in.Eval(tc.dstCol, tc.expr, nil)
+			out := in.Eval(tc.dstCol, tc.expr, ctx)
 
 			assertEquals(t, expected, out)
 		})

@@ -435,18 +435,18 @@ func (qf QFrame) checkColumns(operation string, columns []string) error {
 }
 
 func (qf QFrame) Drop(columns ...string) QFrame {
-	if qf.Err != nil {
+	if qf.Err != nil || len(columns) == 0 {
 		return qf
 	}
 
-	dropColums := make(map[string]struct{}, len(columns))
+	dropColumns := make(map[string]struct{}, len(columns))
 	for _, c := range columns {
-		dropColums[c] = struct{}{}
+		dropColumns[c] = struct{}{}
 	}
 
 	selectColumns := make([]string, 0)
 	for _, c := range qf.columns {
-		if _, ok := dropColums[c.name]; !ok {
+		if _, ok := dropColumns[c.name]; !ok {
 			selectColumns = append(selectColumns, c.name)
 		}
 	}

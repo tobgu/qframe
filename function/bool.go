@@ -1,5 +1,7 @@
 package function
 
+import "strconv"
+
 func NotB(x bool) (bool, error) {
 	return !x, nil
 }
@@ -18,4 +20,9 @@ func XorB(x, y bool) (bool, error) {
 
 func NandB(x, y bool) (bool, error) {
 	return !x || !y, nil
+}
+
+func StrB(x bool) (*string, error) {
+	result := strconv.FormatBool(x)
+	return &result, nil
 }

@@ -37,12 +37,13 @@ type ExprCtx struct {
 
 func NewDefaultExprCtx() *ExprCtx {
 	// TODO: More functions and types
-	// TODO: Cast function Itoa, Atoi, ...
+	// TODO: More cast functions
 	return &ExprCtx{
 		functionsByArgType{
 			types.FunctionTypeFloat: functionsByArgCount{
 				singleArgs: map[string]interface{}{
 					"abs": math.Abs,
+					"str": function.StrF,
 				},
 				doubleArgs: map[string]interface{}{
 					"+": function.PlusF,
@@ -54,6 +55,7 @@ func NewDefaultExprCtx() *ExprCtx {
 			types.FunctionTypeInt: functionsByArgCount{
 				singleArgs: map[string]interface{}{
 					"abs": function.AbsI,
+					"str": function.StrI,
 				},
 				doubleArgs: map[string]interface{}{
 					"+": function.PlusI,
@@ -65,10 +67,11 @@ func NewDefaultExprCtx() *ExprCtx {
 			types.FunctionTypeBool: functionsByArgCount{
 				singleArgs: map[string]interface{}{
 					"not": function.NotB,
+					"str": function.StrB,
 				},
 				doubleArgs: map[string]interface{}{
-					"and":  function.AndB,
-					"or":   function.OrB,
+					"&&":   function.AndB,
+					"||":   function.OrB,
 					"xor":  function.XorB,
 					"nand": function.NandB,
 				},
@@ -114,51 +117,51 @@ func (ctx *ExprCtx) SetFunc(name string, fn interface{}) error {
 	var typ types.FunctionType
 	switch fn.(type) {
 	// Int
-	case func(int, int) int:
+	case func(int, int) (int, error):
 		ac, typ = argCountTwo, types.FunctionTypeInt
-	case func(int) int:
+	case func(int) (int, error):
 		ac, typ = argCountOne, types.FunctionTypeInt
-	case func(int) bool:
+	case func(int) (bool, error):
 		ac, typ = argCountOne, types.FunctionTypeInt
-	case func(int) float64:
+	case func(int) (float64, error):
 		ac, typ = argCountOne, types.FunctionTypeInt
-	case func(int) *string:
+	case func(int) (*string, error):
 		ac, typ = argCountOne, types.FunctionTypeInt
 
 	// Float
-	case func(float64, float64) float64:
+	case func(float64, float64) (float64, error):
 		ac, typ = argCountTwo, types.FunctionTypeFloat
-	case func(float64) float64:
+	case func(float64) (float64, error):
 		ac, typ = argCountOne, types.FunctionTypeFloat
-	case func(float64) int:
+	case func(float64) (int, error):
 		ac, typ = argCountOne, types.FunctionTypeFloat
-	case func(float64) bool:
+	case func(float64) (bool, error):
 		ac, typ = argCountOne, types.FunctionTypeFloat
-	case func(float64) *string:
+	case func(float64) (*string, error):
 		ac, typ = argCountOne, types.FunctionTypeFloat
 
 	// Bool
-	case func(bool, bool) bool:
+	case func(bool, bool) (bool, error):
 		ac, typ = argCountTwo, types.FunctionTypeBool
-	case func(bool) bool:
+	case func(bool) (bool, error):
 		ac, typ = argCountOne, types.FunctionTypeBool
-	case func(bool) int:
+	case func(bool) (int, error):
 		ac, typ = argCountOne, types.FunctionTypeBool
-	case func(bool) float64:
+	case func(bool) (float64, error):
 		ac, typ = argCountOne, types.FunctionTypeBool
-	case func(bool) *string:
+	case func(bool) (*string, error):
 		ac, typ = argCountOne, types.FunctionTypeBool
 
 	// String
-	case func(*string, *string) *string:
+	case func(*string, *string) (*string, error):
 		ac, typ = argCountTwo, types.FunctionTypeString
-	case func(*string) *string:
+	case func(*string) (*string, error):
 		ac, typ = argCountOne, types.FunctionTypeString
-	case func(*string) int:
+	case func(*string) (int, error):
 		ac, typ = argCountOne, types.FunctionTypeString
-	case func(*string) float64:
+	case func(*string) (float64, error):
 		ac, typ = argCountOne, types.FunctionTypeString
-	case func(*string) bool:
+	case func(*string) (bool, error):
 		ac, typ = argCountOne, types.FunctionTypeString
 
 	default:
@@ -194,6 +197,10 @@ type Expression interface {
 
 func NewExpr(expr interface{}) Expression {
 	// Try, in turn, to decode expr into a valid expression type.
+	if e, ok := expr.(Expression); ok {
+		return e
+	}
+
 	if e, ok := newColExpr(expr); ok {
 		return e
 	}
@@ -285,9 +292,10 @@ func newConstExpr(x interface{}) (constExpr, bool) {
 	case bool:
 		isConst = true
 	case string:
-		isConst := isStringConstant(t)
+		isConst = isStringConstant(t)
 		if isConst {
-			value = trimQuotes(t)
+			s := trimQuotes(t)
+			value = &s
 		}
 	default:
 		isConst = false
@@ -461,12 +469,19 @@ func newExprExpr(x interface{}) Expression {
 
 func (e exprExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
 	result, lColName := e.lhs.execute(qf, ctx)
-	result, rColName := e.lhs.execute(result, ctx)
+	result, rColName := e.rhs.execute(result, ctx)
 	ccE, _ := newColColExpr([]interface{}{e.operation, lColName, rColName})
 	result, colName := ccE.execute(result, ctx)
 
-	// Drop intermediate results
-	result = result.Drop(lColName, rColName)
+	// Drop intermediate results if not present in original frame
+	dropCols := make([]string, 0)
+	for _, s := range []string{lColName, rColName} {
+		if !qf.Contains(s) {
+			dropCols = append(dropCols, s)
+		}
+	}
+	result = result.Drop(dropCols...)
+
 	return result, colName
 }
 
@@ -490,7 +505,7 @@ func (e errorExpr) Err() error {
 	return e.err
 }
 
-func Sym(value interface{}) Expression {
+func Val(value interface{}) Expression {
 	return NewExpr(value)
 }
 
