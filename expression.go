@@ -36,14 +36,14 @@ type ExprCtx struct {
 }
 
 func NewDefaultExprCtx() *ExprCtx {
-	// TODO: More functions and types
-	// TODO: More cast functions
+	// TODO: More functions
 	return &ExprCtx{
 		functionsByArgType{
 			types.FunctionTypeFloat: functionsByArgCount{
 				singleArgs: map[string]interface{}{
 					"abs": math.Abs,
 					"str": function.StrF,
+					"int": function.IntF,
 				},
 				doubleArgs: map[string]interface{}{
 					"+": function.PlusF,
@@ -54,8 +54,10 @@ func NewDefaultExprCtx() *ExprCtx {
 			},
 			types.FunctionTypeInt: functionsByArgCount{
 				singleArgs: map[string]interface{}{
-					"abs": function.AbsI,
-					"str": function.StrI,
+					"abs":   function.AbsI,
+					"str":   function.StrI,
+					"bool":  function.BoolI,
+					"float": function.FloatI,
 				},
 				doubleArgs: map[string]interface{}{
 					"+": function.PlusI,
@@ -68,6 +70,7 @@ func NewDefaultExprCtx() *ExprCtx {
 				singleArgs: map[string]interface{}{
 					"!":   function.NotB,
 					"str": function.StrB,
+					"int": function.IntB,
 				},
 				doubleArgs: map[string]interface{}{
 					"&":    function.AndB,
@@ -81,6 +84,7 @@ func NewDefaultExprCtx() *ExprCtx {
 					"upper": function.UpperS,
 					"lower": function.LowerS,
 					"str":   function.StrS,
+					"len":   function.LenS,
 				},
 				doubleArgs: map[string]interface{}{
 					"+": function.ConcatS,

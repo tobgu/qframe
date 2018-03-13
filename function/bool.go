@@ -26,3 +26,11 @@ func StrB(x bool) *string {
 	result := strconv.FormatBool(x)
 	return &result
 }
+
+func IntB(x bool) int {
+	if x {
+		return 1
+	}
+
+	return 0
+}

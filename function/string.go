@@ -23,6 +23,14 @@ func StrS(s *string) *string {
 	return s
 }
 
+func LenS(s *string) int {
+	if s == nil {
+		return 0
+	}
+
+	return len(*s)
+}
+
 func ConcatS(x, y *string) *string {
 	if x == nil {
 		return y

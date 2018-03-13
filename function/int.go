@@ -29,3 +29,11 @@ func StrI(x int) *string {
 	result := strconv.Itoa(x)
 	return &result
 }
+
+func FloatI(x int) float64 {
+	return float64(x)
+}
+
+func BoolI(x int) bool {
+	return x != 0
+}

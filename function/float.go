@@ -22,3 +22,7 @@ func StrF(x float64) *string {
 	result := fmt.Sprintf("%f", x)
 	return &result
 }
+
+func IntF(x float64) int {
+	return int(x)
+}

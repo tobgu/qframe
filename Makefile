@@ -1,4 +1,5 @@
 generate:
+	go install
 	go generate github.com/tobgu/qframe/...
 
 test: generate
