@@ -117,55 +117,31 @@ func (ctx *ExprCtx) SetFunc(name string, fn interface{}) error {
 	var typ types.FunctionType
 	switch fn.(type) {
 	// Int
-	case func(int, int) (int, error):
+	case func(int, int) int:
 		ac, typ = argCountTwo, types.FunctionTypeInt
-	case func(int) (int, error):
-		ac, typ = argCountOne, types.FunctionTypeInt
-	case func(int) (bool, error):
-		ac, typ = argCountOne, types.FunctionTypeInt
-	case func(int) (float64, error):
-		ac, typ = argCountOne, types.FunctionTypeInt
-	case func(int) (*string, error):
+	case func(int) int, func(int) bool, func(int) float64, func(int) *string:
 		ac, typ = argCountOne, types.FunctionTypeInt
 
 	// Float
-	case func(float64, float64) (float64, error):
+	case func(float64, float64) float64:
 		ac, typ = argCountTwo, types.FunctionTypeFloat
-	case func(float64) (float64, error):
-		ac, typ = argCountOne, types.FunctionTypeFloat
-	case func(float64) (int, error):
-		ac, typ = argCountOne, types.FunctionTypeFloat
-	case func(float64) (bool, error):
-		ac, typ = argCountOne, types.FunctionTypeFloat
-	case func(float64) (*string, error):
+	case func(float64) float64, func(float64) int, func(float64) bool, func(float64) *string:
 		ac, typ = argCountOne, types.FunctionTypeFloat
 
 	// Bool
-	case func(bool, bool) (bool, error):
+	case func(bool, bool) bool:
 		ac, typ = argCountTwo, types.FunctionTypeBool
-	case func(bool) (bool, error):
-		ac, typ = argCountOne, types.FunctionTypeBool
-	case func(bool) (int, error):
-		ac, typ = argCountOne, types.FunctionTypeBool
-	case func(bool) (float64, error):
-		ac, typ = argCountOne, types.FunctionTypeBool
-	case func(bool) (*string, error):
+	case func(bool) bool, func(bool) int, func(bool) float64, func(bool) *string:
 		ac, typ = argCountOne, types.FunctionTypeBool
 
 	// String
-	case func(*string, *string) (*string, error):
+	case func(*string, *string) *string:
 		ac, typ = argCountTwo, types.FunctionTypeString
-	case func(*string) (*string, error):
-		ac, typ = argCountOne, types.FunctionTypeString
-	case func(*string) (int, error):
-		ac, typ = argCountOne, types.FunctionTypeString
-	case func(*string) (float64, error):
-		ac, typ = argCountOne, types.FunctionTypeString
-	case func(*string) (bool, error):
+	case func(*string) *string, func(*string) int, func(*string) float64, func(*string) bool:
 		ac, typ = argCountOne, types.FunctionTypeString
 
 	default:
-		return errors.New("SetFunc", "unknown function type: %v", reflect.TypeOf(fn))
+		return errors.New("SetFunc", "invalid function type for function \"%s\": %v", name, reflect.TypeOf(fn))
 	}
 
 	ctx.setFunc(typ, ac, name, fn)

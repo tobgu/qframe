@@ -16,7 +16,7 @@ import (
 //easyjson:json
 type JsonString []*string
 
-var stringApplyFuncs = map[string]func(index.Int, Column) (interface{}, error){
+var stringApplyFuncs = map[string]func(index.Int, Column) interface{}{
 	"ToUpper": toUpper,
 }
 
@@ -26,9 +26,9 @@ var stringApplyFuncs = map[string]func(index.Int, Column) (interface{}, error){
 // generic function based API.
 // This function is roughly 3 - 4 times faster than applying the corresponding
 // general function (depending on the input size, etc. of course).
-func toUpper(ix index.Int, source Column) (interface{}, error) {
+func toUpper(ix index.Int, source Column) interface{} {
 	if len(source.pointers) == 0 {
-		return source, nil
+		return source
 	}
 
 	pointers := make([]qfstrings.Pointer, len(source.pointers))
@@ -41,7 +41,7 @@ func toUpper(ix index.Int, source Column) (interface{}, error) {
 		data = append(data, qfstrings.ToUpper(&strBuf, str)...)
 	}
 
-	return NewBytes(pointers, data), nil
+	return NewBytes(pointers, data)
 }
 
 func (c Column) StringAt(i uint32, naRep string) string {
@@ -340,43 +340,34 @@ func stringToPtr(s string, isNull bool) *string {
 }
 
 func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
-	var err error
 	switch t := fn.(type) {
-	case func(*string) (int, error):
+	case func(*string) int:
 		result := make([]int, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
-				return nil, err
-			}
+			result[i] = t(stringToPtr(c.stringAt(i)))
 		}
 		return result, nil
-	case func(*string) (float64, error):
+	case func(*string) float64:
 		result := make([]float64, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
-				return nil, err
-			}
+			result[i] = t(stringToPtr(c.stringAt(i)))
 		}
 		return result, nil
-	case func(*string) (bool, error):
+	case func(*string) bool:
 		result := make([]bool, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
-				return nil, err
-			}
+			result[i] = t(stringToPtr(c.stringAt(i)))
 		}
 		return result, nil
-	case func(*string) (*string, error):
+	case func(*string) *string:
 		result := make([]*string, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(c.stringAt(i))); err != nil {
-				return nil, err
-			}
+			result[i] = t(stringToPtr(c.stringAt(i)))
 		}
 		return result, nil
 	case string:
 		if f, ok := stringApplyFuncs[t]; ok {
-			return f(ix, c)
+			return f(ix, c), nil
 		}
 		return nil, errors.New("string.apply1", "unknown built in function %c", t)
 	default:
@@ -391,18 +382,15 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 	}
 
 	switch t := fn.(type) {
-	case func(*string, *string) (*string, error):
-		var err error
+	case func(*string, *string) *string:
 		result := make([]*string, len(c.pointers))
 		for _, i := range ix {
-			if result[i], err = t(stringToPtr(c.stringAt(i)), stringToPtr(s2S.stringAt(i))); err != nil {
-				return nil, err
-			}
+			result[i] = t(stringToPtr(c.stringAt(i)), stringToPtr(s2S.stringAt(i)))
 		}
 		return New(result), nil
 	case string:
 		// No built in functions for strings at this stage
-		return nil, errors.New("string.apply2", "unknown built in function %c", t)
+		return nil, errors.New("string.apply2", "unknown built in function %s", t)
 	default:
 		return nil, errors.New("string.apply2", "cannot apply type %#v to column", fn)
 	}

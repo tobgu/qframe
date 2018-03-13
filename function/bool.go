@@ -2,27 +2,27 @@ package function
 
 import "strconv"
 
-func NotB(x bool) (bool, error) {
-	return !x, nil
+func NotB(x bool) bool {
+	return !x
 }
 
-func AndB(x, y bool) (bool, error) {
-	return x && y, nil
+func AndB(x, y bool) bool {
+	return x && y
 }
 
-func OrB(x, y bool) (bool, error) {
-	return x || y, nil
+func OrB(x, y bool) bool {
+	return x || y
 }
 
-func XorB(x, y bool) (bool, error) {
-	return (x && !y) || (!x && y), nil
+func XorB(x, y bool) bool {
+	return (x && !y) || (!x && y)
 }
 
-func NandB(x, y bool) (bool, error) {
-	return !x || !y, nil
+func NandB(x, y bool) bool {
+	return !x || !y
 }
 
-func StrB(x bool) (*string, error) {
+func StrB(x bool) *string {
 	result := strconv.FormatBool(x)
-	return &result, nil
+	return &result
 }

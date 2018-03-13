@@ -2,29 +2,29 @@ package function
 
 import "strings"
 
-func nilSafe(f func(string) string) func(*string) (*string, error) {
-	return func(s *string) (*string, error) {
+func nilSafe(f func(string) string) func(*string) *string {
+	return func(s *string) *string {
 		if s == nil {
-			return nil, nil
+			return nil
 		}
 
 		result := f(*s)
-		return &result, nil
+		return &result
 	}
 }
 
 var UpperS = nilSafe(strings.ToUpper)
 var LowerS = nilSafe(strings.ToLower)
 
-func ConcatS(x, y *string) (*string, error) {
+func ConcatS(x, y *string) *string {
 	if x == nil {
-		return y, nil
+		return y
 	}
 
 	if y == nil {
-		return x, nil
+		return x
 	}
 
 	result := *x + *y
-	return &result, nil
+	return &result
 }

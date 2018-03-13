@@ -37,38 +37,29 @@ func NewConst(val bool, count int) Column {
 // Apply single argument function. The result may be a column
 // of a different type than the current column.
 func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
-	var err error
 	switch t := fn.(type) {
-	case func(bool) (int, error):
+	case func(bool) int:
 		result := make([]int, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.data[i]); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.data[i])
 		}
 		return result, nil
-	case func(bool) (float64, error):
+	case func(bool) float64:
 		result := make([]float64, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.data[i]); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.data[i])
 		}
 		return result, nil
-	case func(bool) (bool, error):
+	case func(bool) bool:
 		result := make([]bool, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.data[i]); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.data[i])
 		}
 		return result, nil
-	case func(bool) (*string, error):
+	case func(bool) *string:
 		result := make([]*string, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.data[i]); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.data[i])
 		}
 		return result, nil
 	default:
@@ -82,20 +73,17 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 	ss2, ok := s2.(Column)
 	var typ bool
 	if !ok {
-		return Column{}, fmt.Errorf("%v apply2: invalid column type: %#v", reflect.TypeOf(typ), s2)
+		return Column{}, fmt.Errorf("%v.apply2: invalid column type: %#v", reflect.TypeOf(typ), s2)
 	}
 
-	t, ok := fn.(func(bool, bool) (bool, error))
+	t, ok := fn.(func(bool, bool) bool)
 	if !ok {
-		return Column{}, fmt.Errorf("%v apply2: invalid function type: %#v", reflect.TypeOf(typ), fn)
+		return Column{}, fmt.Errorf("%v.apply2: invalid function type: %#v", reflect.TypeOf(typ), fn)
 	}
 
 	result := make([]bool, len(c.data))
-	var err error
 	for _, i := range ix {
-		if result[i], err = t(c.data[i], ss2.data[i]); err != nil {
-			return Column{}, err
-		}
+		result[i] = t(c.data[i], ss2.data[i])
 	}
 
 	return New(result), nil

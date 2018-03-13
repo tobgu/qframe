@@ -1037,7 +1037,7 @@ func TestQFrame_AssignSingleArgIntToInt(t *testing.T) {
 		"COL1": []int{6, 4},
 	})
 
-	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: func(a int) (int, error) { return 2 * a, nil }, DstCol: "COL1", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: func(a int) int { return 2 * a }, DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
 func TestQFrame_AssignSingleArgStringToBool(t *testing.T) {
@@ -1050,15 +1050,15 @@ func TestQFrame_AssignSingleArgStringToBool(t *testing.T) {
 		"IS_LONG": []bool{false, false, true},
 	})
 
-	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: func(x *string) (bool, error) { return len(*x) > 2, nil }, DstCol: "IS_LONG", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: func(x *string) bool { return len(*x) > 2 }, DstCol: "IS_LONG", SrcCol1: "COL1"}))
 }
 
-func toUpper(x *string) (*string, error) {
+func toUpper(x *string) *string {
 	if x == nil {
-		return x, nil
+		return x
 	}
 	result := strings.ToUpper(*x)
-	return &result, nil
+	return &result
 }
 
 func TestQFrame_AssignSingleArgString(t *testing.T) {
@@ -1109,17 +1109,17 @@ func TestQFrame_AssignDoubleArg(t *testing.T) {
 			name:     "int",
 			input:    map[string]interface{}{"COL1": []int{3, 2}, "COL2": []int{30, 20}},
 			expected: []int{33, 22},
-			fn:       func(a, b int) (int, error) { return a + b, nil }},
+			fn:       func(a, b int) int { return a + b }},
 		{
 			name:     "string",
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x", "y"}},
 			expected: []string{"ax", "by"},
-			fn:       func(a, b *string) (*string, error) { result := *a + *b; return &result, nil }},
+			fn:       func(a, b *string) *string { result := *a + *b; return &result }},
 		{
 			name:     "enum",
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x", "y"}},
 			expected: []string{"ax", "by"},
-			fn:       func(a, b *string) (*string, error) { result := *a + *b; return &result, nil },
+			fn:       func(a, b *string) *string { result := *a + *b; return &result },
 			enums:    map[string][]string{"COL1": nil, "COL2": nil}},
 	}
 
@@ -1135,7 +1135,7 @@ func TestQFrame_AssignDoubleArg(t *testing.T) {
 }
 
 func TestQFrame_FilteredAssign(t *testing.T) {
-	plus1 := func(a int) (int, error) { return a + 1, nil }
+	plus1 := func(a int) int { return a + 1 }
 	table := []struct {
 		name         string
 		input        map[string]interface{}
@@ -1336,7 +1336,7 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			expr:         qframe.Expr2("pythagoras", "COL1", "COL2"),
 			input:        map[string]interface{}{"COL1": []float64{1, 2}, "COL2": []float64{1, 3}},
 			expected:     []float64{math.Sqrt(2), math.Sqrt(4 + 9)},
-			customFn:     func(x, y float64) (float64, error) { return math.Sqrt(x*x + y*y), nil },
+			customFn:     func(x, y float64) float64 { return math.Sqrt(x*x + y*y) },
 			customFnName: "pythagoras"},
 
 		// TODO: bool, string, float, JSON
@@ -1347,7 +1347,8 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			var ctx *qframe.ExprCtx
 			if tc.customFn != nil {
 				ctx = qframe.NewDefaultExprCtx()
-				ctx.SetFunc(tc.customFnName, tc.customFn)
+				err := ctx.SetFunc(tc.customFnName, tc.customFn)
+				assertNotErr(t, err)
 			}
 
 			if tc.dstCol == "" {

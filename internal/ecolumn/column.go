@@ -175,11 +175,11 @@ func (f *Factory) ToColumn() Column {
 	return f.s
 }
 
-var enumApplyFuncs = map[string]func(index.Int, Column) (interface{}, error){
+var enumApplyFuncs = map[string]func(index.Int, Column) interface{}{
 	"ToUpper": toUpper,
 }
 
-func toUpper(_ index.Int, s Column) (interface{}, error) {
+func toUpper(_ index.Int, s Column) interface{} {
 	// This demonstrates how built in functions can be made a lot more
 	// efficient than the current general functions.
 	// In this example the upper function only has to be applied once to
@@ -190,7 +190,7 @@ func toUpper(_ index.Int, s Column) (interface{}, error) {
 		newValues[i] = strings.ToUpper(s)
 	}
 
-	return Column{data: s.data, values: newValues}, nil
+	return Column{data: s.data, values: newValues}
 }
 
 func (c Column) Len() int {
@@ -495,43 +495,34 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		In that case a mapping between the enum value and the result could be set up to avoid having to
 		call the function multiple times for the same input.
 	*/
-	var err error
 	switch t := fn.(type) {
-	case func(*string) (int, error):
+	case func(*string) int:
 		result := make([]int, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.stringPtrAt(i)); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.stringPtrAt(i))
 		}
 		return result, nil
-	case func(*string) (float64, error):
+	case func(*string) float64:
 		result := make([]float64, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.stringPtrAt(i)); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.stringPtrAt(i))
 		}
 		return result, nil
-	case func(*string) (bool, error):
+	case func(*string) bool:
 		result := make([]bool, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.stringPtrAt(i)); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.stringPtrAt(i))
 		}
 		return result, nil
-	case func(*string) (*string, error):
+	case func(*string) *string:
 		result := make([]*string, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.stringPtrAt(i)); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.stringPtrAt(i))
 		}
 		return result, nil
 	case string:
 		if f, ok := enumApplyFuncs[t]; ok {
-			return f(ix, c)
+			return f(ix, c), nil
 		}
 		return nil, errors.New("string.apply1", "unknown built in function %c", t)
 	default:
@@ -546,18 +537,15 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 	}
 
 	switch t := fn.(type) {
-	case func(*string, *string) (*string, error):
-		var err error
+	case func(*string, *string) *string:
 		result := make([]*string, len(c.data))
 		for _, i := range ix {
-			if result[i], err = t(c.stringPtrAt(i), s2S.stringPtrAt(i)); err != nil {
-				return nil, err
-			}
+			result[i] = t(c.stringPtrAt(i), s2S.stringPtrAt(i))
 		}
 
 		// NB! String column returned here, not enum. Returning enum could result
 		// in unforeseen results (eg. it would not always fit in an enum, the order
-		// is not given).
+		// is not given, etc.).
 		return scolumn.New(result), nil
 	case string:
 		// No built in functions for strings at this stage
