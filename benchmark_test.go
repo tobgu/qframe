@@ -635,7 +635,7 @@ func BenchmarkQFrame_ApplyEnum(b *testing.B) {
 
 	benchApply(b, "Instruction with custom function", df, toUpper)
 	benchApply(b, "Instruction with built in function", df, "ToUpper")
-	benchApply(b, "Instruction int function (for reference)", df, func(x *string) (int, error) { return len(*x), nil })
+	benchApply(b, "Instruction int function (for reference)", df, func(x *string) int { return len(*x) })
 }
 
 func BenchmarkQFrame_IntView(b *testing.B) {
@@ -721,6 +721,18 @@ func BenchmarkQFrame_StringView(b *testing.B) {
 			}
 		}
 	})
+}
+
+func BenchmarkQFrame_EvalInt(b *testing.B) {
+	df := exampleIntFrame(100000)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		result := df.Eval("RESULT", qf.Expr2("+", qf.Expr2("+", "S1", "S2"), qf.Val(3)), nil)
+		if result.Err != nil {
+			b.Errorf("Err: %s, %s", result.Len(), result.Err)
+		}
+	}
 }
 
 /*
@@ -937,4 +949,6 @@ BenchmarkQFrame_StringView/Slice-2            	     100	  14006634 ns/op	 400281
 BenchmarkQFrame_StringView/For_loop-2         	    1000	   1651190 ns/op	       0 B/op	       0 allocs/op
 BenchmarkQFrame_StringView/Slice-2            	     500	   2697675 ns/op	  802816 B/op	       1 allocs/op
 
+// Most of the time is spent in icolumn.Apply2
+BenchmarkQFrame_EvalInt-2   	     500	   2461435 ns/op	 2416968 B/op	      69 allocs/op
 */
