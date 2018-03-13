@@ -291,7 +291,7 @@ func (e constExpr) execute(qf QFrame, _ *ExprCtx) (QFrame, string) {
 	}
 
 	colName := tempColName(qf, "const")
-	return qf.Assign(Instruction{Fn: e.value, DstCol: colName}), colName
+	return qf.Apply(Instruction{Fn: e.value, DstCol: colName}), colName
 }
 
 func (e constExpr) Err() error {
@@ -323,7 +323,7 @@ func (e unaryExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
 	}
 
 	colName := tempColName(qf, "unary")
-	return qf.Assign(Instruction{Fn: fn, DstCol: colName, SrcCol1: e.srcCol}), colName
+	return qf.Apply(Instruction{Fn: fn, DstCol: colName, SrcCol1: e.srcCol}), colName
 }
 
 func (e unaryExpr) Err() error {
@@ -405,7 +405,7 @@ func (e colColExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
 	// There are other ways to do this that would avoid the temp column but it would
 	// require more special case logic.
 	colName := tempColName(qf, "colcol")
-	result := qf.Assign(Instruction{Fn: fn, DstCol: colName, SrcCol1: e.srcCol1, SrcCol2: e.srcCol2})
+	result := qf.Apply(Instruction{Fn: fn, DstCol: colName, SrcCol1: e.srcCol1, SrcCol2: e.srcCol2})
 	return result, colName
 }
 

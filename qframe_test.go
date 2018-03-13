@@ -999,7 +999,7 @@ func TestQFrame_CopyColumn(t *testing.T) {
 	assertEquals(t, expectedReplace, input.Copy("COL1", "COL2"))
 }
 
-func TestQFrame_AssignZeroArg(t *testing.T) {
+func TestQFrame_ApplyZeroArg(t *testing.T) {
 	a, b := "a", "b"
 	table := []struct {
 		name     string
@@ -1022,13 +1022,13 @@ func TestQFrame_AssignZeroArg(t *testing.T) {
 			in := qframe.New(input)
 			input["COL2"] = tc.expected
 			expected := qframe.New(input)
-			out := in.Assign(qframe.Instruction{Fn: tc.fn, DstCol: "COL2"})
+			out := in.Apply(qframe.Instruction{Fn: tc.fn, DstCol: "COL2"})
 			assertEquals(t, expected, out)
 		})
 	}
 }
 
-func TestQFrame_AssignSingleArgIntToInt(t *testing.T) {
+func TestQFrame_ApplySingleArgIntToInt(t *testing.T) {
 	input := qframe.New(map[string]interface{}{
 		"COL1": []int{3, 2},
 	})
@@ -1037,10 +1037,10 @@ func TestQFrame_AssignSingleArgIntToInt(t *testing.T) {
 		"COL1": []int{6, 4},
 	})
 
-	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: func(a int) int { return 2 * a }, DstCol: "COL1", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: func(a int) int { return 2 * a }, DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
-func TestQFrame_AssignSingleArgStringToBool(t *testing.T) {
+func TestQFrame_ApplySingleArgStringToBool(t *testing.T) {
 	input := qframe.New(map[string]interface{}{
 		"COL1": []string{"a", "aa", "aaa"},
 	})
@@ -1050,7 +1050,7 @@ func TestQFrame_AssignSingleArgStringToBool(t *testing.T) {
 		"IS_LONG": []bool{false, false, true},
 	})
 
-	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: func(x *string) bool { return len(*x) > 2 }, DstCol: "IS_LONG", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: func(x *string) bool { return len(*x) > 2 }, DstCol: "IS_LONG", SrcCol1: "COL1"}))
 }
 
 func toUpper(x *string) *string {
@@ -1061,7 +1061,7 @@ func toUpper(x *string) *string {
 	return &result
 }
 
-func TestQFrame_AssignSingleArgString(t *testing.T) {
+func TestQFrame_ApplySingleArgString(t *testing.T) {
 	a, b := "a", "b"
 	A, B := "A", "B"
 	input := qframe.New(map[string]interface{}{
@@ -1073,13 +1073,13 @@ func TestQFrame_AssignSingleArgString(t *testing.T) {
 	})
 
 	// General function
-	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: toUpper, DstCol: "COL1", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: toUpper, DstCol: "COL1", SrcCol1: "COL1"}))
 
 	// Built in function
-	assertEquals(t, expectedNew, input.Assign(qframe.Instruction{Fn: "ToUpper", DstCol: "COL1", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: "ToUpper", DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
-func TestQFrame_AssignSingleArgEnum(t *testing.T) {
+func TestQFrame_ApplySingleArgEnum(t *testing.T) {
 	a, b := "a", "b"
 	A, B := "A", "B"
 	input := qframe.New(
@@ -1091,13 +1091,13 @@ func TestQFrame_AssignSingleArgEnum(t *testing.T) {
 	expectedNewBuiltIn := qframe.New(expectedData, qframe.Enums(map[string][]string{"COL1": nil}))
 
 	// General function
-	assertEquals(t, expectedNewGeneral, input.Assign(qframe.Instruction{Fn: toUpper, DstCol: "COL1", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNewGeneral, input.Apply(qframe.Instruction{Fn: toUpper, DstCol: "COL1", SrcCol1: "COL1"}))
 
 	// Builtin function
-	assertEquals(t, expectedNewBuiltIn, input.Assign(qframe.Instruction{Fn: "ToUpper", DstCol: "COL1", SrcCol1: "COL1"}))
+	assertEquals(t, expectedNewBuiltIn, input.Apply(qframe.Instruction{Fn: "ToUpper", DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
-func TestQFrame_AssignDoubleArg(t *testing.T) {
+func TestQFrame_ApplyDoubleArg(t *testing.T) {
 	table := []struct {
 		name     string
 		input    map[string]interface{}
@@ -1128,13 +1128,13 @@ func TestQFrame_AssignDoubleArg(t *testing.T) {
 			in := qframe.New(tc.input, qframe.Enums(tc.enums))
 			tc.input["COL3"] = tc.expected
 			expected := qframe.New(tc.input, qframe.Enums(tc.enums))
-			out := in.Assign(qframe.Instruction{Fn: tc.fn, DstCol: "COL3", SrcCol1: "COL1", SrcCol2: "COL2"})
+			out := in.Apply(qframe.Instruction{Fn: tc.fn, DstCol: "COL3", SrcCol1: "COL1", SrcCol2: "COL2"})
 			assertEquals(t, expected, out)
 		})
 	}
 }
 
-func TestQFrame_FilteredAssign(t *testing.T) {
+func TestQFrame_FilteredApply(t *testing.T) {
 	plus1 := func(a int) int { return a + 1 }
 	table := []struct {
 		name         string
@@ -1167,7 +1167,7 @@ func TestQFrame_FilteredAssign(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			in := qframe.New(tc.input)
 			expected := qframe.New(tc.expected)
-			out := in.FilteredAssign(tc.clauses, tc.instructions...)
+			out := in.FilteredApply(tc.clauses, tc.instructions...)
 			assertEquals(t, expected, out)
 		})
 	}

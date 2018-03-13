@@ -679,7 +679,7 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 	return qf.setColumn(dstCol, namedColumn.Column)
 }
 
-func (qf QFrame) assign0(fn interface{}, dstCol string) QFrame {
+func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -724,7 +724,7 @@ func (qf QFrame) assign0(fn interface{}, dstCol string) QFrame {
 	case *string:
 		data = ConstString{Val: t, Count: colLen}
 	default:
-		return qf.withErr(errors.New("assign0", "unknown assign type: %v", reflect.TypeOf(fn)))
+		return qf.withErr(errors.New("apply0", "unknown apply type: %v", reflect.TypeOf(fn)))
 	}
 
 	c, err := createColumn(dstCol, data, newConfig(nil))
@@ -735,21 +735,21 @@ func (qf QFrame) assign0(fn interface{}, dstCol string) QFrame {
 	return qf.setColumn(dstCol, c)
 }
 
-func (qf QFrame) assign1(fn interface{}, dstCol, srcCol string) QFrame {
+func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("assign1", "no such columns: %s", srcCol))
+		return qf.withErr(errors.New("apply1", "no such columns: %s", srcCol))
 	}
 
 	srcColumn := namedColumn.Column
 
 	sliceResult, err := srcColumn.Apply1(fn, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("assign1", err))
+		return qf.withErr(errors.Propagate("apply1", err))
 	}
 
 	var resultColumn column.Column
@@ -765,32 +765,32 @@ func (qf QFrame) assign1(fn interface{}, dstCol, srcCol string) QFrame {
 	case column.Column:
 		resultColumn = t
 	default:
-		return qf.withErr(errors.New("assign1", "unexpected type of new columns %#v", t))
+		return qf.withErr(errors.New("apply1", "unexpected type of new columns %#v", t))
 	}
 
 	return qf.setColumn(dstCol, resultColumn)
 }
 
-func (qf QFrame) assign2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
+func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	namedSrcColumn1, ok := qf.columnsByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("assign2", "no such columns: %s", srcCol1))
+		return qf.withErr(errors.New("apply2", "no such columns: %s", srcCol1))
 	}
 	srcColumn1 := namedSrcColumn1.Column
 
 	namedSrcColumn2, ok := qf.columnsByName[srcCol2]
 	if !ok {
-		return qf.withErr(errors.New("assign2", "no such columns: %s", srcCol2))
+		return qf.withErr(errors.New("apply2", "no such columns: %s", srcCol2))
 	}
 	srcColumn2 := namedSrcColumn2.Column
 
 	resultColumn, err := srcColumn1.Apply2(fn, srcColumn2, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("assign2", err))
+		return qf.withErr(errors.Propagate("apply2", err))
 	}
 
 	return qf.setColumn(dstCol, resultColumn)
@@ -805,22 +805,22 @@ type Instruction struct {
 	SrcCol2 string
 }
 
-func (qf QFrame) Assign(instructions ...Instruction) QFrame {
+func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	result := qf
 	for _, a := range instructions {
 		if a.SrcCol1 == "" {
-			result = result.assign0(a.Fn, a.DstCol)
+			result = result.apply0(a.Fn, a.DstCol)
 		} else if a.SrcCol2 == "" {
-			result = result.assign1(a.Fn, a.DstCol, a.SrcCol1)
+			result = result.apply1(a.Fn, a.DstCol, a.SrcCol1)
 		} else {
-			result = result.assign2(a.Fn, a.DstCol, a.SrcCol1, a.SrcCol2)
+			result = result.apply2(a.Fn, a.DstCol, a.SrcCol1, a.SrcCol2)
 		}
 	}
 
 	return result
 }
 
-func (qf QFrame) FilteredAssign(clause FilterClause, instructions ...Instruction) QFrame {
+func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -833,7 +833,7 @@ func (qf QFrame) FilteredAssign(clause FilterClause, instructions ...Instruction
 	// Use the filtered index when applying instructions then restore it to the original index.
 	newQf := qf
 	newQf.index = filteredQf.index
-	newQf = newQf.Assign(instructions...)
+	newQf = newQf.Apply(instructions...)
 	newQf.index = qf.index
 	return newQf
 }
@@ -852,7 +852,7 @@ func (qf QFrame) Eval(destCol string, expr Expression, ctx *ExprCtx) QFrame {
 	// colName is often just a temporary name of a column created as a result of
 	// executing the expression. We want to rename this column to the requested
 	// destination columns name. Remove colName from the result if not present in
-	// the original frame to avoid poluting the frame with intermediate results.
+	// the original frame to avoid polluting the frame with intermediate results.
 	result = result.Copy(destCol, colName)
 	if !qf.Contains(colName) {
 		result = result.Drop(colName)
@@ -1198,6 +1198,4 @@ func (qf QFrame) ByteSize() int {
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
 // - ApplyN?
-// - Revert Assign -> Apply?
 // - Include frame dimensions in String()
-// - Include column types in String()
