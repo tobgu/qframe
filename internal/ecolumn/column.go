@@ -533,7 +533,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	s2S, ok := s2.(Column)
 	if !ok {
-		return nil, errors.New("enum.apply2", "invalid column type %v", reflect.TypeOf(s2))
+		return nil, errors.New("enum.apply2", "invalid column type %s", s2.DataType())
 	}
 
 	switch t := fn.(type) {
@@ -561,6 +561,10 @@ func (c Column) View(ix index.Int) View {
 
 func (c Column) FunctionType() types.FunctionType {
 	return types.FunctionTypeString
+}
+
+func (c Column) DataType() string {
+	return "enum"
 }
 
 type Comparable struct {

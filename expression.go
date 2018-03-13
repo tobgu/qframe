@@ -66,13 +66,13 @@ func NewDefaultExprCtx() *ExprCtx {
 			},
 			types.FunctionTypeBool: functionsByArgCount{
 				singleArgs: map[string]interface{}{
-					"not": function.NotB,
+					"!":   function.NotB,
 					"str": function.StrB,
 				},
 				doubleArgs: map[string]interface{}{
-					"&&":   function.AndB,
-					"||":   function.OrB,
-					"xor":  function.XorB,
+					"&":    function.AndB,
+					"|":    function.OrB,
+					"!=":   function.XorB,
 					"nand": function.NandB,
 				},
 			},
@@ -80,6 +80,7 @@ func NewDefaultExprCtx() *ExprCtx {
 				singleArgs: map[string]interface{}{
 					"upper": function.UpperS,
 					"lower": function.LowerS,
+					"str":   function.StrS,
 				},
 				doubleArgs: map[string]interface{}{
 					"+": function.ConcatS,
@@ -160,7 +161,7 @@ func getFunc(ctx *ExprCtx, ac argCount, qf QFrame, colName, funcName string) (QF
 
 	fn, ok := ctx.getFunc(typ, ac, funcName)
 	if !ok {
-		return qf.withErr(errors.New("getFunc", "Could not find %s function with name '%s'", ac, funcName)), nil
+		return qf.withErr(errors.New("getFunc", "Could not find %s %s function with name '%s'", typ, ac, funcName)), nil
 	}
 
 	return qf, fn

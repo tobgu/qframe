@@ -596,8 +596,9 @@ func (qf QFrame) String() string {
 	colWidths := make([]int, len(qf.columns))
 	minColWidth := 5
 	for i, s := range qf.columns {
-		colWidths[i] = intMax(len(s.name), minColWidth)
-		row[i] = fixLengthString(s.name, " ", colWidths[i])
+		colHeader := s.name + "(" + s.DataType()[:1] + ")"
+		colWidths[i] = intMax(len(colHeader), minColWidth)
+		row[i] = fixLengthString(colHeader, " ", colWidths[i])
 	}
 	result = append(result, strings.Join(row, " "))
 
@@ -874,8 +875,7 @@ func (qf QFrame) FloatView(name string) (FloatView, error) {
 	if !ok {
 		return FloatView{}, errors.New(
 			"FloatView",
-			"invalid column type, expected float, was: %v",
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected float, was: %s", namedColumn.DataType())
 	}
 
 	return FloatView{fCol.View(qf.index)}, nil
@@ -895,8 +895,7 @@ func (qf QFrame) IntView(name string) (IntView, error) {
 	if !ok {
 		return IntView{}, errors.New(
 			"IntView",
-			"invalid column type, expected int, was: %v",
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected int, was: %s", namedColumn.DataType())
 	}
 
 	return IntView{iCol.View(qf.index)}, nil
@@ -916,8 +915,7 @@ func (qf QFrame) BoolView(name string) (BoolView, error) {
 	if !ok {
 		return BoolView{}, errors.New(
 			"BoolView",
-			"invalid column type, expected bool, was: %v",
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected bool, was: %s", namedColumn.DataType())
 	}
 
 	return BoolView{bCol.View(qf.index)}, nil
@@ -937,8 +935,7 @@ func (qf QFrame) StringView(name string) (StringView, error) {
 	if !ok {
 		return StringView{}, errors.New(
 			"StringView",
-			"invalid column type, expected string, was: %v",
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected string, was: %s", namedColumn.DataType())
 	}
 
 	return StringView{sCol.View(qf.index)}, nil
@@ -958,7 +955,7 @@ func (qf QFrame) EnumView(name string) (EnumView, error) {
 	if !ok {
 		return EnumView{}, errors.New(
 			"EnumView",
-			"invalid column type, expected enum, was: %v",
+			"invalid column type, expected enum, was: %s", namedColumn.DataType(),
 			reflect.TypeOf(namedColumn.Column))
 	}
 
@@ -1202,3 +1199,5 @@ func (qf QFrame) ByteSize() int {
 // - Switch to using vgo for dependencies?
 // - ApplyN?
 // - Revert Assign -> Apply?
+// - Include frame dimensions in String()
+// - Include column types in String()

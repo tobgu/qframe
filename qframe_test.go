@@ -940,15 +940,15 @@ func TestQFrame_LikeFilterString(t *testing.T) {
 func TestQFrame_String(t *testing.T) {
 	a := qframe.New(map[string]interface{}{
 		"COLUMN1": []string{"Long content", "a", "b", "c"},
-		"COL2":    []int{3, 2, 1, 123456},
+		"COL2":    []int{3, 2, 1, 12345678910},
 	}, qframe.ColumnOrder("COL2", "COLUMN1"))
 
-	expected := ` COL2 COLUMN1
------ -------
-    3 Long...
-    2       a
-    1       b
-12...       c`
+	expected := `COL2(i) COLUMN1(s)
+------- ----------
+      3 Long co...
+      2          a
+      1          b
+1234...          c`
 
 	if expected != a.String() {
 		t.Errorf("\n%s\n != \n%s", expected, a.String())
@@ -1310,6 +1310,7 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 		expected     interface{}
 		customFn     interface{}
 		customFnName string
+		enums        map[string][]string
 	}{
 		{
 			name:     "int col plus col",
@@ -1338,8 +1339,23 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			expected:     []float64{math.Sqrt(2), math.Sqrt(4 + 9)},
 			customFn:     func(x, y float64) float64 { return math.Sqrt(x*x + y*y) },
 			customFnName: "pythagoras"},
-
-		// TODO: bool, string, float, JSON
+		{
+			name:     "bool col and col",
+			expr:     qframe.Expr2("&", "COL1", "COL2"),
+			input:    map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, true}},
+			expected: []bool{true, false}},
+		{
+			name:     "enum col plus col",
+			expr:     qframe.Expr2("+", "COL1", "COL2"),
+			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"A", "B"}},
+			expected: []string{"aA", "bB"},
+			enums:    map[string][]string{"COL1": nil, "COL2": nil}},
+		{
+			name:     "enum col plus string col, cast string to enum needed",
+			expr:     qframe.Expr2("+", qframe.Expr1("str", "COL1"), "COL2"),
+			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"A", "B"}},
+			expected: []string{"aA", "bB"},
+			enums:    map[string][]string{"COL1": nil}},
 	}
 
 	for _, tc := range table {
@@ -1354,9 +1370,9 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			if tc.dstCol == "" {
 				tc.dstCol = "COL3"
 			}
-			in := qframe.New(tc.input)
+			in := qframe.New(tc.input, qframe.Enums(tc.enums))
 			tc.input[tc.dstCol] = tc.expected
-			expected := qframe.New(tc.input)
+			expected := qframe.New(tc.input, qframe.Enums(tc.enums))
 
 			out := in.Eval(tc.dstCol, tc.expr, ctx)
 

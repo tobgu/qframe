@@ -3,6 +3,7 @@ package template
 // Code generated from template/column.go DO NOT EDIT
 
 import (
+	"debug/dwarf"
 	"fmt"
 	"github.com/tobgu/genny/generic"
 	"github.com/tobgu/qframe/internal/column"
@@ -65,7 +66,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		}
 		return result, nil
 	default:
-		return nil, fmt.Errorf("cannot apply type %#v to column", fn)
+		return nil, fmt.Errorf("%s.apply2: cannot apply type %#v to column", c.DataType(), fn)
 	}
 }
 
@@ -73,14 +74,13 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 // same type. The resulting column will have the same type as this column.
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	ss2, ok := s2.(Column)
-	var typ dataType
 	if !ok {
-		return Column{}, fmt.Errorf("%v.apply2: invalid column type: %#v", reflect.TypeOf(typ), s2)
+		return Column{}, fmt.Errorf("%s.apply2: invalid column type: %s", c.DataType(), s2.DataType())
 	}
 
 	t, ok := fn.(func(dataType, dataType) dataType)
 	if !ok {
-		return Column{}, fmt.Errorf("%v.apply2: invalid function type: %#v", reflect.TypeOf(typ), fn)
+		return Column{}, fmt.Errorf("%s.apply2: invalid function type: %#v", c.DataType(), fn)
 	}
 
 	result := make([]dataType, len(c.data))
@@ -149,6 +149,11 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 
 func (c Column) View(ix index.Int) View {
 	return View{data: c.data, index: ix}
+}
+
+func (c Column) DataType() string {
+	var x dataType
+	return fmt.Sprintf("%v", reflect.TypeOf(x))
 }
 
 type Comparable struct {

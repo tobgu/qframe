@@ -404,6 +404,10 @@ func (c Column) FunctionType() types.FunctionType {
 	return types.FunctionTypeString
 }
 
+func (c Column) DataType() string {
+	return "string"
+}
+
 type Comparable struct {
 	column  Column
 	ltValue column.CompareResult
