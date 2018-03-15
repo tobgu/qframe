@@ -29,7 +29,16 @@ const (
 	argCountTwo
 )
 
-//go:generate stringer -type=argCount
+func (c argCount) String() string {
+	switch c {
+	case argCountOne:
+		return "Single argument"
+	case argCountTwo:
+		return "Double argument"
+	default:
+		return "Unknown argument count"
+	}
+}
 
 type ExprCtx struct {
 	functions functionsByArgType

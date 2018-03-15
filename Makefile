@@ -1,5 +1,6 @@
 generate:
-	go install
+	# Build and install generator binary first
+	go install github.com/tobgu/qframe/cmd/qfgenerate
 	go generate github.com/tobgu/qframe/...
 
 test: generate

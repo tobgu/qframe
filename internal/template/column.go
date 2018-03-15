@@ -3,7 +3,6 @@ package template
 // Code generated from template/column.go DO NOT EDIT
 
 import (
-	"debug/dwarf"
 	"fmt"
 	"github.com/tobgu/genny/generic"
 	"github.com/tobgu/qframe/internal/column"
