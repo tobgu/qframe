@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	bgenerator "github.com/tobgu/qframe/internal/bcolumn/generator"
+	egenerator "github.com/tobgu/qframe/internal/ecolumn/generator"
 	fgenerator "github.com/tobgu/qframe/internal/fcolumn/generator"
 	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
-	egenerator "github.com/tobgu/qframe/internal/ecolumn/generator"
 	"go/format"
 	"os"
 )

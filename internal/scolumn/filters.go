@@ -9,7 +9,9 @@ import (
 
 var filterFuncs = map[string]func(index.Int, Column, string, index.Bool) error{
 	filter.Gt:  gt,
+	filter.Gte: gte,
 	filter.Lt:  lt,
+	filter.Lte: lte,
 	filter.Eq:  eq,
 	filter.Neq: neq,
 	"like":     like,
@@ -21,8 +23,10 @@ var multiInputFilterFuncs = map[string]func(index.Int, Column, qfstrings.StringS
 }
 
 var filterFuncs2 = map[string]func(index.Int, Column, Column, index.Bool) error{
-	filter.Gt: gt2,
-	filter.Lt: lt2,
+	filter.Gt:  gt2,
+	filter.Gte: gte2,
+	filter.Lt:  lt2,
+	filter.Lte: lte2,
 }
 
 func gt(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
@@ -38,11 +42,35 @@ func gt(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	return nil
 }
 
+func gte(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			s, isNull := s.stringAt(index[i])
+			if !isNull {
+				bIndex[i] = s >= comparatee
+			}
+		}
+	}
+
+	return nil
+}
+
 func lt(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			str, isNull := s.stringAt(index[i])
 			bIndex[i] = isNull || str < comparatee
+		}
+	}
+
+	return nil
+}
+
+func lte(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			str, isNull := s.stringAt(index[i])
+			bIndex[i] = isNull || str <= comparatee
 		}
 	}
 
@@ -130,6 +158,22 @@ func gt2(index index.Int, s, s2 Column, bIndex index.Bool) error {
 	return nil
 }
 
+func gte2(index index.Int, s, s2 Column, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			str, isNull := s.stringAt(index[i])
+			str2, isNull2 := s2.stringAt(index[i])
+			if !isNull && !isNull2 {
+				bIndex[i] = str >= str2
+			} else {
+				bIndex[i] = !isNull
+			}
+		}
+	}
+
+	return nil
+}
+
 func lt2(index index.Int, s, s2 Column, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
@@ -137,6 +181,22 @@ func lt2(index index.Int, s, s2 Column, bIndex index.Bool) error {
 			str2, isNull2 := s2.stringAt(index[i])
 			if !isNull && !isNull2 {
 				bIndex[i] = str < str2
+			} else {
+				bIndex[i] = isNull && !isNull2
+			}
+		}
+	}
+
+	return nil
+}
+
+func lte2(index index.Int, s, s2 Column, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			str, isNull := s.stringAt(index[i])
+			str2, isNull2 := s2.stringAt(index[i])
+			if !isNull && !isNull2 {
+				bIndex[i] = str <= str2
 			} else {
 				bIndex[i] = isNull && !isNull2
 			}

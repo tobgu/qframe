@@ -63,12 +63,12 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	}
 
 	if math.IsNaN(x) || math.IsNaN(y) {
-		if math.IsNaN(x) {
-			return c.ltValue
+		if !math.IsNaN(x) {
+			return c.gtValue
 		}
 
-		if math.IsNaN(y) {
-			return c.gtValue
+		if !math.IsNaN(y) {
+			return c.ltValue
 		}
 
 		// Consider NaN == NaN, this means that we can group
