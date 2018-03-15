@@ -8,6 +8,7 @@ import (
 	bgenerator "github.com/tobgu/qframe/internal/bcolumn/generator"
 	fgenerator "github.com/tobgu/qframe/internal/fcolumn/generator"
 	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
+	egenerator "github.com/tobgu/qframe/internal/ecolumn/generator"
 	"go/format"
 	"os"
 )
@@ -33,6 +34,8 @@ func main() {
 		fn = fgenerator.GenerateFilters
 	case "bfilter":
 		fn = bgenerator.GenerateFilters
+	case "efilter":
+		fn = egenerator.GenerateFilters
 	default:
 		panic(fmt.Sprintf("Unknown source: \"%s\"", *source))
 	}
