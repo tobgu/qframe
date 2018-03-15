@@ -126,7 +126,7 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 			input:      map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
 			expected:   map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
 		{
-			name:       "custon float compare",
+			name:       "custom float compare",
 			comparator: func(a, b float64) bool { return a < b },
 			input:      map[string]interface{}{"COL1": []float64{1, 2, 3}, "COL2": []float64{10, 1, 10}},
 			expected:   map[string]interface{}{"COL1": []float64{2}, "COL2": []float64{1}}},
@@ -376,7 +376,7 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("GroupByAggregate %s", tc.name), func(t *testing.T) {
 			in := qframe.New(tc.input)
-			out := in.GroupBy(tc.groupColumns...).Aggregate(tc.aggregations...)
+			out := in.GroupBy(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
 			assertEquals(t, qframe.New(tc.expected), out)
 		})
 	}
@@ -1188,7 +1188,7 @@ func TestQFrame_AggregateStrings(t *testing.T) {
 				"COL2": []string{"x", "p", "y", "q", "z"},
 			}, qframe.Enums(tc.enums))
 			expected := qframe.New(map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x,y,z", "p,q"}})
-			out := input.GroupBy("COL1").Aggregate(aggregation.New(aggregation.StrJoin(","), "COL2"))
+			out := input.GroupBy(qframe.GroupBy("COL1")).Aggregate(aggregation.New(aggregation.StrJoin(","), "COL2"))
 			assertEquals(t, expected, out)
 		})
 	}

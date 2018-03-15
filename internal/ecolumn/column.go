@@ -39,7 +39,7 @@ type Column struct {
 
 // Factory is a helper used during construction of the enum column
 type Factory struct {
-	s         Column
+	column    Column
 	valToEnum map[string]enumVal
 	strict    bool
 }
@@ -95,7 +95,7 @@ func NewFactory(values []string, sizeHint int) (*Factory, error) {
 		valToEnum[v] = enumVal(i)
 	}
 
-	return &Factory{s: Column{
+	return &Factory{column: Column{
 		data: make([]enumVal, 0, sizeHint), values: values},
 		valToEnum: valToEnum,
 		strict:    len(values) > 0}, nil
@@ -106,7 +106,7 @@ func (f *Factory) AppendNil() {
 }
 
 func (f *Factory) AppendEnum(val enumVal) {
-	f.s.data = append(f.s.data, val)
+	f.column.data = append(f.column.data, val)
 }
 
 func (f *Factory) AppendByteString(str []byte) error {
@@ -121,7 +121,7 @@ func (f *Factory) AppendByteString(str []byte) error {
 
 func (f *Factory) AppendString(str string) error {
 	if e, ok := f.valToEnum[str]; ok {
-		f.s.data = append(f.s.data, e)
+		f.column.data = append(f.column.data, e)
 		return nil
 	}
 
@@ -129,8 +129,8 @@ func (f *Factory) AppendString(str string) error {
 }
 
 func (f *Factory) newEnumVal(s string) enumVal {
-	ev := enumVal(len(f.s.values))
-	f.s.values = append(f.s.values, s)
+	ev := enumVal(len(f.column.values))
+	f.column.values = append(f.column.values, s)
 	f.valToEnum[s] = ev
 	return ev
 }
@@ -148,7 +148,7 @@ func (f *Factory) enumVal(s *string) (enumVal, error) {
 		return 0, errors.New("enum val", `unknown enum value "%s" using strict enum`, *s)
 	}
 
-	if len(f.s.values) >= maxCardinality {
+	if len(f.column.values) >= maxCardinality {
 		return 0, errors.New("enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
 	}
 
@@ -160,19 +160,19 @@ func (f *Factory) appendString(str string) error {
 		return errors.New("append enum val", `unknown enum value "%s" using strict enum`, str)
 	}
 
-	if len(f.s.values) >= maxCardinality {
+	if len(f.column.values) >= maxCardinality {
 		return errors.New("append enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
 	}
 
 	ev := f.newEnumVal(str)
-	f.s.data = append(f.s.data, ev)
+	f.column.data = append(f.column.data, ev)
 	return nil
 }
 
 func (f *Factory) ToColumn() Column {
 	// Using the factory after this method has been called and the column exposed
 	// is not recommended.
-	return f.s
+	return f.column
 }
 
 var enumApplyFuncs = map[string]func(index.Int, Column) interface{}{
@@ -278,7 +278,7 @@ func (c Column) Equals(index index.Int, other column.Column, otherIndex index.In
 }
 
 func (c Comparable) Compare(i, j uint32) column.CompareResult {
-	x, y := c.s.data[i], c.s.data[j]
+	x, y := c.column.data[i], c.column.data[j]
 	if x.isNull() || y.isNull() {
 		if !x.isNull() {
 			return c.gtValue
@@ -441,12 +441,17 @@ func (c Column) stringSlice(index index.Int) []*string {
 	return result
 }
 
-func (c Column) Comparable(reverse bool) column.Comparable {
+func (c Column) Comparable(reverse, equalNull bool) column.Comparable {
+	result := Comparable{column: c, ltValue: column.LessThan, gtValue: column.GreaterThan, equalNullValue: column.NotEqual}
 	if reverse {
-		return Comparable{s: c, ltValue: column.GreaterThan, gtValue: column.LessThan}
+		result.ltValue, result.gtValue = result.gtValue, result.ltValue
 	}
 
-	return Comparable{s: c, ltValue: column.LessThan, gtValue: column.GreaterThan}
+	if equalNull {
+		result.equalNullValue = column.Equal
+	}
+
+	return result
 }
 
 func (c Column) String() string {
@@ -568,7 +573,8 @@ func (c Column) DataType() string {
 }
 
 type Comparable struct {
-	s       Column
-	ltValue column.CompareResult
-	gtValue column.CompareResult
+	column         Column
+	ltValue        column.CompareResult
+	gtValue        column.CompareResult
+	equalNullValue column.CompareResult
 }

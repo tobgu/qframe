@@ -13,7 +13,7 @@ type Column interface {
 	Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error
 	Subset(index index.Int) Column
 	Equals(index index.Int, other Column, otherIndex index.Int) bool
-	Comparable(reverse bool) Comparable
+	Comparable(reverse, equalNull bool) Comparable
 	Aggregate(indices []index.Int, fn interface{}) (Column, error)
 	StringAt(i uint32, naRep string) string
 	AppendByteStringAt(buf []byte, i uint32) []byte
@@ -33,8 +33,11 @@ type CompareResult int
 
 const (
 	LessThan CompareResult = iota
-	Equal
 	GreaterThan
+	Equal
+
+	// Used when comparing null with null
+	NotEqual
 )
 
 type Comparable interface {

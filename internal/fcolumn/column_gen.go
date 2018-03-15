@@ -101,12 +101,17 @@ func (c Column) Subset(index index.Int) column.Column {
 	return c.subset(index)
 }
 
-func (c Column) Comparable(reverse bool) column.Comparable {
+func (c Column) Comparable(reverse, equalNull bool) column.Comparable {
+	result := Comparable{data: c.data, ltValue: column.LessThan, gtValue: column.GreaterThan, equalNullValue: column.NotEqual}
 	if reverse {
-		return Comparable{data: c.data, ltValue: column.GreaterThan, gtValue: column.LessThan}
+		result.ltValue, result.gtValue = result.gtValue, result.ltValue
 	}
 
-	return Comparable{data: c.data, ltValue: column.LessThan, gtValue: column.GreaterThan}
+	if equalNull {
+		result.equalNullValue = column.Equal
+	}
+
+	return result
 }
 
 func (c Column) String() string {
@@ -154,9 +159,10 @@ func (c Column) DataType() string {
 }
 
 type Comparable struct {
-	data    []float64
-	ltValue column.CompareResult
-	gtValue column.CompareResult
+	data           []float64
+	ltValue        column.CompareResult
+	gtValue        column.CompareResult
+	equalNullValue column.CompareResult
 }
 
 type View struct {

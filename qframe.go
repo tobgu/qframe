@@ -335,7 +335,7 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 			return qf.withErr(errors.New("Sort", "unknown columns: %s", o.Column))
 		}
 
-		comparables = append(comparables, s.Comparable(o.Reverse))
+		comparables = append(comparables, s.Comparable(o.Reverse, false))
 	}
 
 	newDf := qf.withIndex(qf.index.Copy())
@@ -371,17 +371,17 @@ func (qf QFrame) orders(columns []string) []Order {
 	return orders
 }
 
-func (qf QFrame) reverseComparables(columns []string, orders []Order) []column.Comparable {
+func (qf QFrame) reverseComparables(columns []string, orders []Order, groupByNull bool) []column.Comparable {
 	// Compare the columns in reverse order compared to the sort order
 	// since it's likely to produce differences with fewer comparisons.
 	comparables := make([]column.Comparable, 0, len(columns))
 	for i := len(columns) - 1; i >= 0; i-- {
-		comparables = append(comparables, qf.columnsByName[orders[i].Column].Comparable(false))
+		comparables = append(comparables, qf.columnsByName[orders[i].Column].Comparable(false, groupByNull))
 	}
 	return comparables
 }
 
-func (qf QFrame) Distinct(columns ...string) QFrame {
+func (qf QFrame) Distinct(configFns ...GroupByConfigFn) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -390,15 +390,17 @@ func (qf QFrame) Distinct(columns ...string) QFrame {
 		return qf
 	}
 
-	for _, col := range columns {
+	config := newGroupByFn(configFns)
+
+	for _, col := range config.columns {
 		if _, ok := qf.columnsByName[col]; !ok {
 			return qf.withErr(errors.New("Distinct", `unknown columns "%s"`, col))
 		}
 	}
 
-	columns = qf.columnsOrAll(columns)
+	columns := qf.columnsOrAll(config.columns)
 	orders := qf.orders(columns)
-	comparables := qf.reverseComparables(columns, orders)
+	comparables := qf.reverseComparables(columns, orders, config.groupByNull)
 
 	// Sort dataframe on the columns that should be distinct. Loop over all rows
 	// comparing the specified columns of each row with the previous rows. If there
@@ -483,24 +485,59 @@ type Grouper struct {
 	Err            error
 }
 
+type GroupByConfig struct {
+	columns     []string
+	groupByNull bool
+	// dropNulls?
+}
+
+type GroupByConfigFn func(c *GroupByConfig)
+
+func GroupBy(columns ...string) GroupByConfigFn {
+	return func(c *GroupByConfig) {
+		c.columns = columns
+	}
+}
+
+func GroupByNull(b bool) GroupByConfigFn {
+	return func(c *GroupByConfig) {
+		c.groupByNull = b
+	}
+}
+
+func newGroupByFn(configFns []GroupByConfigFn) GroupByConfig {
+	var config GroupByConfig
+	for _, f := range configFns {
+		f(&config)
+	}
+
+	return config
+}
+
 // Leaving out columns will make one large group over which aggregations can be done
-func (qf QFrame) GroupBy(columns ...string) Grouper {
-	if err := qf.checkColumns("GroupBy", columns); err != nil {
+func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
+	if qf.Err != nil {
+		return Grouper{Err: qf.Err}
+	}
+
+	config := newGroupByFn(configFns)
+
+	if err := qf.checkColumns("GroupBy", config.columns); err != nil {
 		return Grouper{Err: err}
 	}
 
-	grouper := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: columns}
+	grouper := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: config.columns}
 	if qf.Len() == 0 {
 		return grouper
 	}
 
-	if len(columns) == 0 {
+	if len(config.columns) == 0 {
 		grouper.indices = []index.Int{qf.index}
 		return grouper
 	}
 
-	orders := qf.orders(columns)
-	comparables := qf.reverseComparables(columns, orders)
+	orders := qf.orders(config.columns)
+	comparables := qf.reverseComparables(config.columns, orders, config.groupByNull)
 
 	// Sort dataframe on the columns that should be grouped. Loop over all rows
 	// comparing the specified columns of each row with the first in the current group.
