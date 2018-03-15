@@ -156,8 +156,8 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 			})}},
 	}
 
-	for i, tc := range table {
-		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("Filter %s", tc.name), func(t *testing.T) {
 			input := qframe.New(tc.input, tc.configs...)
 			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.ColumnName("COL1")})
 			expected := qframe.New(tc.expected, tc.configs...)

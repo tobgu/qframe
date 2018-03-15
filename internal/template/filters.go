@@ -33,7 +33,7 @@ func {{.name}}(index index.Int, column []{{.dataType}}, compCol []{{.dataType}},
 	for i, x := range bIndex {
 		if !x {
 			pos := index[i]
-			bIndex[i] = column[pos] > compCol[pos]
+			bIndex[i] = column[pos] {{.operator}} compCol[pos]
 		}
 	}
 }

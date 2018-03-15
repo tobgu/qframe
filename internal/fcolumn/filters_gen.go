@@ -1,4 +1,4 @@
-package icolumn
+package fcolumn
 
 import (
 	"github.com/tobgu/qframe/internal/index"
@@ -6,7 +6,7 @@ import (
 
 // Code generated from template/filters.go DO NOT EDIT
 
-func lt(index index.Int, column []int, comp int, bIndex index.Bool) {
+func lt(index index.Int, column []float64, comp float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = column[index[i]] < comp
@@ -14,7 +14,7 @@ func lt(index index.Int, column []int, comp int, bIndex index.Bool) {
 	}
 }
 
-func lte(index index.Int, column []int, comp int, bIndex index.Bool) {
+func lte(index index.Int, column []float64, comp float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = column[index[i]] <= comp
@@ -22,7 +22,7 @@ func lte(index index.Int, column []int, comp int, bIndex index.Bool) {
 	}
 }
 
-func gt(index index.Int, column []int, comp int, bIndex index.Bool) {
+func gt(index index.Int, column []float64, comp float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = column[index[i]] > comp
@@ -30,7 +30,7 @@ func gt(index index.Int, column []int, comp int, bIndex index.Bool) {
 	}
 }
 
-func gte(index index.Int, column []int, comp int, bIndex index.Bool) {
+func gte(index index.Int, column []float64, comp float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = column[index[i]] >= comp
@@ -38,7 +38,7 @@ func gte(index index.Int, column []int, comp int, bIndex index.Bool) {
 	}
 }
 
-func eq(index index.Int, column []int, comp int, bIndex index.Bool) {
+func eq(index index.Int, column []float64, comp float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = column[index[i]] == comp
@@ -46,7 +46,7 @@ func eq(index index.Int, column []int, comp int, bIndex index.Bool) {
 	}
 }
 
-func neq(index index.Int, column []int, comp int, bIndex index.Bool) {
+func neq(index index.Int, column []float64, comp float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = column[index[i]] != comp
@@ -54,7 +54,7 @@ func neq(index index.Int, column []int, comp int, bIndex index.Bool) {
 	}
 }
 
-func lt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+func lt2(index index.Int, column []float64, compCol []float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			pos := index[i]
@@ -63,7 +63,7 @@ func lt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
 	}
 }
 
-func lte2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+func lte2(index index.Int, column []float64, compCol []float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			pos := index[i]
@@ -72,7 +72,7 @@ func lte2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
 	}
 }
 
-func gt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+func gt2(index index.Int, column []float64, compCol []float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			pos := index[i]
@@ -81,7 +81,7 @@ func gt2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
 	}
 }
 
-func gte2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+func gte2(index index.Int, column []float64, compCol []float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			pos := index[i]
@@ -90,7 +90,7 @@ func gte2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
 	}
 }
 
-func eq2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+func eq2(index index.Int, column []float64, compCol []float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			pos := index[i]
@@ -99,7 +99,7 @@ func eq2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
 	}
 }
 
-func neq2(index index.Int, column []int, compCol []int, bIndex index.Bool) {
+func neq2(index index.Int, column []float64, compCol []float64, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			pos := index[i]

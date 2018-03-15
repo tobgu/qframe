@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
+	fgenerator "github.com/tobgu/qframe/internal/fcolumn/generator"
 	"go/format"
 	"os"
 )
@@ -27,6 +28,8 @@ func main() {
 	switch *source {
 	case "ifilter":
 		fn = igenerator.GenerateFilters
+	case "ffilter":
+		fn = fgenerator.GenerateFilters
 	default:
 		panic(fmt.Sprintf("Unknown source: \"%s\"", *source))
 	}
