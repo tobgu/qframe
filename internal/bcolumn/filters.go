@@ -6,25 +6,11 @@ import (
 )
 
 var filterFuncs = map[string]func(index.Int, []bool, bool, index.Bool){
-	filter.Eq: eq,
-}
-
-func eq(index index.Int, column []bool, comp bool, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] == comp
-		}
-	}
+	filter.Eq:  eq,
+	filter.Neq: neq,
 }
 
 var filterFuncs2 = map[string]func(index.Int, []bool, []bool, index.Bool){
-	filter.Eq: eq2,
-}
-
-func eq2(index index.Int, column []bool, comp []bool, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			bIndex[i] = column[index[i]] == comp[index[i]]
-		}
-	}
+	filter.Eq:  eq2,
+	filter.Neq: neq2,
 }

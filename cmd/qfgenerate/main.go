@@ -5,8 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
-	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
+	bgenerator "github.com/tobgu/qframe/internal/bcolumn/generator"
 	fgenerator "github.com/tobgu/qframe/internal/fcolumn/generator"
+	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
 	"go/format"
 	"os"
 )
@@ -30,6 +31,8 @@ func main() {
 		fn = igenerator.GenerateFilters
 	case "ffilter":
 		fn = fgenerator.GenerateFilters
+	case "bfilter":
+		fn = bgenerator.GenerateFilters
 	default:
 		panic(fmt.Sprintf("Unknown source: \"%s\"", *source))
 	}
