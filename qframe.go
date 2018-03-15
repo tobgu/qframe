@@ -499,6 +499,8 @@ func GroupBy(columns ...string) GroupByConfigFn {
 	}
 }
 
+// Setting this to "true" means that nil/NaN values are grouped
+// together. Default "false".
 func GroupByNull(b bool) GroupByConfigFn {
 	return func(c *GroupByConfig) {
 		c.groupByNull = b

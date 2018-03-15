@@ -1194,6 +1194,40 @@ func TestQFrame_AggregateStrings(t *testing.T) {
 	}
 }
 
+func sum(c []int) int {
+	result := 0
+	for _, v := range c {
+		result += v
+	}
+	return result
+}
+
+func TestQFrame_AggregateGroupByNull(t *testing.T) {
+	a, b := "a", "b"
+	for _, groupByNull := range []bool{false, true} {
+		for _, column := range []string{"COL1", "COL2", "COL3"} {
+			t.Run(fmt.Sprintf("%s %v", column, groupByNull), func(t *testing.T) {
+				input := qframe.New(map[string]interface{}{
+					"COL1": []*string{&a, &b, nil, &a, &b, nil},
+					"COL2": []*string{&a, &b, nil, &a, &b, nil},
+					"COL3": []float64{1, 2, math.NaN(), 1, 2, math.NaN()},
+					"COL4": []int{1, 2, 3, 10, 20, 30},
+				}, qframe.Enums(map[string][]string{"COL2": nil}))
+
+				col4 := []int{3, 30, 11, 22}
+				if groupByNull {
+					// Here we expect the nil/NaN columns to have been aggregated together
+					col4 = []int{33, 11, 22}
+				}
+				expected := qframe.New(map[string]interface{}{"COL4": col4})
+
+				out := input.GroupBy(qframe.GroupBy(column), qframe.GroupByNull(groupByNull)).Aggregate(aggregation.New(sum, "COL4"))
+				assertEquals(t, expected, out.Select("COL4"))
+			})
+		}
+	}
+}
+
 func TestQFrame_InitWithConstantVal(t *testing.T) {
 	a := "a"
 	table := []struct {

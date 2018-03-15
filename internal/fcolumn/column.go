@@ -71,8 +71,7 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 			return c.ltValue
 		}
 
-		// Consider NaN == NaN, this means that we can group
-		// by null values for example (this differs from Pandas)
+		return c.equalNullValue
 	}
 
 	return column.Equal
