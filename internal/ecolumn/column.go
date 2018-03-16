@@ -336,20 +336,20 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 				}
 			}
 
-			return errors.New("Filter enum", "Unknown enum value in filter argument: %c", comp)
+			return errors.New("filter enum", "Unknown enum value in filter argument: %s", comp)
 		}
 
 		if multiFunc, ok := multiFilterFuncs[comparator]; ok {
 			bset, err := multiFunc(comp, c.values)
 			if err != nil {
-				return errors.Propagate("Filter enum", err)
+				return errors.Propagate("filter enum", err)
 			}
 
 			c.filterWithBitset(index, bset, bIndex)
 			return nil
 		}
 
-		return errors.New("Filter enum", "unknown comparison operator, %v", comparator)
+		return errors.New("filter enum", "unknown comparison operator, %v", comparator)
 	case []string:
 		if multiFunc, ok := multiInputFilterFuncs[comparator]; ok {
 			bset := multiFunc(qfstrings.NewStringSet(comp), c.values)
@@ -357,21 +357,21 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 			return nil
 		}
 
-		return errors.New("Filter enum", "unknown comparison operator, %v", comparator)
+		return errors.New("filter enum", "unknown comparison operator, %v", comparator)
 	case Column:
 		if ok := equalTypes(c, comp); !ok {
-			return errors.New("Filter enum", "cannot compare enums of different types")
+			return errors.New("filter enum", "cannot compare enums of different types")
 		}
 
 		compFunc, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("Filter enum", "unknown comparison operator, %v", comparator)
+			return errors.New("filter enum", "unknown comparison operator, %v", comparator)
 		}
 
 		compFunc(index, c.data, comp.data, bIndex)
 		return nil
 	default:
-		return errors.New("Filter enum", "invalid comparison type, %c, expected string or other enum column", reflect.TypeOf(comparatee))
+		return errors.New("filter enum", "invalid comparison type, %v, expected string or other enum column", reflect.TypeOf(comparatee))
 	}
 }
 
@@ -471,7 +471,7 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	switch t := fn.(type) {
 	case string:
 		// There are currently no build in aggregations for enums
-		return nil, errors.New("enum aggregate", "aggregation function %c is not defined for enum column", fn)
+		return nil, errors.New("enum aggregate", "aggregation function %v is not defined for enum column", fn)
 	case func([]*string) *string:
 		data := make([]*string, 0, len(indices))
 		for _, ix := range indices {
@@ -527,7 +527,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		if f, ok := enumApplyFuncs[t]; ok {
 			return f(ix, c), nil
 		}
-		return nil, errors.New("string.apply1", "unknown built in function %c", t)
+		return nil, errors.New("string.apply1", "unknown built in function %s", t)
 	default:
 		return nil, errors.New("enum.apply1", "cannot apply type %#v to column", fn)
 	}
@@ -552,7 +552,7 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 		return scolumn.New(result), nil
 	case string:
 		// No built in functions for strings at this stage
-		return nil, errors.New("enum.apply2", "unknown built in function %c", t)
+		return nil, errors.New("enum.apply2", "unknown built in function %s", t)
 	default:
 		return nil, errors.New("enum.apply2", "cannot apply type %#v to column", fn)
 	}

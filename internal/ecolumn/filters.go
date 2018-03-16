@@ -68,3 +68,12 @@ func in(comp qfstrings.StringSet, values []string) *bitset {
 
 	return bset
 }
+
+func neq(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			enum := column[index[i]]
+			bIndex[i] = enum.isNull() || enum.compVal() != comparatee.compVal()
+		}
+	}
+}

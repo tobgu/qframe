@@ -52,43 +52,104 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 		name     string
 		filters  []filter.Filter
 		input    map[string]interface{}
-		expected qframe.QFrame
+		expected map[string]interface{}
 	}{
 		{
-			"built in greater than",
-			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: 3}},
-			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			qframe.New(map[string]interface{}{"COL1": []int{4, 5}})},
+			name:     "built in greater than",
+			filters:  []filter.Filter{{Column: "COL1", Comparator: ">", Arg: 3}},
+			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			expected: map[string]interface{}{"COL1": []int{4, 5}}},
 		{
-			"built in 'in' with int",
-			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []int{3, 5}}},
-			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			qframe.New(map[string]interface{}{"COL1": []int{3, 5}})},
+			name:     "built in 'in' with int",
+			filters:  []filter.Filter{{Column: "COL1", Comparator: "in", Arg: []int{3, 5}}},
+			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			expected: map[string]interface{}{"COL1": []int{3, 5}}},
 		{
-			"built in 'in' with float (truncated to int)",
-			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []float64{3.4, 5.1}}},
-			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			qframe.New(map[string]interface{}{"COL1": []int{3, 5}})},
+			name:     "built in 'in' with float (truncated to int)",
+			filters:  []filter.Filter{{Column: "COL1", Comparator: "in", Arg: []float64{3.4, 5.1}}},
+			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			expected: map[string]interface{}{"COL1": []int{3, 5}}},
 		{
-			"combined with OR",
-			[]filter.Filter{
+			name: "combined with OR",
+			filters: []filter.Filter{
 				{Column: "COL1", Comparator: ">", Arg: 4},
 				{Column: "COL1", Comparator: "<", Arg: 2}},
-			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			qframe.New(map[string]interface{}{"COL1": []int{1, 5}})},
+			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			expected: map[string]interface{}{"COL1": []int{1, 5}}},
 		{
-			"inverse",
-			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: 4, Inverse: true}},
-			map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			qframe.New(map[string]interface{}{"COL1": []int{1, 2, 3, 4}})},
+			name:     "inverse",
+			filters:  []filter.Filter{{Column: "COL1", Comparator: ">", Arg: 4, Inverse: true}},
+			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
+			expected: map[string]interface{}{"COL1": []int{1, 2, 3, 4}}},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
 			input := qframe.New(tc.input)
 			output := input.Filter(tc.filters...)
-			assertEquals(t, tc.expected, output)
+			expected := qframe.New(tc.expected)
+			assertEquals(t, expected, output)
 		})
+	}
+}
+
+func isNull(x interface{}) bool {
+	switch t := x.(type) {
+	case nil:
+		return true
+	case float64:
+		return math.IsNaN(t)
+	default:
+		return false
+	}
+}
+
+func TestQFrame_FilterAgainstNull(t *testing.T) {
+	comparisons := []struct {
+		operation   string
+		expectCount int
+	}{
+		{"<", 1},
+		{">=", 1},
+		{"=", 1},
+		{"!=", 2},
+	}
+
+	a, b := "a", "b"
+	table := []struct {
+		name   string
+		input  interface{}
+		isEnum bool
+		arg    interface{}
+	}{
+		{name: "string value", input: []*string{&a, &b, nil}, arg: "b"},
+		{name: "string nil", input: []*string{&a, &b, nil}, arg: nil},
+		{name: "enum value", input: []*string{&a, &b, nil}, arg: "b", isEnum: true},
+		{name: "enum nil", input: []*string{&a, &b, nil}, arg: nil, isEnum: true},
+		{name: "float value", input: []float64{1.0, 2.0, math.NaN()}, arg: 2.0},
+		{name: "float NaN", input: []float64{1.0, 2.0, math.NaN()}, arg: math.NaN()},
+	}
+
+	for _, comp := range comparisons {
+		for _, tc := range table {
+			t.Run(fmt.Sprintf("%s, %s", tc.name, comp.operation), func(t *testing.T) {
+				enums := map[string][]string{}
+				if tc.isEnum {
+					enums["COL1"] = nil
+				}
+				input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
+				output := input.Filter(filter.Filter{Column: "COL1", Comparator: comp.operation, Arg: tc.arg})
+				if isNull(tc.arg) {
+					assertErr(t, output.Err, "filter")
+				} else {
+					assertNotErr(t, output.Err)
+					if output.Len() != comp.expectCount {
+						fmt.Println(output.String())
+						t.Errorf("Unexpected frame length: %d", output.Len())
+					}
+				}
+			})
+		}
 	}
 }
 
@@ -859,7 +920,12 @@ func TestQFrame_FilterString(t *testing.T) {
 		{
 			withNil,
 			[]filter.Filter{{Column: "COL1", Comparator: "<", Arg: "b"}},
-			map[string]interface{}{"COL1": []*string{&a, nil, nil}},
+			map[string]interface{}{"COL1": []*string{&a}},
+		},
+		{
+			withNil,
+			[]filter.Filter{{Column: "COL1", Comparator: "!=", Arg: "a"}},
+			map[string]interface{}{"COL1": []*string{&b, &c, nil, &e, &d, nil}},
 		},
 		{
 			withNil,

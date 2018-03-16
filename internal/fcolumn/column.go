@@ -80,6 +80,10 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
 	switch t := comparatee.(type) {
 	case float64:
+		if math.IsNaN(t) {
+			return errors.New("filter float", "NaN not allowed as filter argument")
+		}
+
 		compFunc, ok := filterFuncs[comparator]
 		if !ok {
 			return errors.New("filter float", "invalid comparison operator, %v", comparator)

@@ -6,16 +6,18 @@ import (
 	"github.com/tobgu/qframe/internal/template"
 )
 
-//go:generate qfgenerate -source=efilter -dst-file=../filters_gen.go
+//go:generate qfgenerate -source=sfilter -dst-file=../filters_gen.go
 
 const basicColConstComparison = `
-func {{.name}}(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
+func {{.name}}(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			enum := column[index[i]]
-			bIndex[i] = !enum.isNull() && enum.compVal() {{.operator}} comparatee.compVal()
+			s, isNull := s.stringAt(index[i])
+			bIndex[i] = !isNull && s {{.operator}} comparatee
 		}
 	}
+
+	return nil
 }
 `
 
@@ -24,7 +26,7 @@ func {{.name}}(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			enum, enum2 := col[index[i]], col2[index[i]]
-			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() {{.operator}} enum2.compVal()
+			bIndex[i] = !enum.isNull() && !enum2.isNull() && bIndex[i] = enum.compVal() {{.operator}} enum2.compVal()
 		}
 	}
 }
@@ -48,17 +50,18 @@ func colColComparison(name, operator string) template.Spec {
 func GenerateFilters() (*bytes.Buffer, error) {
 	// If adding more filters here make sure to also add a reference to them
 	// in the corresponding filter map so that they can be looked up.
-	return template.Generate("ecolumn", []template.Spec{
+	return template.Generate("scolumn", []template.Spec{
 		colConstComparison("lt", filter.Lt),
 		colConstComparison("lte", filter.Lte),
 		colConstComparison("gt", filter.Gt),
 		colConstComparison("gte", filter.Gte),
 		colConstComparison("eq", "=="), // Go eq ("==") differs from qframe eq ("=")
-		colColComparison("lt2", filter.Lt),
-		colColComparison("lte2", filter.Lte),
-		colColComparison("gt2", filter.Gt),
-		colColComparison("gte2", filter.Gte),
-		colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")
-		colColComparison("neq2", filter.Neq),
+		/*
+			colColComparison("lt2", filter.Lt),
+			colColComparison("lte2", filter.Lte),
+			colColComparison("gt2", filter.Gt),
+			colColComparison("gte2", filter.Gte),
+			colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")
+			colColComparison("neq2", filter.Neq), */
 	})
 }

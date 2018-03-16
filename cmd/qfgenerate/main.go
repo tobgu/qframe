@@ -9,6 +9,7 @@ import (
 	egenerator "github.com/tobgu/qframe/internal/ecolumn/generator"
 	fgenerator "github.com/tobgu/qframe/internal/fcolumn/generator"
 	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
+	sgenerator "github.com/tobgu/qframe/internal/scolumn/generator"
 	"go/format"
 	"os"
 )
@@ -26,21 +27,20 @@ func main() {
 		panic("Destination file must be given")
 	}
 
-	var fn func() (*bytes.Buffer, error)
-	switch *source {
-	case "ifilter":
-		fn = igenerator.GenerateFilters
-	case "ffilter":
-		fn = fgenerator.GenerateFilters
-	case "bfilter":
-		fn = bgenerator.GenerateFilters
-	case "efilter":
-		fn = egenerator.GenerateFilters
-	default:
+	generators := map[string]func() (*bytes.Buffer, error){
+		"ifilter": igenerator.GenerateFilters,
+		"ffilter": fgenerator.GenerateFilters,
+		"bfilter": bgenerator.GenerateFilters,
+		"efilter": egenerator.GenerateFilters,
+		"sfilter": sgenerator.GenerateFilters,
+	}
+
+	generator, ok := generators[*source]
+	if !ok {
 		panic(fmt.Sprintf("Unknown source: \"%s\"", *source))
 	}
 
-	buf, err := fn()
+	buf, err := generator()
 	if err != nil {
 		panic(err)
 	}
@@ -48,8 +48,6 @@ func main() {
 	if err := writeFile(buf, *dstFile); err != nil {
 		panic(err)
 	}
-
-	fmt.Println("Successfully wrote ", *dstFile)
 }
 
 func writeFile(buf *bytes.Buffer, file string) error {

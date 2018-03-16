@@ -29,74 +29,11 @@ var filterFuncs2 = map[string]func(index.Int, Column, Column, index.Bool) error{
 	filter.Lte: lte2,
 }
 
-func gt(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = s > comparatee
-			}
-		}
-	}
-
-	return nil
-}
-
-func gte(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = s >= comparatee
-			}
-		}
-	}
-
-	return nil
-}
-
-func lt(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			str, isNull := s.stringAt(index[i])
-			bIndex[i] = isNull || str < comparatee
-		}
-	}
-
-	return nil
-}
-
-func lte(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			str, isNull := s.stringAt(index[i])
-			bIndex[i] = isNull || str <= comparatee
-		}
-	}
-
-	return nil
-}
-
-func eq(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = s == comparatee
-			}
-		}
-	}
-
-	return nil
-}
-
 func neq(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
 			s, isNull := s.stringAt(index[i])
-			if !isNull {
-				bIndex[i] = s != comparatee
-			}
+			bIndex[i] = isNull || s != comparatee
 		}
 	}
 

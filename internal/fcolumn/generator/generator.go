@@ -24,9 +24,6 @@ func colColComparison(name, operator string) template.Spec {
 }
 
 func GenerateFilters() (*bytes.Buffer, error) {
-	// TODO: Decide how to handle NaN in comparisons. Should probably be aligned with how
-	//       null is handled in string columns. Also add isNaN/isNull filter.
-
 	// If adding more filters here make sure to also add a reference to them
 	// in the corresponding filter map so that they can be looked up.
 	return template.Generate("fcolumn", []template.Spec{

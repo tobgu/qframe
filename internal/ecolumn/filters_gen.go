@@ -10,7 +10,7 @@ func lt(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool
 	for i, x := range bIndex {
 		if !x {
 			enum := column[index[i]]
-			bIndex[i] = enum.compVal() < comparatee.compVal()
+			bIndex[i] = !enum.isNull() && enum.compVal() < comparatee.compVal()
 		}
 	}
 }
@@ -19,7 +19,7 @@ func lte(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Boo
 	for i, x := range bIndex {
 		if !x {
 			enum := column[index[i]]
-			bIndex[i] = enum.compVal() <= comparatee.compVal()
+			bIndex[i] = !enum.isNull() && enum.compVal() <= comparatee.compVal()
 		}
 	}
 }
@@ -28,7 +28,7 @@ func gt(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool
 	for i, x := range bIndex {
 		if !x {
 			enum := column[index[i]]
-			bIndex[i] = enum.compVal() > comparatee.compVal()
+			bIndex[i] = !enum.isNull() && enum.compVal() > comparatee.compVal()
 		}
 	}
 }
@@ -37,7 +37,7 @@ func gte(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Boo
 	for i, x := range bIndex {
 		if !x {
 			enum := column[index[i]]
-			bIndex[i] = enum.compVal() >= comparatee.compVal()
+			bIndex[i] = !enum.isNull() && enum.compVal() >= comparatee.compVal()
 		}
 	}
 }
@@ -46,16 +46,7 @@ func eq(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool
 	for i, x := range bIndex {
 		if !x {
 			enum := column[index[i]]
-			bIndex[i] = enum.compVal() == comparatee.compVal()
-		}
-	}
-}
-
-func neq(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			enum := column[index[i]]
-			bIndex[i] = enum.compVal() != comparatee.compVal()
+			bIndex[i] = !enum.isNull() && enum.compVal() == comparatee.compVal()
 		}
 	}
 }
@@ -63,7 +54,8 @@ func neq(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Boo
 func lt2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = col[index[i]].compVal() < col2[index[i]].compVal()
+			enum, enum2 := col[index[i]], col2[index[i]]
+			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() < enum2.compVal()
 		}
 	}
 }
@@ -71,7 +63,8 @@ func lt2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 func lte2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = col[index[i]].compVal() <= col2[index[i]].compVal()
+			enum, enum2 := col[index[i]], col2[index[i]]
+			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() <= enum2.compVal()
 		}
 	}
 }
@@ -79,7 +72,8 @@ func lte2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 func gt2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = col[index[i]].compVal() > col2[index[i]].compVal()
+			enum, enum2 := col[index[i]], col2[index[i]]
+			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() > enum2.compVal()
 		}
 	}
 }
@@ -87,7 +81,8 @@ func gt2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 func gte2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = col[index[i]].compVal() >= col2[index[i]].compVal()
+			enum, enum2 := col[index[i]], col2[index[i]]
+			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() >= enum2.compVal()
 		}
 	}
 }
@@ -95,7 +90,8 @@ func gte2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 func eq2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = col[index[i]].compVal() == col2[index[i]].compVal()
+			enum, enum2 := col[index[i]], col2[index[i]]
+			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() == enum2.compVal()
 		}
 	}
 }
@@ -103,7 +99,8 @@ func eq2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 func neq2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
-			bIndex[i] = col[index[i]].compVal() != col2[index[i]].compVal()
+			enum, enum2 := col[index[i]], col2[index[i]]
+			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() != enum2.compVal()
 		}
 	}
 }
