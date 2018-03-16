@@ -1203,7 +1203,7 @@ func (qf QFrame) ByteSize() int {
 }
 
 // TODO filter
-// - Fix filtering for NaN/nil, those should never compare to anything
+// - Test null filtering between columns
 // - Add isNull filter for strings, enums and floats
 // - Bitwise filters for int (and their inverse/not?), or can we handle not in a more general
 //   way where no complementary functions are implemented by adding an extra step involving

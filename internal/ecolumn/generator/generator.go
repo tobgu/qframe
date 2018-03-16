@@ -59,6 +59,5 @@ func GenerateFilters() (*bytes.Buffer, error) {
 		colColComparison("gt2", filter.Gt),
 		colColComparison("gte2", filter.Gte),
 		colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")
-		colColComparison("neq2", filter.Neq),
 	})
 }

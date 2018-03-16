@@ -9,10 +9,10 @@ import (
 //go:generate qfgenerate -source=sfilter -dst-file=../filters_gen.go
 
 const basicColConstComparison = `
-func {{.name}}(index index.Int, s Column, comparatee string, bIndex index.Bool) error {
+func {{.name}}(index index.Int, c Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			s, isNull := s.stringAt(index[i])
+			s, isNull := c.stringAt(index[i])
 			bIndex[i] = !isNull && s {{.operator}} comparatee
 		}
 	}
@@ -22,13 +22,15 @@ func {{.name}}(index index.Int, s Column, comparatee string, bIndex index.Bool) 
 `
 
 const basicColColComparison = `
-func {{.name}}(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
+func {{.name}}(index index.Int, col, col2 Column, bIndex index.Bool) error {
 	for i, x := range bIndex {
 		if !x {
-			enum, enum2 := col[index[i]], col2[index[i]]
-			bIndex[i] = !enum.isNull() && !enum2.isNull() && bIndex[i] = enum.compVal() {{.operator}} enum2.compVal()
+			s, isNull := col.stringAt(index[i])
+			s2, isNull2 := col2.stringAt(index[i])
+			bIndex[i] = !isNull && !isNull2 && s {{.operator}} s2
 		}
 	}
+	return nil
 }
 `
 
@@ -56,12 +58,10 @@ func GenerateFilters() (*bytes.Buffer, error) {
 		colConstComparison("gt", filter.Gt),
 		colConstComparison("gte", filter.Gte),
 		colConstComparison("eq", "=="), // Go eq ("==") differs from qframe eq ("=")
-		/*
-			colColComparison("lt2", filter.Lt),
-			colColComparison("lte2", filter.Lte),
-			colColComparison("gt2", filter.Gt),
-			colColComparison("gte2", filter.Gte),
-			colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")
-			colColComparison("neq2", filter.Neq), */
+		colColComparison("lt2", filter.Lt),
+		colColComparison("lte2", filter.Lte),
+		colColComparison("gt2", filter.Gt),
+		colColComparison("gte2", filter.Gte),
+		colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")
 	})
 }

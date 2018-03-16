@@ -95,12 +95,3 @@ func eq2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 		}
 	}
 }
-
-func neq2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
-	for i, x := range bIndex {
-		if !x {
-			enum, enum2 := col[index[i]], col2[index[i]]
-			bIndex[i] = !enum.isNull() && !enum2.isNull() && enum.compVal() != enum2.compVal()
-		}
-	}
-}

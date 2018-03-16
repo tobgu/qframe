@@ -77,3 +77,12 @@ func neq(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Boo
 		}
 	}
 }
+
+func neq2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			enum, enum2 := col[index[i]], col2[index[i]]
+			bIndex[i] = enum.isNull() || enum2.isNull() || enum.compVal() != enum2.compVal()
+		}
+	}
+}
