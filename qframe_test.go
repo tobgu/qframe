@@ -93,26 +93,16 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 	}
 }
 
-func isNull(x interface{}) bool {
-	switch t := x.(type) {
-	case nil:
-		return true
-	case float64:
-		return math.IsNaN(t)
-	default:
-		return false
-	}
-}
-
-func TestQFrame_FilterAgainstNull(t *testing.T) {
+func TestQFrame_FilterColConstNull(t *testing.T) {
+	// For null columns all comparisons will always produce false except for != which will always produce true
 	comparisons := []struct {
 		operation   string
 		expectCount int
 	}{
-		{"<", 1},
-		{">=", 1},
-		{"=", 1},
-		{"!=", 2},
+		{operation: "<", expectCount: 1},
+		{operation: ">=", expectCount: 1},
+		{operation: "=", expectCount: 1},
+		{operation: "!=", expectCount: 2},
 	}
 
 	a, b := "a", "b"
@@ -122,12 +112,9 @@ func TestQFrame_FilterAgainstNull(t *testing.T) {
 		isEnum bool
 		arg    interface{}
 	}{
-		{name: "string value", input: []*string{&a, &b, nil}, arg: "b"},
-		{name: "string nil", input: []*string{&a, &b, nil}, arg: nil},
-		{name: "enum value", input: []*string{&a, &b, nil}, arg: "b", isEnum: true},
-		{name: "enum nil", input: []*string{&a, &b, nil}, arg: nil, isEnum: true},
-		{name: "float value", input: []float64{1.0, 2.0, math.NaN()}, arg: 2.0},
-		{name: "float NaN", input: []float64{1.0, 2.0, math.NaN()}, arg: math.NaN()},
+		{name: "string", input: []*string{&a, &b, nil}, arg: "b"},
+		{name: "enum", input: []*string{&a, &b, nil}, arg: "b", isEnum: true},
+		{name: "float", input: []float64{1.0, 2.0, math.NaN()}, arg: 2.0},
 	}
 
 	for _, comp := range comparisons {
@@ -139,17 +126,84 @@ func TestQFrame_FilterAgainstNull(t *testing.T) {
 				}
 				input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
 				output := input.Filter(filter.Filter{Column: "COL1", Comparator: comp.operation, Arg: tc.arg})
-				if isNull(tc.arg) {
-					assertErr(t, output.Err, "filter")
-				} else {
-					assertNotErr(t, output.Err)
-					if output.Len() != comp.expectCount {
-						fmt.Println(output.String())
-						t.Errorf("Unexpected frame length: %d", output.Len())
-					}
+				assertNotErr(t, output.Err)
+				if output.Len() != comp.expectCount {
+					fmt.Println(output.String())
+					t.Errorf("Unexpected frame length: %d", output.Len())
 				}
 			})
 		}
+	}
+}
+
+func TestQFrame_FilterColColNull(t *testing.T) {
+	// For null columns all comparisons will always produce false except for != which will always produce true
+	comparisons := []struct {
+		operation   string
+		expectCount int
+	}{
+		{operation: "<", expectCount: 0},
+		{operation: ">=", expectCount: 1},
+		{operation: "=", expectCount: 1},
+		{operation: "!=", expectCount: 3},
+	}
+
+	a, b := "a", "b"
+	table := []struct {
+		name      string
+		inputCol1 interface{}
+		inputCol2 interface{}
+		isEnum    bool
+	}{
+		{name: "string", inputCol1: []*string{&a, &b, nil, nil}, inputCol2: []*string{&a, nil, nil, &b}},
+		{name: "enum", inputCol1: []*string{&a, &b, nil, nil}, inputCol2: []*string{&a, nil, nil, &b}, isEnum: true},
+		{name: "enum", inputCol1: []float64{1.0, 2.0, math.NaN(), math.NaN()}, inputCol2: []float64{1.0, math.NaN(), math.NaN(), 2.0}},
+	}
+
+	for _, comp := range comparisons {
+		for _, tc := range table {
+			t.Run(fmt.Sprintf("%s, %s", tc.name, comp.operation), func(t *testing.T) {
+				enums := map[string][]string{}
+				if tc.isEnum {
+					enums["COL1"] = nil
+					enums["COL2"] = nil
+				}
+				input := qframe.New(map[string]interface{}{"COL1": tc.inputCol1, "COL2": tc.inputCol2}, qframe.Enums(enums))
+				output := input.Filter(filter.Filter{Column: "COL1", Comparator: comp.operation, Arg: filter.ColumnName("COL2")})
+				assertNotErr(t, output.Err)
+				if output.Len() != comp.expectCount {
+					fmt.Println(output.String())
+					t.Errorf("Unexpected frame length: %d", output.Len())
+				}
+			})
+		}
+	}
+}
+
+func TestQFrame_FilterNullArg(t *testing.T) {
+	// This should result in an error
+	table := []struct {
+		name   string
+		input  interface{}
+		isEnum bool
+		arg    interface{}
+	}{
+		{name: "string", input: []string{"a"}, arg: nil},
+		{name: "enum", input: []string{"a"}, arg: nil, isEnum: true},
+		{name: "float", input: []float64{1.0}, arg: math.NaN()},
+	}
+
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("%s", tc.name), func(t *testing.T) {
+			enums := map[string][]string{}
+			if tc.isEnum {
+				enums["COL1"] = nil
+			}
+
+			input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
+			output := input.Filter(filter.Filter{Column: "COL1", Comparator: "<", Arg: tc.arg})
+			assertErr(t, output.Err, "filter")
+		})
 	}
 }
 
