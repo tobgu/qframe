@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/filter"
 	"math"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -177,6 +178,40 @@ func TestQFrame_FilterColColNull(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestQFrame_FilterIsNull(t *testing.T) {
+	a, b := "a", "b"
+	table := []struct {
+		input     interface{}
+		expected  interface{}
+		isEnum    bool
+		inverse   bool
+		operation string
+	}{
+		{operation: "isnull", input: []*string{&a, nil, nil, &b}, expected: []*string{nil, nil}},
+		{operation: "isnotnull", input: []*string{&a, nil, nil, &b}, expected: []*string{nil, nil}, inverse: true},
+		{operation: "isnotnull", input: []*string{&a, nil, nil, &b}, expected: []*string{&a, &b}},
+		{operation: "isnull", input: []*string{&a, nil, nil, &b}, expected: []*string{&a, &b}, inverse: true},
+		{operation: "isnull", input: []*string{&a, nil, nil, &b}, expected: []*string{nil, nil}, isEnum: true},
+		{operation: "isnotnull", input: []*string{&a, nil, nil, &b}, expected: []*string{&a, &b}, isEnum: true},
+		{operation: "isnull", input: []float64{1, math.NaN(), 2}, expected: []float64{math.NaN()}},
+		{operation: "isnotnull", input: []float64{1, math.NaN(), 2}, expected: []float64{1, 2}},
+	}
+
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("%v, %s", reflect.TypeOf(tc.input), tc.operation), func(t *testing.T) {
+			enums := map[string][]string{}
+			if tc.isEnum {
+				enums["COL1"] = nil
+			}
+			input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
+			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(enums))
+			output := input.Filter(filter.Filter{Column: "COL1", Comparator: tc.operation, Inverse: tc.inverse})
+			assertNotErr(t, output.Err)
+			assertEquals(t, expected, output)
+		})
 	}
 }
 

@@ -84,17 +84,23 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 			return errors.New("filter float", "NaN not allowed as filter argument")
 		}
 
-		compFunc, ok := filterFuncs[comparator]
+		compFunc, ok := filterFuncs1[comparator]
 		if !ok {
-			return errors.New("filter float", "invalid comparison operator, %v", comparator)
+			return errors.New("filter float", "invalid comparison operator to single argument filter, %v", comparator)
 		}
 		compFunc(index, c.data, t, bIndex)
 	case Column:
 		compFunc, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter float", "invalid comparison operator, %v", comparator)
+			return errors.New("filter float", "invalid comparison operator to column - column filter, %v", comparator)
 		}
 		compFunc(index, c.data, t.data, bIndex)
+	case nil:
+		compFunc, ok := filterFuncs0[comparator]
+		if !ok {
+			return errors.New("filter float", "invalid comparison operator to zero argument filter, %v", comparator)
+		}
+		compFunc(index, c.data, bIndex)
 	default:
 		return errors.New("filter float", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}

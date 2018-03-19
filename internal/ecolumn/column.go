@@ -328,7 +328,7 @@ func (c Column) filterWithBitset(index index.Int, bset *bitset, bIndex index.Boo
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
 	switch comp := comparatee.(type) {
 	case string:
-		if compFunc, ok := filterFuncs[comparator]; ok {
+		if compFunc, ok := filterFuncs1[comparator]; ok {
 			for i, value := range c.values {
 				if value == comp {
 					compFunc(index, c.data, enumVal(i), bIndex)
@@ -349,7 +349,7 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 			return nil
 		}
 
-		return errors.New("filter enum", "unknown comparison operator, %v", comparator)
+		return errors.New("filter enum", "unknown comparison operator for single argument comparison, %v", comparator)
 	case []string:
 		if multiFunc, ok := multiInputFilterFuncs[comparator]; ok {
 			bset := multiFunc(qfstrings.NewStringSet(comp), c.values)
@@ -357,7 +357,7 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 			return nil
 		}
 
-		return errors.New("filter enum", "unknown comparison operator, %v", comparator)
+		return errors.New("filter enum", "unknown comparison operator for multi argument comparison, %v", comparator)
 	case Column:
 		if ok := equalTypes(c, comp); !ok {
 			return errors.New("filter enum", "cannot compare enums of different types")
@@ -365,10 +365,17 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 
 		compFunc, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter enum", "unknown comparison operator, %v", comparator)
+			return errors.New("filter enum", "unknown comparison operator for column - column comparison, %v", comparator)
 		}
 
 		compFunc(index, c.data, comp.data, bIndex)
+		return nil
+	case nil:
+		compFunc, ok := filterFuncs0[comparator]
+		if !ok {
+			return errors.New("filter enum", "unknown comparison operator for zero argument comparison, %v", comparator)
+		}
+		compFunc(index, c.data, bIndex)
 		return nil
 	default:
 		return errors.New("filter enum", "invalid comparison type, %v, expected string or other enum column", reflect.TypeOf(comparatee))

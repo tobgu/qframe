@@ -7,7 +7,12 @@ import (
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 )
 
-var filterFuncs = map[string]func(index.Int, Column, string, index.Bool) error{
+var filterFuncs0 = map[string]func(index.Int, Column, index.Bool) error{
+	filter.IsNull:    isNull,
+	filter.IsNotNull: isNotNull,
+}
+
+var filterFuncs1 = map[string]func(index.Int, Column, string, index.Bool) error{
 	filter.Gt:  gt,
 	filter.Gte: gte,
 	filter.Lt:  lt,
@@ -87,6 +92,26 @@ func neq2(index index.Int, col, col2 Column, bIndex index.Bool) error {
 			s, isNull := col.stringAt(index[i])
 			s2, isNull2 := col2.stringAt(index[i])
 			bIndex[i] = isNull || isNull2 || s != s2
+		}
+	}
+	return nil
+}
+
+func isNull(index index.Int, col Column, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			_, isNull := col.stringAt(index[i])
+			bIndex[i] = isNull
+		}
+	}
+	return nil
+}
+
+func isNotNull(index index.Int, col Column, bIndex index.Bool) error {
+	for i, x := range bIndex {
+		if !x {
+			_, isNull := col.stringAt(index[i])
+			bIndex[i] = !isNull
 		}
 	}
 	return nil

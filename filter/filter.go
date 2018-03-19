@@ -7,24 +7,28 @@ import "fmt"
 //       by a couple of config functions for the QFrame.
 
 const (
-	Gt  = ">"
-	Gte = ">="
-	Eq  = "="
-	Neq = "!="
-	Lt  = "<"
-	Lte = "<="
-	In  = "in"
-	Nin = "not in"
+	Gt        = ">"
+	Gte       = ">="
+	Eq        = "="
+	Neq       = "!="
+	Lt        = "<"
+	Lte       = "<="
+	In        = "in"
+	Nin       = "not in"
+	IsNull    = "isnull"
+	IsNotNull = "isnotnull"
 )
 
 var Inverse = map[string]string{
-	Gt:  Lte,
-	Gte: Lt,
-	Eq:  Neq,
-	Lt:  Gte,
-	Lte: Gt,
-	In:  Nin,
-	Nin: In,
+	Gt:        Lte,
+	Gte:       Lt,
+	Eq:        Neq,
+	Lt:        Gte,
+	Lte:       Gt,
+	In:        Nin,
+	Nin:       In,
+	IsNotNull: IsNull,
+	IsNull:    IsNotNull,
 }
 
 // Marker type to use in Filter.Arg to denote that the argument is

@@ -7,7 +7,12 @@ import (
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 )
 
-var filterFuncs = map[string]func(index.Int, []enumVal, enumVal, index.Bool){
+var filterFuncs0 = map[string]func(index.Int, []enumVal, index.Bool){
+	filter.IsNull:    isNull,
+	filter.IsNotNull: isNotNull,
+}
+
+var filterFuncs1 = map[string]func(index.Int, []enumVal, enumVal, index.Bool){
 	filter.Gt:  gt,
 	filter.Gte: gte,
 	filter.Lt:  lt,
@@ -83,6 +88,24 @@ func neq2(index index.Int, col, col2 []enumVal, bIndex index.Bool) {
 		if !x {
 			enum, enum2 := col[index[i]], col2[index[i]]
 			bIndex[i] = enum.isNull() || enum2.isNull() || enum.compVal() != enum2.compVal()
+		}
+	}
+}
+
+func isNull(index index.Int, col []enumVal, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			enum := col[index[i]]
+			bIndex[i] = enum.isNull()
+		}
+	}
+}
+
+func isNotNull(index index.Int, col []enumVal, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			enum := col[index[i]]
+			bIndex[i] = !enum.isNull()
 		}
 	}
 }
