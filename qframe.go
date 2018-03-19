@@ -1203,11 +1203,6 @@ func (qf QFrame) ByteSize() int {
 }
 
 // TODO filter
-// - Add isNull filter for strings, enums and floats
-// - Bitwise filters for int (and their inverse/not?), or can we handle not in a more general
-//   way where no complementary functions are implemented by adding an extra step involving
-//   an additional, new, boolean slice that is kept in isolation and inverted before being
-//   merged with the current slice? Also consider "(not (or ....))".
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
 

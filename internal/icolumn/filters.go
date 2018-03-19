@@ -13,6 +13,8 @@ var filterFuncs = map[string]func(index.Int, []int, int, index.Bool){
 	filter.Lte: lte,
 	filter.Eq:  eq,
 	filter.Neq: neq,
+	"any_bits": anyBits,
+	"all_bits": allBits,
 }
 
 // Comparisons against multiple values
@@ -34,6 +36,22 @@ func in(index index.Int, column []int, comp intSet, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {
 			bIndex[i] = comp.Contains(column[index[i]])
+		}
+	}
+}
+
+func anyBits(index index.Int, column []int, comp int, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = column[index[i]]&comp > 0
+		}
+	}
+}
+
+func allBits(index index.Int, column []int, comp int, bIndex index.Bool) {
+	for i, x := range bIndex {
+		if !x {
+			bIndex[i] = column[index[i]]&comp == comp
 		}
 	}
 }

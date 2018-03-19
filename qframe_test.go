@@ -52,43 +52,58 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 	table := []struct {
 		name     string
 		filters  []filter.Filter
-		input    map[string]interface{}
-		expected map[string]interface{}
+		input    interface{}
+		expected interface{}
 	}{
 		{
 			name:     "built in greater than",
 			filters:  []filter.Filter{{Column: "COL1", Comparator: ">", Arg: 3}},
-			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			expected: map[string]interface{}{"COL1": []int{4, 5}}},
+			input:    []int{1, 2, 3, 4, 5},
+			expected: []int{4, 5}},
 		{
 			name:     "built in 'in' with int",
 			filters:  []filter.Filter{{Column: "COL1", Comparator: "in", Arg: []int{3, 5}}},
-			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			expected: map[string]interface{}{"COL1": []int{3, 5}}},
+			input:    []int{1, 2, 3, 4, 5},
+			expected: []int{3, 5}},
 		{
 			name:     "built in 'in' with float (truncated to int)",
 			filters:  []filter.Filter{{Column: "COL1", Comparator: "in", Arg: []float64{3.4, 5.1}}},
-			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			expected: map[string]interface{}{"COL1": []int{3, 5}}},
+			input:    []int{1, 2, 3, 4, 5},
+			expected: []int{3, 5}},
 		{
 			name: "combined with OR",
 			filters: []filter.Filter{
 				{Column: "COL1", Comparator: ">", Arg: 4},
 				{Column: "COL1", Comparator: "<", Arg: 2}},
-			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			expected: map[string]interface{}{"COL1": []int{1, 5}}},
+			input:    []int{1, 2, 3, 4, 5},
+			expected: []int{1, 5}},
 		{
 			name:     "inverse",
 			filters:  []filter.Filter{{Column: "COL1", Comparator: ">", Arg: 4, Inverse: true}},
-			input:    map[string]interface{}{"COL1": []int{1, 2, 3, 4, 5}},
-			expected: map[string]interface{}{"COL1": []int{1, 2, 3, 4}}},
+			input:    []int{1, 2, 3, 4, 5},
+			expected: []int{1, 2, 3, 4}},
+		{
+			name:     "all_bits",
+			filters:  []filter.Filter{{Column: "COL1", Comparator: "all_bits", Arg: 6}},
+			input:    []int{7, 2, 4, 1, 6},
+			expected: []int{7, 6}},
+		{
+			name:     "all_bits inverse",
+			filters:  []filter.Filter{{Column: "COL1", Comparator: "all_bits", Arg: 6, Inverse: true}},
+			input:    []int{7, 2, 4, 1, 6},
+			expected: []int{2, 4, 1}},
+		{
+			name:     "any_bits",
+			filters:  []filter.Filter{{Column: "COL1", Comparator: "any_bits", Arg: 6}},
+			input:    []int{7, 2, 4, 1, 6},
+			expected: []int{7, 2, 4, 6}},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
-			input := qframe.New(tc.input)
+			input := qframe.New(map[string]interface{}{"COL1": tc.input})
 			output := input.Filter(tc.filters...)
-			expected := qframe.New(tc.expected)
+			expected := qframe.New(map[string]interface{}{"COL1": tc.expected})
 			assertEquals(t, expected, output)
 		})
 	}
