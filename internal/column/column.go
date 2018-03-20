@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	// TODO: Make index a public package?
+	"bytes"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
 )
@@ -42,4 +43,7 @@ const (
 
 type Comparable interface {
 	Compare(i, j uint32) CompareResult
+
+	// Write bytes to be used for hashing into buf
+	HashBytes(i uint32, buf *bytes.Buffer)
 }

@@ -1,6 +1,7 @@
 package bcolumn
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
@@ -22,6 +23,13 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	}
 
 	return c.ltValue
+}
+
+func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
+	if c.data[i] {
+		buf.WriteByte(1)
+	}
+	buf.WriteByte(0)
 }
 
 func (c Column) StringAt(i uint32, _ string) string {

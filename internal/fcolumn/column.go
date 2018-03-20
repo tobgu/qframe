@@ -1,6 +1,7 @@
 package fcolumn
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
@@ -10,6 +11,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"unsafe"
 )
 
 func (c Column) StringAt(i uint32, naRep string) string {
@@ -75,6 +77,12 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	}
 
 	return column.Equal
+}
+
+func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
+	bits := math.Float64bits(c.data[i])
+	b := (*[8]byte)(unsafe.Pointer(&bits))[:]
+	buf.Write(b)
 }
 
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {

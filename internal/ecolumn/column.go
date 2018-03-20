@@ -1,6 +1,7 @@
 package ecolumn
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
@@ -300,6 +301,10 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	}
 
 	return column.Equal
+}
+
+func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
+	buf.WriteByte(byte(c.column.data[i]))
 }
 
 func equalTypes(s1, s2 Column) bool {

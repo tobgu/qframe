@@ -541,7 +541,11 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("GroupByAggregate %s", tc.name), func(t *testing.T) {
 			in := qframe.New(tc.input)
-			out := in.GroupBy(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
+			out := in.GroupBy2(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
+
+			// TODO: Sort these to make tests ignore row order
+			// TODO: More tests with larger frames, etc. to exercise all paths
+			// TODO: Benchmark to compare with existing implementation
 			assertEquals(t, qframe.New(tc.expected), out)
 		})
 	}

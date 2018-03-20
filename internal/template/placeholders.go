@@ -1,6 +1,7 @@
 package template
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
@@ -46,4 +47,7 @@ func (c Column) StringAt(i uint32, naRep string) string {
 
 func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
+}
+
+func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
 }

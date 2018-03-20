@@ -10,6 +10,7 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fcolumn"
+	"github.com/tobgu/qframe/internal/grouper"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
@@ -372,6 +373,7 @@ func (qf QFrame) orders(columns []string) []Order {
 }
 
 func (qf QFrame) reverseComparables(columns []string, orders []Order, groupByNull bool) []column.Comparable {
+	// TODO: Drop the reverse aspect here
 	// Compare the columns in reverse order compared to the sort order
 	// since it's likely to produce differences with fewer comparisons.
 	comparables := make([]column.Comparable, 0, len(columns))
@@ -477,12 +479,15 @@ func (qf QFrame) Select(columns ...string) QFrame {
 	return QFrame{columns: newColumns, columnsByName: newColumnsByName, index: qf.index}
 }
 
+type GroupStats grouper.GroupStats
+
 type Grouper struct {
 	indices        []index.Int
 	groupedColumns []string
 	columns        []namedColumn
 	columnsByName  map[string]namedColumn
 	Err            error
+	Stats          GroupStats
 }
 
 type GroupByConfig struct {
@@ -560,6 +565,36 @@ func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
 
 	grouper.indices = append(indices, sortedDf.index[groupStart:])
 	return grouper
+}
+
+// Leaving out columns will make one large group over which aggregations can be done
+func (qf QFrame) GroupBy2(configFns ...GroupByConfigFn) Grouper {
+	if qf.Err != nil {
+		return Grouper{Err: qf.Err}
+	}
+
+	config := newGroupByFn(configFns)
+
+	if err := qf.checkColumns("GroupBy", config.columns); err != nil {
+		return Grouper{Err: err}
+	}
+
+	g := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: config.columns}
+	if qf.Len() == 0 {
+		return g
+	}
+
+	if len(config.columns) == 0 {
+		g.indices = []index.Int{qf.index}
+		return g
+	}
+
+	orders := qf.orders(config.columns)
+	comparables := qf.reverseComparables(config.columns, orders, config.groupByNull)
+	indices, stats := grouper.Groups(qf.index, comparables)
+	g.indices = indices
+	g.Stats = GroupStats(stats)
+	return g
 }
 
 // fnsAndCols is a list of alternating function names and columns names
@@ -1231,3 +1266,5 @@ func (qf QFrame) ByteSize() int {
 // - Include frame dimensions in String()
 // - Add option to drop NaN/Null before grouping?
 // - Consider changing most API functions to take variadic "config functions" for better future proofing.
+// - Make Filter and Eval APIs more similar
+// - Improve group by performance by avoiding sorting

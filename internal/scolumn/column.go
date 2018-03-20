@@ -1,6 +1,7 @@
 package scolumn
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
@@ -137,6 +138,15 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	}
 
 	return column.Equal
+}
+
+func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
+	x, isNull := c.column.stringAt(i)
+	if isNull {
+		buf.WriteByte(0)
+	} else {
+		buf.WriteString(x)
+	}
 }
 
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {

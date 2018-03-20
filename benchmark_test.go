@@ -32,6 +32,24 @@ func genInts(seed int64, size int) []int {
 	return result
 }
 
+func genIntsWithCardinality(seed int64, size, cardinality int) []int {
+	result := genInts(seed, size)
+	for i, x := range result {
+		result[i] = x % cardinality
+	}
+
+	return result
+}
+
+func genStringsWithCardinality(seed int64, size, cardinality, strLen int) []string {
+	baseStr := "abcdefghijklmnopqrstuvxyz"[:strLen]
+	result := make([]string, size)
+	for i, x := range genIntsWithCardinality(seed, size, cardinality) {
+		result[i] = fmt.Sprintf("%s%d", baseStr, x)
+	}
+	return result
+}
+
 const noSeed int64 = 0
 const seed1 int64 = 1
 const seed2 int64 = 2
@@ -731,6 +749,91 @@ func BenchmarkQFrame_EvalInt(b *testing.B) {
 		result := df.Eval("RESULT", qf.Expr2("+", qf.Expr2("+", "S1", "S2"), qf.Val(3)), nil)
 		if result.Err != nil {
 			b.Errorf("Err: %s, %s", result.Len(), result.Err)
+		}
+	}
+}
+
+func BenchmarkGroupBy(b *testing.B) {
+	// TODO:
+	// - Vary frame size
+	// - Vary number of groups
+	// - Vary number of columns to group by
+	// - Vary strings vs int columns
+	// - Test negative ints, very large ints
+	// - Rename grouper -> hasher
+	// - Implement similar thing for distinct
+	// - Code cleanup/refactoring to be able to reuse stuff in distinct
+	table := []struct {
+		name         string
+		size         int
+		cardinality1 int
+		cardinality2 int
+		cardinality3 int
+		cols         []string
+	}{
+		{name: "single col", size: 100000, cardinality1: 1000, cardinality2: 10, cardinality3: 2, cols: []string{"COL1"}},
+		{name: "triple col", size: 100000, cardinality1: 1000, cardinality2: 10, cardinality3: 2, cols: []string{"COL1", "COL2", "COL3"}},
+		{name: "high cardinality", size: 100000, cardinality1: 50000, cardinality2: 1, cardinality3: 1, cols: []string{"COL1"}},
+		{name: "low cardinality", size: 100000, cardinality1: 5, cardinality2: 1, cardinality3: 1, cols: []string{"COL1"}},
+		{name: "small frame", size: 100, cardinality1: 20, cardinality2: 1, cardinality3: 1, cols: []string{"COL1"}},
+	}
+
+	for _, tc := range table {
+		for _, newGroupBy := range []bool{false, true} {
+			b.Run(fmt.Sprintf("%s_newGroupBy=%v", tc.name, newGroupBy), func(b *testing.B) {
+				input := map[string]interface{}{
+					"COL1": genIntsWithCardinality(seed1, tc.size, tc.cardinality1),
+					"COL2": genIntsWithCardinality(seed2, tc.size, tc.cardinality2),
+					"COL3": genIntsWithCardinality(seed3, tc.size, tc.cardinality3),
+				}
+				b.ReportAllocs()
+				b.ResetTimer()
+				var stats qf.GroupStats
+				for i := 0; i < b.N; i++ {
+					df := qf.New(input)
+					var grouper qf.Grouper
+					if newGroupBy {
+						grouper = df.GroupBy2(qf.GroupBy(tc.cols...))
+					} else {
+						grouper = df.GroupBy(qf.GroupBy(tc.cols...))
+					}
+					if grouper.Err != nil {
+						b.Errorf(grouper.Err.Error())
+					}
+					stats = grouper.Stats
+				}
+
+				_ = stats
+				// b.Logf("Stats: %#v", stats)
+
+				/*
+					Initial:
+					* 	benchmark_test.go:803: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:104428, LoadFactor:0.0999000999000999}
+
+					BenchmarkGroupBy/single_col_newGroupBy=false-2         	      50	  33550152 ns/op	  853104 B/op	      31 allocs/op
+					BenchmarkGroupBy/single_col_newGroupBy=true-2          	     100	  21108864 ns/op	 1850668 B/op	    8125 allocs/op
+					BenchmarkGroupBy/triple_col_newGroupBy=false-2         	      20	  74064273 ns/op	 3073440 B/op	      47 allocs/op
+					BenchmarkGroupBy/triple_col_newGroupBy=true-2          	      20	  52926070 ns/op	 4918226 B/op	   69774 allocs/op
+					BenchmarkGroupBy/high_cardinality_newGroupBy=false-2   	      20	  55452871 ns/op	 6636665 B/op	      47 allocs/op
+					BenchmarkGroupBy/high_cardinality_newGroupBy=true-2    	      20	  61709840 ns/op	14534546 B/op	   93639 allocs/op
+					BenchmarkGroupBy/low_cardinality_newGroupBy=false-2    	     100	  12246070 ns/op	  804336 B/op	      24 allocs/op
+					BenchmarkGroupBy/low_cardinality_newGroupBy=true-2     	     100	  13149489 ns/op	 2613168 B/op	     129 allocs/op
+					BenchmarkGroupBy/small_frame_newGroupBy=false-2        	  100000	     18347 ns/op	    3504 B/op	      26 allocs/op
+					BenchmarkGroupBy/small_frame_newGroupBy=true-2         	   50000	     27849 ns/op	    6027 B/op	      96 allocs/op
+
+					With murmur 3 hasher (a lot less collisions):
+					BenchmarkGroupBy/single_col_newGroupBy=false-2         	      50	  35374149 ns/op	  853104 B/op	      31 allocs/op
+					BenchmarkGroupBy/single_col_newGroupBy=true-2          	     100	  14684145 ns/op	 1779024 B/op	    8023 allocs/op
+					BenchmarkGroupBy/triple_col_newGroupBy=false-2         	      20	  79740707 ns/op	 3073440 B/op	      47 allocs/op
+					BenchmarkGroupBy/triple_col_newGroupBy=true-2          	      30	  35465717 ns/op	 4130144 B/op	   69191 allocs/op
+					BenchmarkGroupBy/high_cardinality_newGroupBy=false-2   	      20	  58377084 ns/op	 6636656 B/op	      47 allocs/op
+					BenchmarkGroupBy/high_cardinality_newGroupBy=true-2    	      30	  39921237 ns/op	12190186 B/op	   91691 allocs/op
+					BenchmarkGroupBy/low_cardinality_newGroupBy=false-2    	     100	  12164216 ns/op	  804336 B/op	      24 allocs/op
+					BenchmarkGroupBy/low_cardinality_newGroupBy=true-2     	     100	  12128158 ns/op	 2613280 B/op	     130 allocs/op
+					BenchmarkGroupBy/small_frame_newGroupBy=false-2        	  100000	     18375 ns/op	    3504 B/op	      26 allocs/op
+					BenchmarkGroupBy/small_frame_newGroupBy=true-2         	  100000	     21699 ns/op	    5072 B/op	      91 allocs/op
+				*/
+			})
 		}
 	}
 }
