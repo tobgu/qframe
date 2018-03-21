@@ -626,7 +626,7 @@ func benchApply(b *testing.B, name string, input qf.QFrame, fn interface{}) {
 		for i := 0; i < b.N; i++ {
 			result := input.Apply(qf.Instruction{Fn: fn, DstCol: "COL.1", SrcCol1: "COL.1"})
 			if result.Err != nil {
-				b.Errorf("Err: %s, %s", result.Len(), result.Err)
+				b.Errorf("Err: %d, %s", result.Len(), result.Err)
 			}
 		}
 	})
@@ -748,7 +748,7 @@ func BenchmarkQFrame_EvalInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		result := df.Eval("RESULT", qf.Expr2("+", qf.Expr2("+", "S1", "S2"), qf.Val(3)), nil)
 		if result.Err != nil {
-			b.Errorf("Err: %s, %s", result.Len(), result.Err)
+			b.Errorf("Err: %d, %s", result.Len(), result.Err)
 		}
 	}
 }

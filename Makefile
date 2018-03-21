@@ -13,5 +13,5 @@ vet: generate
 	go vet ./...
 
 cov: generate
-	go test github.com/tobgu/qframe/ -coverprofile=coverage.out
+	go test github.com/tobgu/qframe/... -coverprofile=coverage.out -coverpkg=all
 	go tool cover -html=coverage.out
