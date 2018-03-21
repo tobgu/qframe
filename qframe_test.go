@@ -485,6 +485,14 @@ func TestQFrame_Distinct(t *testing.T) {
 	}
 }
 
+func incSlice(size, step int) []int {
+	result := make([]int, size)
+	for i := range result {
+		result[i] = step * i
+	}
+	return result
+}
+
 func TestQFrame_GroupByAggregate(t *testing.T) {
 	ownSum := func(col []int) int {
 		result := 0
@@ -533,6 +541,18 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 			expected: map[string]interface{}{
 				"COL.1": []int{},
 				"COL.2": []int{}},
+			groupColumns: []string{"COL.1"},
+			aggregations: []aggregation.Aggregation{aggregation.New("sum", "COL.2")},
+		},
+		{
+			// This will trigger hash table relocations
+			name: "high cardinality grouping column",
+			input: map[string]interface{}{
+				"COL.1": incSlice(1000, 1),
+				"COL.2": incSlice(1000, 2)},
+			expected: map[string]interface{}{
+				"COL.1": incSlice(1000, 1),
+				"COL.2": incSlice(1000, 2)},
 			groupColumns: []string{"COL.1"},
 			aggregations: []aggregation.Aggregation{aggregation.New("sum", "COL.2")},
 		},
