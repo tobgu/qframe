@@ -597,7 +597,6 @@ func (qf QFrame) GroupBy2(configFns ...GroupByConfigFn) Grouper {
 	return g
 }
 
-// fnsAndCols is a list of alternating function names and columns names
 func (g Grouper) Aggregate(aggs ...aggregation.Aggregation) QFrame {
 	if g.Err != nil {
 		return QFrame{Err: g.Err}
@@ -1267,4 +1266,4 @@ func (qf QFrame) ByteSize() int {
 // - Add option to drop NaN/Null before grouping?
 // - Consider changing most API functions to take variadic "config functions" for better future proofing.
 // - Make Filter and Eval APIs more similar
-// - Improve group by performance by avoiding sorting
+// - During aggregation, would it make sense (performance wise) to reuse buffers used as targets for subsetting?

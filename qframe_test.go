@@ -543,12 +543,17 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 			in := qframe.New(tc.input)
 			out := in.GroupBy2(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
 
-			// TODO: Sort these to make tests ignore row order
-			// TODO: More tests with larger frames, etc. to exercise all paths
-			// TODO: Benchmark to compare with existing implementation
-			assertEquals(t, qframe.New(tc.expected), out)
+			// TODO: More tests with larger frames, high cardinality groups, low cardinality groups, etc. to exercise all paths
+			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders(tc.groupColumns)...))
 		})
 	}
+}
+func colNamesToOrders(colNames []string) []qframe.Order {
+	result := make([]qframe.Order, len(colNames))
+	for i, name := range colNames {
+		result[i] = qframe.Order{Column: name}
+	}
+	return result
 }
 
 func TestQFrame_Select(t *testing.T) {
