@@ -373,7 +373,7 @@ func (qf QFrame) orders(columns []string) []Order {
 }
 
 func (qf QFrame) reverseComparables(columns []string, orders []Order, groupByNull bool) []column.Comparable {
-	// TODO: Drop the reverse aspect here
+	// TODO: Remove this function
 	// Compare the columns in reverse order compared to the sort order
 	// since it's likely to produce differences with fewer comparisons.
 	comparables := make([]column.Comparable, 0, len(columns))
@@ -381,6 +381,15 @@ func (qf QFrame) reverseComparables(columns []string, orders []Order, groupByNul
 		comparables = append(comparables, qf.columnsByName[orders[i].Column].Comparable(false, groupByNull))
 	}
 	return comparables
+}
+
+func (qf QFrame) comparables(columns []string, orders []Order, groupByNull bool) []column.Comparable {
+	result := make([]column.Comparable, 0, len(columns))
+	for i := 0; i < len(columns); i++ {
+		result = append(result, qf.columnsByName[orders[i].Column].Comparable(false, groupByNull))
+	}
+
+	return result
 }
 
 func (qf QFrame) Distinct(configFns ...GroupByConfigFn) QFrame {
@@ -590,7 +599,7 @@ func (qf QFrame) GroupBy2(configFns ...GroupByConfigFn) Grouper {
 	}
 
 	orders := qf.orders(config.columns)
-	comparables := qf.reverseComparables(config.columns, orders, config.groupByNull)
+	comparables := qf.comparables(config.columns, orders, config.groupByNull)
 	indices, stats := grouper.Groups(qf.index, comparables)
 	g.indices = indices
 	g.Stats = GroupStats(stats)

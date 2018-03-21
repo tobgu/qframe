@@ -813,26 +813,26 @@ func BenchmarkGroupBy(b *testing.B) {
 					// b.Logf("Stats: %#v", stats)
 
 					/*
-						BenchmarkGroupBy/single_col__dataType=string_newGroupBy=true-2         	     100	  19511314 ns/op	 1376720 B/op	    8011 allocs/op
-						BenchmarkGroupBy/single_col__dataType=integer_newGroupBy=true-2        	     100	  11932614 ns/op	 1376689 B/op	    8011 allocs/op
-						BenchmarkGroupBy/single_col__dataType=string_newGroupBy=false-2        	      20	  99802223 ns/op	  450832 B/op	      19 allocs/op
-						BenchmarkGroupBy/single_col__dataType=integer_newGroupBy=false-2       	      30	  34296304 ns/op	  450768 B/op	      19 allocs/op
-						BenchmarkGroupBy/triple_col__dataType=string_newGroupBy=true-2         	      20	  71825413 ns/op	 3727898 B/op	   69179 allocs/op
-						BenchmarkGroupBy/triple_col__dataType=integer_newGroupBy=true-2        	      30	  33432144 ns/op	 3727805 B/op	   69179 allocs/op
-						BenchmarkGroupBy/triple_col__dataType=string_newGroupBy=false-2        	       5	 265878931 ns/op	 2671296 B/op	      35 allocs/op
-						BenchmarkGroupBy/triple_col__dataType=integer_newGroupBy=false-2       	      20	  74716255 ns/op	 2671104 B/op	      35 allocs/op
-						BenchmarkGroupBy/high_cardinality__dataType=string_newGroupBy=true-2   	      30	  46740325 ns/op	11787875 B/op	   91679 allocs/op
-						BenchmarkGroupBy/high_cardinality__dataType=integer_newGroupBy=true-2  	      30	  35785386 ns/op	11787848 B/op	   91679 allocs/op
-						BenchmarkGroupBy/high_cardinality__dataType=string_newGroupBy=false-2  	      10	 148225011 ns/op	 6234384 B/op	      35 allocs/op
-						BenchmarkGroupBy/high_cardinality__dataType=integer_newGroupBy=false-2 	      20	  65998262 ns/op	 6234320 B/op	      35 allocs/op
-						BenchmarkGroupBy/low_cardinality__dataType=string_newGroupBy=true-2    	     100	  16905852 ns/op	 2210976 B/op	     118 allocs/op
-						BenchmarkGroupBy/low_cardinality__dataType=integer_newGroupBy=true-2   	     100	  10930897 ns/op	 2210944 B/op	     118 allocs/op
-						BenchmarkGroupBy/low_cardinality__dataType=string_newGroupBy=false-2   	      50	  32678354 ns/op	  402064 B/op	      12 allocs/op
-						BenchmarkGroupBy/low_cardinality__dataType=integer_newGroupBy=false-2  	     100	  12398913 ns/op	  402000 B/op	      12 allocs/op
-						BenchmarkGroupBy/small_frame__dataType=string_newGroupBy=true-2        	  100000	     23019 ns/op	    3760 B/op	      79 allocs/op
-						BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=true-2       	  100000	     18376 ns/op	    3728 B/op	      79 allocs/op
-						BenchmarkGroupBy/small_frame__dataType=string_newGroupBy=false-2       	   50000	     37393 ns/op	    2224 B/op	      14 allocs/op
-						BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=false-2      	  100000	     17600 ns/op	    2160 B/op	      14 allocs/op
+					BenchmarkGroupBy/single_col__dataType=string_newGroupBy=true-2         	     100	  19370107 ns/op	 1376720 B/op	    8011 allocs/op
+					BenchmarkGroupBy/single_col__dataType=integer_newGroupBy=true-2        	     100	  11874344 ns/op	 1376689 B/op	    8011 allocs/op
+					BenchmarkGroupBy/single_col__dataType=string_newGroupBy=false-2        	      10	 109526266 ns/op	  450832 B/op	      19 allocs/op
+					BenchmarkGroupBy/single_col__dataType=integer_newGroupBy=false-2       	      30	  34198834 ns/op	  450768 B/op	      19 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=string_newGroupBy=true-2         	      20	  70778115 ns/op	 3727896 B/op	   69179 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=integer_newGroupBy=true-2        	      30	  34102351 ns/op	 3727810 B/op	   69179 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=string_newGroupBy=false-2        	       5	 281229821 ns/op	 2671296 B/op	      35 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=integer_newGroupBy=false-2       	      20	  79296628 ns/op	 2671104 B/op	      35 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=string_newGroupBy=true-2   	      30	  45367926 ns/op	11787876 B/op	   91679 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=integer_newGroupBy=true-2  	      30	  38269025 ns/op	11787849 B/op	   91679 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=string_newGroupBy=false-2  	      10	 148355950 ns/op	 6234384 B/op	      35 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=integer_newGroupBy=false-2 	      20	  67052041 ns/op	 6234320 B/op	      35 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=string_newGroupBy=true-2    	     100	  23457453 ns/op	 2210976 B/op	     118 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=integer_newGroupBy=true-2   	     100	  12985035 ns/op	 2210944 B/op	     118 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=string_newGroupBy=false-2   	      50	  31006141 ns/op	  402064 B/op	      12 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=integer_newGroupBy=false-2  	     100	  12177176 ns/op	  402000 B/op	      12 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=string_newGroupBy=true-2        	  100000	     22476 ns/op	    3760 B/op	      79 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=true-2       	  100000	     17038 ns/op	    3728 B/op	      79 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=string_newGroupBy=false-2       	   30000	     38219 ns/op	    2224 B/op	      14 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=false-2      	  100000	     17029 ns/op	    2160 B/op	      14 allocs/op
 					*/
 
 					/*
