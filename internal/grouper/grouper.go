@@ -7,30 +7,8 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-const (
-	// Constants for multiplication: random odd 64-bit numbers.
-	m1 = 16877499708836156737
-	m2 = 2820277070424839065
-	m3 = 9497967016996688599
-)
-
-// Taken from/highly inspired by stdlib runtime/hash64.go, see GO-LICENCE in root directory
-func memhash64(x, seed uint64) uint64 {
-	h := seed
-	h ^= (x | (x + 4)) << 32
-	h = rotl31(h*m1) * m2
-	h ^= h >> 29
-	h *= m3
-	h ^= h >> 32
-	return h
-}
-
-func rotl31(x uint64) uint64 {
-	return (x << 31) | (x >> (64 - 31))
-}
-
 type entry struct {
-	hash uint64
+	hash uint32
 	ix   index.Int
 }
 
@@ -43,10 +21,10 @@ func equals(comparables []column.Comparable, i, j uint32) bool {
 	return true
 }
 
-func insertEntry(i uint32, hash uint64, entries []entry, comparables []column.Comparable) (bool, int) {
+func insertEntry(i uint32, hash uint32, entries []entry, comparables []column.Comparable) (bool, int) {
 	newGroup := false
 	entriesLen := uint64(len(entries))
-	startPos := hash % entriesLen
+	startPos := uint64(hash) % entriesLen
 
 	// Find entry
 	var destEntry *entry
@@ -74,19 +52,18 @@ func insertEntry(i uint32, hash uint64, entries []entry, comparables []column.Co
 	return newGroup, collisions
 }
 
-func newHash(i uint32, comparables []column.Comparable, buf *bytes.Buffer) uint64 {
+func newHash(i uint32, comparables []column.Comparable, buf *bytes.Buffer) uint32 {
 	buf.Reset()
 	for _, c := range comparables {
 		c.HashBytes(i, buf)
 	}
-
-	return murmur3.Sum64(buf.Bytes())
+	return murmur3.Sum32(buf.Bytes())
 }
 
 const maxLoadFactor = 0.5
 
 func reLocateEntries(oldEntries []entry) ([]entry, int) {
-	newLen := uint64(2 * len(oldEntries))
+	newLen := uint32(2 * len(oldEntries))
 	result := make([]entry, newLen)
 	collisions := 0
 	for _, e := range oldEntries {

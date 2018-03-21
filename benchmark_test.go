@@ -763,6 +763,12 @@ func BenchmarkGroupBy(b *testing.B) {
 	// - Rename grouper -> hasher
 	// - Implement similar thing for distinct
 	// - Code cleanup/refactoring to be able to reuse stuff in distinct
+
+	// Test with 32 bit hash
+	// Test reusing hash object
+	// Test writing directly to hash instead of copying
+	// What are the extra 7000 allocations coming from? Reallocation when doing appends on group slices.
+
 	table := []struct {
 		name         string
 		size         int
@@ -807,6 +813,24 @@ func BenchmarkGroupBy(b *testing.B) {
 				// b.Logf("Stats: %#v", stats)
 
 				/*
+					Start:
+					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  14815638 ns/op	 1779262 B/op	    8023 allocs/op
+					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:5921, LoadFactor:0.0999000999000999}
+
+					USE THIS! -> Use 32 bit hash instead of 64:
+					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  12782996 ns/op	 1779260 B/op	    8023 allocs/op
+					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:6004, LoadFactor:0.0999000999000999}
+
+					Reuse hasher (slower)
+					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  15504819 ns/op	 1779342 B/op	    8024 allocs/op
+					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:6004, LoadFactor:0.0999000999000999}
+
+					Remove use of intermediate buffer, this just created an intermediate buffer in the hasher that we cannot control, slower and much more allocations:
+					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  16643501 ns/op	 2582279 B/op	  108023 allocs/op
+					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:6004, LoadFactor:0.0999000999000999}
+				*/
+
+				/*
 					Initial:
 					* 	benchmark_test.go:803: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:104428, LoadFactor:0.0999000999000999}
 
@@ -832,6 +856,22 @@ func BenchmarkGroupBy(b *testing.B) {
 					BenchmarkGroupBy/low_cardinality_newGroupBy=true-2     	     100	  12128158 ns/op	 2613280 B/op	     130 allocs/op
 					BenchmarkGroupBy/small_frame_newGroupBy=false-2        	  100000	     18375 ns/op	    3504 B/op	      26 allocs/op
 					BenchmarkGroupBy/small_frame_newGroupBy=true-2         	  100000	     21699 ns/op	    5072 B/op	      91 allocs/op
+
+					Murmur3 32 bits:
+					BenchmarkGroupBy/single_col_newGroupBy=true-2          	     100	  12785516 ns/op	 1779024 B/op	    8023 allocs/op
+					BenchmarkGroupBy/triple_col_newGroupBy=true-2          	      50	  35092342 ns/op	 4130140 B/op	   69191 allocs/op
+					BenchmarkGroupBy/high_cardinality_newGroupBy=true-2    	      30	  37546727 ns/op	12190184 B/op	   91691 allocs/op
+					BenchmarkGroupBy/low_cardinality_newGroupBy=true-2     	     100	  10896077 ns/op	 2613280 B/op	     130 allocs/op
+					BenchmarkGroupBy/small_frame_newGroupBy=true-2         	  100000	     19702 ns/op	    5072 B/op	      91 allocs/op
+				*/
+
+				/*
+					// Remember to put -alloc_space there otherwise it will be empty since no space is used anymore
+					go tool pprof -alloc_space qframe.test mem_singlegroup.prof/
+
+					(pprof) web
+					(pprof) list insertEntry
+
 				*/
 			})
 		}
