@@ -2,7 +2,6 @@ package grouper
 
 import (
 	"bytes"
-	"github.com/spaolacci/murmur3"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 )
@@ -57,7 +56,7 @@ func newHash(i uint32, comparables []column.Comparable, buf *bytes.Buffer) uint3
 	for _, c := range comparables {
 		c.HashBytes(i, buf)
 	}
-	return murmur3.Sum32(buf.Bytes())
+	return murmur32(buf.Bytes())
 }
 
 const maxLoadFactor = 0.5

@@ -755,19 +755,9 @@ func BenchmarkQFrame_EvalInt(b *testing.B) {
 
 func BenchmarkGroupBy(b *testing.B) {
 	// TODO:
-	// - Vary frame size
-	// - Vary number of groups
-	// - Vary number of columns to group by
-	// - Vary strings vs int columns
-	// - Test negative ints, very large ints
 	// - Rename grouper -> hasher
 	// - Implement similar thing for distinct
 	// - Code cleanup/refactoring to be able to reuse stuff in distinct
-
-	// Test with 32 bit hash
-	// Test reusing hash object
-	// Test writing directly to hash instead of copying
-	// What are the extra 7000 allocations coming from? Reallocation when doing appends on group slices.
 
 	table := []struct {
 		name         string
@@ -785,95 +775,76 @@ func BenchmarkGroupBy(b *testing.B) {
 	}
 
 	for _, tc := range table {
-		for _, newGroupBy := range []bool{false, true} {
-			b.Run(fmt.Sprintf("%s_newGroupBy=%v", tc.name, newGroupBy), func(b *testing.B) {
-				input := map[string]interface{}{
-					"COL1": genIntsWithCardinality(seed1, tc.size, tc.cardinality1),
-					"COL2": genIntsWithCardinality(seed2, tc.size, tc.cardinality2),
-					"COL3": genIntsWithCardinality(seed3, tc.size, tc.cardinality3),
-				}
-				b.ReportAllocs()
-				b.ResetTimer()
-				var stats qf.GroupStats
-				for i := 0; i < b.N; i++ {
-					df := qf.New(input)
-					var grouper qf.Grouper
-					if newGroupBy {
-						grouper = df.GroupBy2(qf.GroupBy(tc.cols...))
+		for _, newGroupBy := range []bool{true, false} {
+			for _, dataType := range []string{"string", "integer"} {
+				b.Run(fmt.Sprintf("%s__dataType=%s_newGroupBy=%v", tc.name, dataType, newGroupBy), func(b *testing.B) {
+					var input map[string]interface{}
+					if dataType == "integer" {
+						input = map[string]interface{}{
+							"COL1": genIntsWithCardinality(seed1, tc.size, tc.cardinality1),
+							"COL2": genIntsWithCardinality(seed2, tc.size, tc.cardinality2),
+							"COL3": genIntsWithCardinality(seed3, tc.size, tc.cardinality3),
+						}
 					} else {
-						grouper = df.GroupBy(qf.GroupBy(tc.cols...))
+						input = map[string]interface{}{
+							"COL1": genStringsWithCardinality(seed1, tc.size, tc.cardinality1, 10),
+							"COL2": genStringsWithCardinality(seed2, tc.size, tc.cardinality2, 10),
+							"COL3": genStringsWithCardinality(seed3, tc.size, tc.cardinality3, 10),
+						}
 					}
-					if grouper.Err != nil {
-						b.Errorf(grouper.Err.Error())
+					df := qf.New(input)
+					b.ReportAllocs()
+					b.ResetTimer()
+					var stats qf.GroupStats
+					for i := 0; i < b.N; i++ {
+						var grouper qf.Grouper
+						if newGroupBy {
+							grouper = df.GroupBy2(qf.GroupBy(tc.cols...))
+						} else {
+							grouper = df.GroupBy(qf.GroupBy(tc.cols...))
+						}
+						if grouper.Err != nil {
+							b.Errorf(grouper.Err.Error())
+						}
+						stats = grouper.Stats
 					}
-					stats = grouper.Stats
-				}
 
-				_ = stats
-				// b.Logf("Stats: %#v", stats)
+					_ = stats
+					// b.Logf("Stats: %#v", stats)
 
-				/*
-					Start:
-					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  14815638 ns/op	 1779262 B/op	    8023 allocs/op
-					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:5921, LoadFactor:0.0999000999000999}
+					/*
+					BenchmarkGroupBy/single_col__dataType=string_newGroupBy=true-2         	     100	  19511314 ns/op	 1376720 B/op	    8011 allocs/op
+					BenchmarkGroupBy/single_col__dataType=integer_newGroupBy=true-2        	     100	  11932614 ns/op	 1376689 B/op	    8011 allocs/op
+					BenchmarkGroupBy/single_col__dataType=string_newGroupBy=false-2        	      20	  99802223 ns/op	  450832 B/op	      19 allocs/op
+					BenchmarkGroupBy/single_col__dataType=integer_newGroupBy=false-2       	      30	  34296304 ns/op	  450768 B/op	      19 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=string_newGroupBy=true-2         	      20	  71825413 ns/op	 3727898 B/op	   69179 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=integer_newGroupBy=true-2        	      30	  33432144 ns/op	 3727805 B/op	   69179 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=string_newGroupBy=false-2        	       5	 265878931 ns/op	 2671296 B/op	      35 allocs/op
+					BenchmarkGroupBy/triple_col__dataType=integer_newGroupBy=false-2       	      20	  74716255 ns/op	 2671104 B/op	      35 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=string_newGroupBy=true-2   	      30	  46740325 ns/op	11787875 B/op	   91679 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=integer_newGroupBy=true-2  	      30	  35785386 ns/op	11787848 B/op	   91679 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=string_newGroupBy=false-2  	      10	 148225011 ns/op	 6234384 B/op	      35 allocs/op
+					BenchmarkGroupBy/high_cardinality__dataType=integer_newGroupBy=false-2 	      20	  65998262 ns/op	 6234320 B/op	      35 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=string_newGroupBy=true-2    	     100	  16905852 ns/op	 2210976 B/op	     118 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=integer_newGroupBy=true-2   	     100	  10930897 ns/op	 2210944 B/op	     118 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=string_newGroupBy=false-2   	      50	  32678354 ns/op	  402064 B/op	      12 allocs/op
+					BenchmarkGroupBy/low_cardinality__dataType=integer_newGroupBy=false-2  	     100	  12398913 ns/op	  402000 B/op	      12 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=string_newGroupBy=true-2        	  100000	     23019 ns/op	    3760 B/op	      79 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=true-2       	  100000	     18376 ns/op	    3728 B/op	      79 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=string_newGroupBy=false-2       	   50000	     37393 ns/op	    2224 B/op	      14 allocs/op
+					BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=false-2      	  100000	     17600 ns/op	    2160 B/op	      14 allocs/op
+					*/
 
-					USE THIS! -> Use 32 bit hash instead of 64:
-					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  12782996 ns/op	 1779260 B/op	    8023 allocs/op
-					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:6004, LoadFactor:0.0999000999000999}
+					/*
+						// Remember to put -alloc_space there otherwise it will be empty since no space is used anymore
+						go tool pprof -alloc_space qframe.test mem_singlegroup.prof/
 
-					Reuse hasher (slower)
-					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  15504819 ns/op	 1779342 B/op	    8024 allocs/op
-					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:6004, LoadFactor:0.0999000999000999}
+						(pprof) web
+						(pprof) list insertEntry
 
-					Remove use of intermediate buffer, this just created an intermediate buffer in the hasher that we cannot control, slower and much more allocations:
-					BenchmarkGroupBy/single_col_newGroupBy=true-2         	     100	  16643501 ns/op	 2582279 B/op	  108023 allocs/op
-					benchmark_test.go:813: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:6004, LoadFactor:0.0999000999000999}
-				*/
-
-				/*
-					Initial:
-					* 	benchmark_test.go:803: Stats: qframe.GroupStats{RelocationCount:0, RelocationCollisions:0, InsertCollisions:104428, LoadFactor:0.0999000999000999}
-
-					BenchmarkGroupBy/single_col_newGroupBy=false-2         	      50	  33550152 ns/op	  853104 B/op	      31 allocs/op
-					BenchmarkGroupBy/single_col_newGroupBy=true-2          	     100	  21108864 ns/op	 1850668 B/op	    8125 allocs/op
-					BenchmarkGroupBy/triple_col_newGroupBy=false-2         	      20	  74064273 ns/op	 3073440 B/op	      47 allocs/op
-					BenchmarkGroupBy/triple_col_newGroupBy=true-2          	      20	  52926070 ns/op	 4918226 B/op	   69774 allocs/op
-					BenchmarkGroupBy/high_cardinality_newGroupBy=false-2   	      20	  55452871 ns/op	 6636665 B/op	      47 allocs/op
-					BenchmarkGroupBy/high_cardinality_newGroupBy=true-2    	      20	  61709840 ns/op	14534546 B/op	   93639 allocs/op
-					BenchmarkGroupBy/low_cardinality_newGroupBy=false-2    	     100	  12246070 ns/op	  804336 B/op	      24 allocs/op
-					BenchmarkGroupBy/low_cardinality_newGroupBy=true-2     	     100	  13149489 ns/op	 2613168 B/op	     129 allocs/op
-					BenchmarkGroupBy/small_frame_newGroupBy=false-2        	  100000	     18347 ns/op	    3504 B/op	      26 allocs/op
-					BenchmarkGroupBy/small_frame_newGroupBy=true-2         	   50000	     27849 ns/op	    6027 B/op	      96 allocs/op
-
-					With murmur 3 hasher (a lot less collisions):
-					BenchmarkGroupBy/single_col_newGroupBy=false-2         	      50	  35374149 ns/op	  853104 B/op	      31 allocs/op
-					BenchmarkGroupBy/single_col_newGroupBy=true-2          	     100	  14684145 ns/op	 1779024 B/op	    8023 allocs/op
-					BenchmarkGroupBy/triple_col_newGroupBy=false-2         	      20	  79740707 ns/op	 3073440 B/op	      47 allocs/op
-					BenchmarkGroupBy/triple_col_newGroupBy=true-2          	      30	  35465717 ns/op	 4130144 B/op	   69191 allocs/op
-					BenchmarkGroupBy/high_cardinality_newGroupBy=false-2   	      20	  58377084 ns/op	 6636656 B/op	      47 allocs/op
-					BenchmarkGroupBy/high_cardinality_newGroupBy=true-2    	      30	  39921237 ns/op	12190186 B/op	   91691 allocs/op
-					BenchmarkGroupBy/low_cardinality_newGroupBy=false-2    	     100	  12164216 ns/op	  804336 B/op	      24 allocs/op
-					BenchmarkGroupBy/low_cardinality_newGroupBy=true-2     	     100	  12128158 ns/op	 2613280 B/op	     130 allocs/op
-					BenchmarkGroupBy/small_frame_newGroupBy=false-2        	  100000	     18375 ns/op	    3504 B/op	      26 allocs/op
-					BenchmarkGroupBy/small_frame_newGroupBy=true-2         	  100000	     21699 ns/op	    5072 B/op	      91 allocs/op
-
-					Murmur3 32 bits:
-					BenchmarkGroupBy/single_col_newGroupBy=true-2          	     100	  12785516 ns/op	 1779024 B/op	    8023 allocs/op
-					BenchmarkGroupBy/triple_col_newGroupBy=true-2          	      50	  35092342 ns/op	 4130140 B/op	   69191 allocs/op
-					BenchmarkGroupBy/high_cardinality_newGroupBy=true-2    	      30	  37546727 ns/op	12190184 B/op	   91691 allocs/op
-					BenchmarkGroupBy/low_cardinality_newGroupBy=true-2     	     100	  10896077 ns/op	 2613280 B/op	     130 allocs/op
-					BenchmarkGroupBy/small_frame_newGroupBy=true-2         	  100000	     19702 ns/op	    5072 B/op	      91 allocs/op
-				*/
-
-				/*
-					// Remember to put -alloc_space there otherwise it will be empty since no space is used anymore
-					go tool pprof -alloc_space qframe.test mem_singlegroup.prof/
-
-					(pprof) web
-					(pprof) list insertEntry
-
-				*/
-			})
+					*/
+				})
+			}
 		}
 	}
 }
