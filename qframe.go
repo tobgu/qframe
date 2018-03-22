@@ -372,17 +372,6 @@ func (qf QFrame) orders(columns []string) []Order {
 	return orders
 }
 
-func (qf QFrame) reverseComparables(columns []string, orders []Order, groupByNull bool) []column.Comparable {
-	// TODO: Remove this function
-	// Compare the columns in reverse order compared to the sort order
-	// since it's likely to produce differences with fewer comparisons.
-	comparables := make([]column.Comparable, 0, len(columns))
-	for i := len(columns) - 1; i >= 0; i-- {
-		comparables = append(comparables, qf.columnsByName[orders[i].Column].Comparable(false, groupByNull))
-	}
-	return comparables
-}
-
 func (qf QFrame) comparables(columns []string, orders []Order, groupByNull bool) []column.Comparable {
 	result := make([]column.Comparable, 0, len(columns))
 	for i := 0; i < len(columns); i++ {
@@ -411,25 +400,8 @@ func (qf QFrame) Distinct(configFns ...GroupByConfigFn) QFrame {
 
 	columns := qf.columnsOrAll(config.columns)
 	orders := qf.orders(columns)
-	comparables := qf.reverseComparables(columns, orders, config.groupByNull)
-
-	// Sort dataframe on the columns that should be distinct. Loop over all rows
-	// comparing the specified columns of each row with the previous rows. If there
-	// is a difference the new row will be added to the new index.
-	sortedDf := qf.Sort(orders...)
-	prevPos, currPos := uint32(0), sortedDf.index[0]
-	newIx := make(index.Int, 0)
-	newIx = append(newIx, currPos)
-	for i := 1; i < sortedDf.Len(); i++ {
-		prevPos, currPos = currPos, sortedDf.index[i]
-		for _, c := range comparables {
-			if c.Compare(prevPos, currPos) != column.Equal {
-				newIx = append(newIx, currPos)
-				break
-			}
-		}
-	}
-
+	comparables := qf.comparables(columns, orders, config.groupByNull)
+	newIx := hashgrouper.Distinct(qf.index, comparables)
 	return qf.withIndex(newIx)
 }
 
@@ -557,7 +529,7 @@ func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
 
 	orders := qf.orders(config.columns)
 	comparables := qf.comparables(config.columns, orders, config.groupByNull)
-	indices, stats := hashgrouper.Groups(qf.index, comparables)
+	indices, stats := hashgrouper.GroupBy(qf.index, comparables)
 	g.indices = indices
 	g.Stats = GroupStats(stats)
 	return g
@@ -1222,8 +1194,6 @@ func (qf QFrame) ByteSize() int {
 // - Documentation
 // - Use https://goreportcard.com
 // - More serialization and deserialization tests
-// - Perhaps make a special case for distinct with only one columns involved that simply calls distinct on
-//   a columns for that specific columns. Should be quite a bit faster than current sort based implementation.
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?

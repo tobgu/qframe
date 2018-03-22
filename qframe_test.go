@@ -480,7 +480,7 @@ func TestQFrame_Distinct(t *testing.T) {
 		t.Run(fmt.Sprintf("Distinct %d", i), func(t *testing.T) {
 			in := qframe.New(tc.input)
 			out := in.Distinct()
-			assertEquals(t, qframe.New(tc.expected), out)
+			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders("COL.1", "COL.2")...))
 		})
 	}
 }
@@ -563,12 +563,12 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 			in := qframe.New(tc.input)
 			out := in.GroupBy(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
 
-			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders(tc.groupColumns)...))
+			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders(tc.groupColumns...)...))
 		})
 	}
 }
 
-func colNamesToOrders(colNames []string) []qframe.Order {
+func colNamesToOrders(colNames ...string) []qframe.Order {
 	result := make([]qframe.Order, len(colNames))
 	for i, name := range colNames {
 		result[i] = qframe.Order{Column: name}

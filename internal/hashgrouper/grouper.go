@@ -6,9 +6,11 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-type entry struct {
-	hash uint32
-	ix   index.Int
+type groupEntry struct {
+	ix       index.Int
+	hash     uint32
+	firstPos uint32
+	occupied bool
 }
 
 func equals(comparables []column.Comparable, i, j uint32) bool {
@@ -20,17 +22,15 @@ func equals(comparables []column.Comparable, i, j uint32) bool {
 	return true
 }
 
-func insertEntry(i uint32, hash uint32, entries []entry, comparables []column.Comparable) (bool, int) {
-	newGroup := false
+func insertEntry(i, hash uint32, entries []groupEntry, comparables []column.Comparable, collectIx bool) (bool, int) {
+	// Find entry
 	entriesLen := uint64(len(entries))
 	startPos := uint64(hash) % entriesLen
-
-	// Find entry
-	var destEntry *entry
+	var destEntry *groupEntry
 	collisions := 0
 	for pos := startPos; destEntry == nil; pos = (pos + 1) % entriesLen {
 		e := &entries[pos]
-		if e.ix == nil || e.hash == hash && equals(comparables, i, e.ix[0]) {
+		if !e.occupied || e.hash == hash && equals(comparables, i, e.firstPos) {
 			destEntry = e
 		} else {
 			collisions++
@@ -38,14 +38,25 @@ func insertEntry(i uint32, hash uint32, entries []entry, comparables []column.Co
 	}
 
 	// Update entry
-	if destEntry.ix == nil {
+	newGroup := false
+	if !destEntry.occupied {
 		// Eden entry
-		destEntry.ix = index.Int{i}
 		destEntry.hash = hash
+		destEntry.firstPos = i
+		destEntry.occupied = true
 		newGroup = true
 	} else {
 		// Existing entry
-		destEntry.ix = append(destEntry.ix, i)
+		if collectIx {
+			// Small hack to reduce number of allocations under some circumstances. Delay
+			// creation of index slice until there are at least two entries in the group
+			// since we store the first position in a separate variable on the entry anyway.
+			if destEntry.ix == nil {
+				destEntry.ix = index.Int{destEntry.firstPos, i}
+			} else {
+				destEntry.ix = append(destEntry.ix, i)
+			}
+		}
 	}
 
 	return newGroup, collisions
@@ -61,16 +72,14 @@ func newHash(i uint32, comparables []column.Comparable, buf *bytes.Buffer) uint3
 
 const maxLoadFactor = 0.5
 
-func reLocateEntries(oldEntries []entry) ([]entry, int) {
+func reLocateEntries(oldEntries []groupEntry) ([]groupEntry, int) {
 	newLen := uint32(2 * len(oldEntries))
-	result := make([]entry, newLen)
+	result := make([]groupEntry, newLen)
 	collisions := 0
 	for _, e := range oldEntries {
 		for pos := e.hash % newLen; ; pos = (pos + 1) % newLen {
-			newEntry := &result[pos]
-			if newEntry.ix == nil {
-				newEntry.ix = e.ix
-				newEntry.hash = e.hash
+			if !result[pos].occupied {
+				result[pos] = e
 				break
 			}
 			collisions++
@@ -83,13 +92,14 @@ type GroupStats struct {
 	RelocationCount      int
 	RelocationCollisions int
 	InsertCollisions     int
+	GroupCount           int
 	LoadFactor           float64
 }
 
-func Groups(ix index.Int, comparables []column.Comparable) ([]index.Int, GroupStats) {
+func groupIndex(ix index.Int, comparables []column.Comparable, collectIx bool) ([]groupEntry, GroupStats) {
 	// Initial length is arbitrary
 	groupCount := 0
-	entries := make([]entry, (len(ix)/10)+10)
+	entries := make([]groupEntry, (len(ix)/10)+10)
 	stats := GroupStats{}
 	var collisions int
 
@@ -102,22 +112,42 @@ func Groups(ix index.Int, comparables []column.Comparable) ([]index.Int, GroupSt
 		}
 
 		hash := newHash(i, comparables, hashBytes)
-		newGroup, collisions := insertEntry(i, hash, entries, comparables)
+		newGroup, collisions := insertEntry(i, hash, entries, comparables, collectIx)
 		stats.InsertCollisions += collisions
 		if newGroup {
 			groupCount++
 		}
 	}
 
-	result := make([]index.Int, 0, groupCount)
+	stats.LoadFactor = float64(groupCount) / float64(len(entries))
+	stats.GroupCount = groupCount
+	return entries, stats
+}
+
+func GroupBy(ix index.Int, comparables []column.Comparable) ([]index.Int, GroupStats) {
+	entries, stats := groupIndex(ix, comparables, true)
+	result := make([]index.Int, 0, stats.GroupCount)
 	for _, e := range entries {
-		if len(e.ix) > 0 {
-			result = append(result, e.ix)
+		if e.occupied {
+			if e.ix == nil {
+				result = append(result, index.Int{e.firstPos})
+			} else {
+				result = append(result, e.ix)
+			}
 		}
 	}
 
-	stats.LoadFactor = float64(groupCount) / float64(len(entries))
-
-	// fmt.Println(fmt.Sprintf("Hash count: %d, Hash sum count: %v, Group len: %d", len(hashes), len(hashSums), len(result)))
 	return result, stats
+}
+
+func Distinct(ix index.Int, comparables []column.Comparable) index.Int {
+	entries, stats := groupIndex(ix, comparables, false)
+	result := make(index.Int, 0, stats.GroupCount)
+	for _, e := range entries {
+		if e.occupied {
+			result = append(result, e.firstPos)
+		}
+	}
+
+	return result
 }
