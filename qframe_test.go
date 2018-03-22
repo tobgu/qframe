@@ -1147,10 +1147,15 @@ func TestQFrame_String(t *testing.T) {
       3 Long co...
       2          a
       1          b
-1234...          c`
+1234...          c
+
+Dims = 2 x 4`
 
 	if expected != a.String() {
-		t.Errorf("\n%s\n != \n%s", expected, a.String())
+		if len(expected) != len(a.String()) {
+			t.Errorf("Different lengths: %d != %d", len(expected), len(a.String()))
+		}
+		t.Errorf("\n%s\n != \n%s\n", expected, a.String())
 	}
 }
 

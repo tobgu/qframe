@@ -614,12 +614,19 @@ func (qf QFrame) String() string {
 	}
 	result = append(result, strings.Join(row, " "))
 
-	for i := 0; i < qf.Len(); i++ {
+	maxRowCount := 50
+	for i := 0; i < intMin(qf.Len(), maxRowCount); i++ {
 		for j, s := range qf.columns {
-			row[j] = fixLengthString(s.StringAt(qf.index[i], "NaN"), " ", colWidths[j])
+			row[j] = fixLengthString(s.StringAt(qf.index[i], "null"), " ", colWidths[j])
 		}
 		result = append(result, strings.Join(row, " "))
 	}
+
+	if qf.Len() > maxRowCount {
+		result = append(result, "... printout truncated ...")
+	}
+
+	result = append(result, fmt.Sprintf("\nDims = %d x %d", len(qf.columns), qf.Len()))
 
 	return strings.Join(result, "\n")
 }
@@ -1179,9 +1186,6 @@ func (qf QFrame) ByteSize() int {
 //   than the stdlib version.
 
 // TODO:
-// - Make it possible to implement custom Column and use as input to QFrame constructor (this could probably
-//   be extended to allow custom columns to be created from JSON, CSV, etc. as well, this is not in scope at the
-//   moment though).
 // - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
 //   null could be interpreted as NaN. Should not be impossible using the generated easyjson code
 //   as starting point for columns based format and by refining type detection for the record based
@@ -1189,7 +1193,6 @@ func (qf QFrame) ByteSize() int {
 //   floats.
 // - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
 //   interface.
-// - Handle float NaN in filtering
 // - Benchmarks comparing performance with Pandas
 // - Documentation
 // - Use https://goreportcard.com
@@ -1198,7 +1201,6 @@ func (qf QFrame) ByteSize() int {
 // - Start documenting public functions
 // - Switch to using vgo for dependencies?
 // - ApplyN?
-// - Include frame dimensions in String()
 // - Add option to drop NaN/Null before grouping?
 // - Consider changing most API functions to take variadic "config functions" for better future proofing.
 // - Make Filter and Eval APIs more similar
