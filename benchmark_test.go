@@ -755,7 +755,6 @@ func BenchmarkQFrame_EvalInt(b *testing.B) {
 
 func BenchmarkGroupBy(b *testing.B) {
 	// TODO:
-	// - Rename grouper -> hasher
 	// - Implement similar thing for distinct
 	// - Code cleanup/refactoring to be able to reuse stuff in distinct
 
@@ -775,44 +774,38 @@ func BenchmarkGroupBy(b *testing.B) {
 	}
 
 	for _, tc := range table {
-		for _, newGroupBy := range []bool{true, false} {
-			for _, dataType := range []string{"string", "integer"} {
-				b.Run(fmt.Sprintf("%s__dataType=%s_newGroupBy=%v", tc.name, dataType, newGroupBy), func(b *testing.B) {
-					var input map[string]interface{}
-					if dataType == "integer" {
-						input = map[string]interface{}{
-							"COL1": genIntsWithCardinality(seed1, tc.size, tc.cardinality1),
-							"COL2": genIntsWithCardinality(seed2, tc.size, tc.cardinality2),
-							"COL3": genIntsWithCardinality(seed3, tc.size, tc.cardinality3),
-						}
-					} else {
-						input = map[string]interface{}{
-							"COL1": genStringsWithCardinality(seed1, tc.size, tc.cardinality1, 10),
-							"COL2": genStringsWithCardinality(seed2, tc.size, tc.cardinality2, 10),
-							"COL3": genStringsWithCardinality(seed3, tc.size, tc.cardinality3, 10),
-						}
+		for _, dataType := range []string{"string", "integer"} {
+			b.Run(fmt.Sprintf("%s dataType=%s", tc.name, dataType), func(b *testing.B) {
+				var input map[string]interface{}
+				if dataType == "integer" {
+					input = map[string]interface{}{
+						"COL1": genIntsWithCardinality(seed1, tc.size, tc.cardinality1),
+						"COL2": genIntsWithCardinality(seed2, tc.size, tc.cardinality2),
+						"COL3": genIntsWithCardinality(seed3, tc.size, tc.cardinality3),
 					}
-					df := qf.New(input)
-					b.ReportAllocs()
-					b.ResetTimer()
-					var stats qf.GroupStats
-					for i := 0; i < b.N; i++ {
-						var grouper qf.Grouper
-						if newGroupBy {
-							grouper = df.GroupBy2(qf.GroupBy(tc.cols...))
-						} else {
-							grouper = df.GroupBy(qf.GroupBy(tc.cols...))
-						}
-						if grouper.Err != nil {
-							b.Errorf(grouper.Err.Error())
-						}
-						stats = grouper.Stats
+				} else {
+					input = map[string]interface{}{
+						"COL1": genStringsWithCardinality(seed1, tc.size, tc.cardinality1, 10),
+						"COL2": genStringsWithCardinality(seed2, tc.size, tc.cardinality2, 10),
+						"COL3": genStringsWithCardinality(seed3, tc.size, tc.cardinality3, 10),
 					}
+				}
+				df := qf.New(input)
+				b.ReportAllocs()
+				b.ResetTimer()
+				var stats qf.GroupStats
+				for i := 0; i < b.N; i++ {
+					grouper := df.GroupBy(qf.GroupBy(tc.cols...))
+					if grouper.Err != nil {
+						b.Errorf(grouper.Err.Error())
+					}
+					stats = grouper.Stats
+				}
 
-					_ = stats
-					// b.Logf("Stats: %#v", stats)
+				_ = stats
+				// b.Logf("Stats: %#v", stats)
 
-					/*
+				/*
 					BenchmarkGroupBy/single_col__dataType=string_newGroupBy=true-2         	     100	  19370107 ns/op	 1376720 B/op	    8011 allocs/op
 					BenchmarkGroupBy/single_col__dataType=integer_newGroupBy=true-2        	     100	  11874344 ns/op	 1376689 B/op	    8011 allocs/op
 					BenchmarkGroupBy/single_col__dataType=string_newGroupBy=false-2        	      10	 109526266 ns/op	  450832 B/op	      19 allocs/op
@@ -833,18 +826,17 @@ func BenchmarkGroupBy(b *testing.B) {
 					BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=true-2       	  100000	     17038 ns/op	    3728 B/op	      79 allocs/op
 					BenchmarkGroupBy/small_frame__dataType=string_newGroupBy=false-2       	   30000	     38219 ns/op	    2224 B/op	      14 allocs/op
 					BenchmarkGroupBy/small_frame__dataType=integer_newGroupBy=false-2      	  100000	     17029 ns/op	    2160 B/op	      14 allocs/op
-					*/
+				*/
 
-					/*
-						// Remember to put -alloc_space there otherwise it will be empty since no space is used anymore
-						go tool pprof -alloc_space qframe.test mem_singlegroup.prof/
+				/*
+					// Remember to put -alloc_space there otherwise it will be empty since no space is used anymore
+					go tool pprof -alloc_space qframe.test mem_singlegroup.prof/
 
-						(pprof) web
-						(pprof) list insertEntry
+					(pprof) web
+					(pprof) list insertEntry
 
-					*/
-				})
-			}
+				*/
+			})
 		}
 	}
 }

@@ -561,13 +561,13 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("GroupByAggregate %s", tc.name), func(t *testing.T) {
 			in := qframe.New(tc.input)
-			out := in.GroupBy2(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
+			out := in.GroupBy(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
 
-			// TODO: More tests with larger frames, high cardinality groups, low cardinality groups, etc. to exercise all paths
 			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders(tc.groupColumns)...))
 		})
 	}
 }
+
 func colNamesToOrders(colNames []string) []qframe.Order {
 	result := make([]qframe.Order, len(colNames))
 	for i, name := range colNames {
@@ -1388,7 +1388,7 @@ func TestQFrame_AggregateStrings(t *testing.T) {
 			}, qframe.Enums(tc.enums))
 			expected := qframe.New(map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x,y,z", "p,q"}})
 			out := input.GroupBy(qframe.GroupBy("COL1")).Aggregate(aggregation.New(aggregation.StrJoin(","), "COL2"))
-			assertEquals(t, expected, out)
+			assertEquals(t, expected, out.Sort(qframe.Order{Column: "COL1"}))
 		})
 	}
 }
@@ -1421,7 +1421,7 @@ func TestQFrame_AggregateGroupByNull(t *testing.T) {
 				expected := qframe.New(map[string]interface{}{"COL4": col4})
 
 				out := input.GroupBy(qframe.GroupBy(column), qframe.GroupByNull(groupByNull)).Aggregate(aggregation.New(sum, "COL4"))
-				assertEquals(t, expected, out.Select("COL4"))
+				assertEquals(t, expected, out.Sort(qframe.Order{Column: column}).Select("COL4"))
 			})
 		}
 	}

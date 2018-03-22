@@ -10,7 +10,7 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fcolumn"
-	"github.com/tobgu/qframe/internal/grouper"
+	"github.com/tobgu/qframe/internal/hashgrouper"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
@@ -488,7 +488,10 @@ func (qf QFrame) Select(columns ...string) QFrame {
 	return QFrame{columns: newColumns, columnsByName: newColumnsByName, index: qf.index}
 }
 
-type GroupStats grouper.GroupStats
+// Internal statistics for grouping. Clients should not depend on this for any
+// type of decision making. It is strictly "for info". The layout may change
+// if the underlying grouping mechanisms change.
+type GroupStats hashgrouper.GroupStats
 
 type Grouper struct {
 	indices        []index.Int
@@ -542,52 +545,6 @@ func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
 		return Grouper{Err: err}
 	}
 
-	grouper := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: config.columns}
-	if qf.Len() == 0 {
-		return grouper
-	}
-
-	if len(config.columns) == 0 {
-		grouper.indices = []index.Int{qf.index}
-		return grouper
-	}
-
-	orders := qf.orders(config.columns)
-	comparables := qf.reverseComparables(config.columns, orders, config.groupByNull)
-
-	// Sort dataframe on the columns that should be grouped. Loop over all rows
-	// comparing the specified columns of each row with the first in the current group.
-	// If there is a difference create a new group.
-	sortedDf := qf.Sort(orders...)
-	groupStart, groupStartPos := 0, sortedDf.index[0]
-	indices := make([]index.Int, 0)
-	for i := 1; i < sortedDf.Len(); i++ {
-		currPos := sortedDf.index[i]
-		for _, c := range comparables {
-			if c.Compare(groupStartPos, currPos) != column.Equal {
-				indices = append(indices, sortedDf.index[groupStart:i])
-				groupStart, groupStartPos = i, sortedDf.index[i]
-				break
-			}
-		}
-	}
-
-	grouper.indices = append(indices, sortedDf.index[groupStart:])
-	return grouper
-}
-
-// Leaving out columns will make one large group over which aggregations can be done
-func (qf QFrame) GroupBy2(configFns ...GroupByConfigFn) Grouper {
-	if qf.Err != nil {
-		return Grouper{Err: qf.Err}
-	}
-
-	config := newGroupByFn(configFns)
-
-	if err := qf.checkColumns("GroupBy", config.columns); err != nil {
-		return Grouper{Err: err}
-	}
-
 	g := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: config.columns}
 	if qf.Len() == 0 {
 		return g
@@ -600,7 +557,7 @@ func (qf QFrame) GroupBy2(configFns ...GroupByConfigFn) Grouper {
 
 	orders := qf.orders(config.columns)
 	comparables := qf.comparables(config.columns, orders, config.groupByNull)
-	indices, stats := grouper.Groups(qf.index, comparables)
+	indices, stats := hashgrouper.Groups(qf.index, comparables)
 	g.indices = indices
 	g.Stats = GroupStats(stats)
 	return g

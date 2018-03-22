@@ -1,4 +1,4 @@
-package grouper
+package hashgrouper
 
 import (
 	"bytes"
