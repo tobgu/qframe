@@ -29,8 +29,7 @@ type Column interface {
 	DataType() string
 }
 
-// TODO: Change to byte
-type CompareResult int
+type CompareResult byte
 
 const (
 	LessThan CompareResult = iota

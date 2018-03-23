@@ -1186,11 +1186,10 @@ func (qf QFrame) ByteSize() int {
 //   than the stdlib version.
 
 // TODO:
-// - Perhaps it would be nicer to output null for float NaNs than NaN. It would also be nice if
-//   null could be interpreted as NaN. Should not be impossible using the generated easyjson code
-//   as starting point for columns based format and by refining type detection for the record based
-//   read. That would also allow proper parsing of integers for record format rather than making them
-//   floats.
+// - It would also be nice if null could be interpreted as NaN for floats. Should not be impossible
+//   using the generated easyjson code as starting point for columns based format and by refining type
+//   detection for the record based read. That would also allow proper parsing of integers for record
+//   format rather than making them floats.
 // - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
 //   interface.
 // - Benchmarks comparing performance with Pandas
@@ -1198,7 +1197,7 @@ func (qf QFrame) ByteSize() int {
 // - Use https://goreportcard.com
 // - More serialization and deserialization tests
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
-// - Start documenting public functions
+// - Document public functions
 // - Switch to using vgo for dependencies?
 // - ApplyN?
 // - Add option to drop NaN/Null before grouping?

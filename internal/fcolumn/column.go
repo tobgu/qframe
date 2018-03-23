@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/hashgrouper"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/types"
@@ -80,9 +81,16 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 }
 
 func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
-	bits := math.Float64bits(c.data[i])
-	b := (*[8]byte)(unsafe.Pointer(&bits))[:]
-	buf.Write(b)
+	f := c.data[i]
+	if math.IsNaN(f) && c.equalNullValue == column.NotEqual {
+		// Use a random value here to avoid hash collisions when
+		// we don't consider null to equal null.
+		hashgrouper.WriteFourRandomBytes(buf)
+	} else {
+		bits := math.Float64bits(c.data[i])
+		b := (*[8]byte)(unsafe.Pointer(&bits))[:]
+		buf.Write(b)
+	}
 }
 
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {

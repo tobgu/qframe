@@ -1426,7 +1426,7 @@ func TestQFrame_AggregateGroupByNull(t *testing.T) {
 				expected := qframe.New(map[string]interface{}{"COL4": col4})
 
 				out := input.GroupBy(qframe.GroupBy(column), qframe.GroupByNull(groupByNull)).Aggregate(aggregation.New(sum, "COL4"))
-				assertEquals(t, expected, out.Sort(qframe.Order{Column: column}).Select("COL4"))
+				assertEquals(t, expected, out.Sort(colNamesToOrders(column, "COL4")...).Select("COL4"))
 			})
 		}
 	}

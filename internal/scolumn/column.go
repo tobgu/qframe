@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/hashgrouper"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
@@ -143,7 +144,15 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
 	x, isNull := c.column.stringAt(i)
 	if isNull {
-		buf.WriteByte(0)
+		if c.equalNullValue == column.NotEqual {
+			// Use a random value here to avoid hash collisions when
+			// we don't consider null to equal null.
+			// Use a random value here to avoid hash collisions when
+			// we don't consider null to equal null.
+			hashgrouper.WriteFourRandomBytes(buf)
+		} else {
+			buf.WriteByte(0)
+		}
 	} else {
 		buf.WriteString(x)
 	}
