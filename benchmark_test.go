@@ -1062,4 +1062,19 @@ BenchmarkQFrame_StringView/Slice-2            	     500	   2697675 ns/op	  80281
 
 // Most of the time is spent in icolumn.Apply2
 BenchmarkQFrame_EvalInt-2   	     500	   2461435 ns/op	 2416968 B/op	      69 allocs/op
+
+// Hash based group by and distinct
+BenchmarkGroupBy/single_col_dataType=string-2         	      50	  21609393 ns/op	 2051552 B/op	    7011 allocs/op
+BenchmarkGroupBy/single_col_dataType=integer-2        	     100	  11348909 ns/op	 2051522 B/op	    7011 allocs/op
+BenchmarkGroupBy/triple_col_dataType=string-2         	      20	  73208870 ns/op	 4382792 B/op	   49989 allocs/op
+BenchmarkGroupBy/triple_col_dataType=integer-2        	      50	  31808698 ns/op	 4382698 B/op	   49989 allocs/op
+BenchmarkGroupBy/high_cardinality_dataType=string-2   	      50	  39319658 ns/op	 8697144 B/op	   62114 allocs/op
+BenchmarkGroupBy/high_cardinality_dataType=integer-2  	      50	  26514172 ns/op	 8697115 B/op	   62114 allocs/op
+BenchmarkGroupBy/low_cardinality_dataType=string-2    	     100	  15968088 ns/op	 2890872 B/op	     113 allocs/op
+BenchmarkGroupBy/low_cardinality_dataType=integer-2   	     200	   9593884 ns/op	 2890843 B/op	     113 allocs/op
+BenchmarkGroupBy/small_frame_dataType=string-2        	   50000	     22220 ns/op	    6200 B/op	      61 allocs/op
+BenchmarkGroupBy/small_frame_dataType=integer-2       	  100000	     16179 ns/op	    6168 B/op	      61 allocs/op
+
+BenchmarkDistinctNull/groupByNull=false-2         	      30	  38197889 ns/op	15425856 B/op	      13 allocs/op
+BenchmarkDistinctNull/groupByNull=true-2          	     100	  10925589 ns/op	 1007945 B/op	      10 allocs/op
 */

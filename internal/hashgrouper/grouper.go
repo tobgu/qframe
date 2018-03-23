@@ -6,11 +6,107 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-type groupEntry struct {
+/*
+This package implements a basic hash table used for GroupBy and Distinct operations.
+
+Hashing is done using murmur 3, collisions are handled using linear probing.
+
+When the table reaches a certain load factor it will be reallocated into a new, larger table.
+*/
+
+// An entry in the hash table. For group by operations a slice of all positions each group
+// are stored. For distinct operations only the first position is stored to avoid some overhead.
+type tableEntry struct {
 	ix       index.Int
 	hash     uint32
 	firstPos uint32
 	occupied bool
+}
+
+type table struct {
+	entries       []tableEntry
+	occupiedCount int
+	comparables   []column.Comparable
+	stats         GroupStats
+	hashBuf       *bytes.Buffer
+	groupCount    uint32
+	collectIx     bool
+}
+
+func (t *table) loadFactor() float64 {
+	return float64(t.groupCount) / float64(len(t.entries))
+}
+
+func (t *table) grow() {
+	newLen := uint32(2 * len(t.entries))
+	newEntries := make([]tableEntry, newLen)
+	for _, e := range t.entries {
+		for pos := e.hash % newLen; ; pos = (pos + 1) % newLen {
+			if !newEntries[pos].occupied {
+				newEntries[pos] = e
+				break
+			}
+			t.stats.RelocationCollisions++
+		}
+	}
+
+	t.stats.RelocationCount++
+	t.entries = newEntries
+}
+
+func (t *table) hash(i uint32) uint32 {
+	t.hashBuf.Reset()
+	for _, c := range t.comparables {
+		c.HashBytes(i, t.hashBuf)
+	}
+
+	return murmur32(t.hashBuf.Bytes())
+}
+
+const maxLoadFactor = 0.5
+
+func (t *table) insertEntry(i uint32) {
+	if t.loadFactor() > maxLoadFactor {
+		t.grow()
+	}
+
+	hash := t.hash(i)
+	entriesLen := uint64(len(t.entries))
+	startPos := uint64(hash) % entriesLen
+	var dstEntry *tableEntry
+	for pos := startPos; dstEntry == nil; pos = (pos + 1) % entriesLen {
+		e := &t.entries[pos]
+		if !e.occupied || e.hash == hash && equals(t.comparables, i, e.firstPos) {
+			dstEntry = e
+		} else {
+			t.stats.InsertCollisions++
+		}
+	}
+
+	// Update entry
+	if !dstEntry.occupied {
+		// Eden entry
+		dstEntry.hash = hash
+		dstEntry.firstPos = i
+		dstEntry.occupied = true
+		t.groupCount++
+	} else {
+		// Existing entry
+		if t.collectIx {
+			// Small hack to reduce number of allocations under some circumstances. Delay
+			// creation of index slice until there are at least two entries in the group
+			// since we store the first position in a separate variable on the entry anyway.
+			if dstEntry.ix == nil {
+				dstEntry.ix = index.Int{dstEntry.firstPos, i}
+			} else {
+				dstEntry.ix = append(dstEntry.ix, i)
+			}
+		}
+	}
+}
+
+func newTable(size int, comparables []column.Comparable, collectIx bool) *table {
+	return &table{entries: make([]tableEntry, size), comparables: comparables, collectIx: collectIx, hashBuf: new(bytes.Buffer)}
 }
 
 func equals(comparables []column.Comparable, i, j uint32) bool {
@@ -22,72 +118,6 @@ func equals(comparables []column.Comparable, i, j uint32) bool {
 	return true
 }
 
-func insertEntry(i, hash uint32, entries []groupEntry, comparables []column.Comparable, collectIx bool) (bool, int) {
-	// Find entry
-	entriesLen := uint64(len(entries))
-	startPos := uint64(hash) % entriesLen
-	var destEntry *groupEntry
-	collisions := 0
-	for pos := startPos; destEntry == nil; pos = (pos + 1) % entriesLen {
-		e := &entries[pos]
-		if !e.occupied || e.hash == hash && equals(comparables, i, e.firstPos) {
-			destEntry = e
-		} else {
-			collisions++
-		}
-	}
-
-	// Update entry
-	newGroup := false
-	if !destEntry.occupied {
-		// Eden entry
-		destEntry.hash = hash
-		destEntry.firstPos = i
-		destEntry.occupied = true
-		newGroup = true
-	} else {
-		// Existing entry
-		if collectIx {
-			// Small hack to reduce number of allocations under some circumstances. Delay
-			// creation of index slice until there are at least two entries in the group
-			// since we store the first position in a separate variable on the entry anyway.
-			if destEntry.ix == nil {
-				destEntry.ix = index.Int{destEntry.firstPos, i}
-			} else {
-				destEntry.ix = append(destEntry.ix, i)
-			}
-		}
-	}
-
-	return newGroup, collisions
-}
-
-func newHash(i uint32, comparables []column.Comparable, buf *bytes.Buffer) uint32 {
-	buf.Reset()
-	for _, c := range comparables {
-		c.HashBytes(i, buf)
-	}
-	return murmur32(buf.Bytes())
-}
-
-const maxLoadFactor = 0.5
-
-func reLocateEntries(oldEntries []groupEntry) ([]groupEntry, int) {
-	newLen := uint32(2 * len(oldEntries))
-	result := make([]groupEntry, newLen)
-	collisions := 0
-	for _, e := range oldEntries {
-		for pos := e.hash % newLen; ; pos = (pos + 1) % newLen {
-			if !result[pos].occupied {
-				result[pos] = e
-				break
-			}
-			collisions++
-		}
-	}
-	return result, collisions
-}
-
 type GroupStats struct {
 	RelocationCount      int
 	RelocationCollisions int
@@ -96,32 +126,18 @@ type GroupStats struct {
 	LoadFactor           float64
 }
 
-func groupIndex(ix index.Int, comparables []column.Comparable, collectIx bool) ([]groupEntry, GroupStats) {
-	// Initial length is arbitrary
-	groupCount := 0
-	entries := make([]groupEntry, (len(ix)/10)+10)
-	stats := GroupStats{}
-	var collisions int
-
-	hashBytes := new(bytes.Buffer)
+func groupIndex(ix index.Int, comparables []column.Comparable, collectIx bool) ([]tableEntry, GroupStats) {
+	// Initial size is picked fairly arbitrarily at the moment
+	initialSize := (len(ix) / 4) + 10
+	table := newTable(initialSize, comparables, collectIx)
 	for _, i := range ix {
-		if float64(groupCount)/float64(len(entries)) > maxLoadFactor {
-			entries, collisions = reLocateEntries(entries)
-			stats.RelocationCollisions += collisions
-			stats.RelocationCount++
-		}
-
-		hash := newHash(i, comparables, hashBytes)
-		newGroup, collisions := insertEntry(i, hash, entries, comparables, collectIx)
-		stats.InsertCollisions += collisions
-		if newGroup {
-			groupCount++
-		}
+		table.insertEntry(i)
 	}
 
-	stats.LoadFactor = float64(groupCount) / float64(len(entries))
-	stats.GroupCount = groupCount
-	return entries, stats
+	stats := table.stats
+	stats.LoadFactor = table.loadFactor()
+	stats.GroupCount = int(table.groupCount)
+	return table.entries, stats
 }
 
 func GroupBy(ix index.Int, comparables []column.Comparable) ([]index.Int, GroupStats) {
