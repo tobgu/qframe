@@ -390,7 +390,7 @@ func (qf QFrame) Distinct(configFns ...GroupByConfigFn) QFrame {
 		return qf
 	}
 
-	config := newGroupByFn(configFns)
+	config := newGroupByConfig(configFns)
 
 	for _, col := range config.columns {
 		if _, ok := qf.columnsByName[col]; !ok {
@@ -496,7 +496,7 @@ func GroupByNull(b bool) GroupByConfigFn {
 	}
 }
 
-func newGroupByFn(configFns []GroupByConfigFn) GroupByConfig {
+func newGroupByConfig(configFns []GroupByConfigFn) GroupByConfig {
 	var config GroupByConfig
 	for _, f := range configFns {
 		f(&config)
@@ -511,7 +511,7 @@ func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
 		return Grouper{Err: qf.Err}
 	}
 
-	config := newGroupByFn(configFns)
+	config := newGroupByConfig(configFns)
 
 	if err := qf.checkColumns("GroupBy", config.columns); err != nil {
 		return Grouper{Err: err}
@@ -1204,3 +1204,8 @@ func (qf QFrame) ByteSize() int {
 // - Consider changing most API functions to take variadic "config functions" for better future proofing.
 // - Make Filter and Eval APIs more similar
 // - During aggregation, would it make sense (performance wise) to reuse buffers used as targets for subsetting?
+// - Are special cases in aggregations that do not rely on index order worth the extra code for the increase in
+//   performance allowed by avoiding use of the index?
+// - Tune group by further. Hashing without copying? Hash table of size 2^X to get rid of modulo calculation?
+// - Move benchmarks to own repo to get rid of dependencies only needed for the benchmarks. Make a benchmark script
+//   comparing old and new implementations. Find suitable dataset to compare with Pandas and Gota.
