@@ -51,7 +51,7 @@ func (f Filter) String() string {
 
 	s := fmt.Sprintf(`["%v", "%s", %v]`, f.Comparator, f.Column, arg)
 	if f.Inverse {
-		return fmt.Sprintf(`["not", %s]`, s)
+		return fmt.Sprintf(`["!", %s]`, s)
 	}
 	return s
 }

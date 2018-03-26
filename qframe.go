@@ -223,7 +223,15 @@ func (qf QFrame) Contains(colName string) bool {
 	return ok
 }
 
-func (qf QFrame) Filter(filters ...filter.Filter) QFrame {
+func (qf QFrame) Filter(clause FilterClause) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	return clause.filter(qf)
+}
+
+func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -835,11 +843,7 @@ func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 }
 
 func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
-	if qf.Err != nil {
-		return qf
-	}
-
-	filteredQf := clause.Filter(qf)
+	filteredQf := qf.Filter(clause)
 	if filteredQf.Err != nil {
 		return filteredQf
 	}
@@ -1209,3 +1213,4 @@ func (qf QFrame) ByteSize() int {
 // - Tune group by further. Hashing without copying? Hash table of size 2^X to get rid of modulo calculation?
 // - Move benchmarks to own repo to get rid of dependencies only needed for the benchmarks. Make a benchmark script
 //   comparing old and new implementations. Find suitable dataset to compare with Pandas and Gota.
+// - Make package filter internal?

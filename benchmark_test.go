@@ -91,10 +91,10 @@ func BenchmarkQFrame_FilterIntBuiltIn(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		newData := data.Filter(
-			filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize / 10},
-			filter.Filter{Column: "S2", Comparator: "<", Arg: frameSize / 10},
-			filter.Filter{Column: "S3", Comparator: ">", Arg: int(0.9 * frameSize)})
+		newData := data.Filter(qf.Or(
+			qf.Filter{Column: "S1", Comparator: "<", Arg: frameSize / 10},
+			qf.Filter{Column: "S2", Comparator: "<", Arg: frameSize / 10},
+			qf.Filter{Column: "S3", Comparator: ">", Arg: int(0.9 * frameSize)}))
 
 		if newData.Len() != 27142 {
 			b.Errorf("Length was %d, Err: %s", newData.Len(), newData.Err)
@@ -116,10 +116,10 @@ func BenchmarkQFrame_FilterIntGeneral(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		newData := data.Filter(
-			filter.Filter{Column: "S1", Comparator: lessThan(frameSize / 10)},
-			filter.Filter{Column: "S2", Comparator: lessThan(frameSize / 10)},
-			filter.Filter{Column: "S3", Comparator: greaterThan(int(0.9 * frameSize))})
+		newData := data.Filter(qf.Or(
+			qf.Filter{Column: "S1", Comparator: lessThan(frameSize / 10)},
+			qf.Filter{Column: "S2", Comparator: lessThan(frameSize / 10)},
+			qf.Filter{Column: "S3", Comparator: greaterThan(int(0.9 * frameSize))}))
 
 		if newData.Len() != 27142 {
 			b.Errorf("Length was %d, Err: %s", newData.Len(), newData.Err)
@@ -141,7 +141,7 @@ func BenchmarkQFrame_FilterIntBuiltinIn(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		newData := data.Filter(filter.Filter{Column: "S1", Comparator: "in", Arg: slice})
+		newData := data.Filter(qf.Filter{Column: "S1", Comparator: "in", Arg: slice})
 		if newData.Err != nil {
 			b.Errorf("Length was Err: %s", newData.Err)
 		}
@@ -166,7 +166,7 @@ func BenchmarkQFrame_FilterIntGeneralIn(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		newData := data.Filter(filter.Filter{Column: "S1", Comparator: intInFilter(slice)})
+		newData := data.Filter(qf.Filter{Column: "S1", Comparator: intInFilter(slice)})
 		if newData.Err != nil {
 			b.Errorf("Length was Err: %s", newData.Err)
 		}
@@ -176,7 +176,7 @@ func BenchmarkQFrame_FilterIntGeneralIn(b *testing.B) {
 func BenchmarkQFrame_FilterNot(b *testing.B) {
 	data := qf.New(map[string]interface{}{
 		"S1": genInts(seed1, frameSize)})
-	f := filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10, Inverse: true}
+	f := qf.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10, Inverse: true}
 
 	b.Run("qframe", func(b *testing.B) {
 		b.ReportAllocs()
@@ -193,8 +193,8 @@ func BenchmarkQFrame_FilterNot(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			f := qf.Not(qf.Filter(filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10}))
-			newData := f.Filter(data)
+			clause := qf.Not(qf.Filter(filter.Filter{Column: "S1", Comparator: "<", Arg: frameSize - frameSize/10}))
+			newData := data.Filter(clause)
 			if newData.Len() != 9882 {
 				b.Errorf("Length was %d", newData.Len())
 			}
@@ -609,7 +609,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				newDf := df.Filter(filter.Filter{Comparator: tc.comparator, Column: tc.column, Arg: tc.filter})
+				newDf := df.Filter(qf.Filter{Comparator: tc.comparator, Column: tc.column, Arg: tc.filter})
 				if newDf.Len() != tc.expectedCount {
 					b.Errorf("Unexpected count: %d, expected: %d", newDf.Len(), tc.expectedCount)
 				}
@@ -1007,7 +1007,7 @@ BenchmarkQFrame_FilterEnumVsString/Filter_%bar_baz_5%_ilike,_enum:_true-2       
 // Inverse (not) filtering:
 BenchmarkQFrame_FilterNot-2   	    2000	    810831 ns/op	  147459 B/op	       2 allocs/op
 
-// Performance tweak for single, simple, clauses statements to put them on par with calling the
+// Performance tweak for single, simple, clause statements to put them on par with calling the
 // Qframe Filter function directly
 
 // Before
@@ -1021,7 +1021,7 @@ BenchmarkQFrame_FilterNot/filter-2         	    2000	    726766 ns/op	  147521 B
 // Restructure string column to use a byte blob with offsets and lengths
 BenchmarkQFrame_ReadCsv-2       	      20	  85906027 ns/op	84728656 B/op	     500 allocs/op
 
-// Fix string filters to make better use of the new string blob structure:
+// Fix string clause to make better use of the new string blob structure:
 BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<,_enum:_true-2         	    2000	    691081 ns/op	  335888 B/op	       3 allocs/op
 BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<,_enum:_false-2        	    1000	   1902665 ns/op	  335889 B/op	       3 allocs/op
 BenchmarkQFrame_FilterEnumVsString/Filter_AB5_<,_enum:_false-2                  	    1000	   1935237 ns/op	  335888 B/op	       3 allocs/op

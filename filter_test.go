@@ -3,12 +3,11 @@ package qframe_test
 import (
 	"fmt"
 	"github.com/tobgu/qframe"
-	"github.com/tobgu/qframe/filter"
 	"testing"
 )
 
 func f(column string, comparator string, arg interface{}) qframe.Filter {
-	return qframe.Filter(filter.Filter{Column: column, Comparator: comparator, Arg: arg})
+	return qframe.Filter{Column: column, Comparator: comparator, Arg: arg}
 }
 
 func notf(column string, comparator string, arg interface{}) qframe.Filter {
@@ -30,7 +29,7 @@ func not(clause qframe.FilterClause) qframe.NotClause {
 }
 
 func TestFilter_Success(t *testing.T) {
-	a := qframe.New(map[string]interface{}{
+	input := qframe.New(map[string]interface{}{
 		"COL1": []int{1, 2, 3, 4, 5},
 	})
 
@@ -66,18 +65,18 @@ func TestFilter_Success(t *testing.T) {
 			[]int{2, 5},
 		},
 		{
-			"Or with nested and, reverse clauses",
+			"Or with nested and, reverse clause",
 			or(eq(5),
 				and(f("COL1", "<", 3), f("COL1", ">", 1))),
 			[]int{2, 5},
 		},
 		{
-			"Or with mixed nested or and filters",
+			"Or with mixed nested or and clause",
 			or(eq(1), or(eq(3), eq(4)), eq(5)),
 			[]int{1, 3, 4, 5},
 		},
 		{
-			"Nested single clauses",
+			"Nested single clause",
 			or(and(eq(4))),
 			[]int{4},
 		},
@@ -111,15 +110,15 @@ func TestFilter_Success(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("Filter %s", tc.name), func(t *testing.T) {
 			assertNotErr(t, tc.clause.Err())
-			b := tc.clause.Filter(a)
-			assertNotErr(t, b.Err)
-			assertEquals(t, qframe.New(map[string]interface{}{"COL1": tc.expected}), b)
+			out := input.Filter(tc.clause)
+			assertNotErr(t, out.Err)
+			assertEquals(t, qframe.New(map[string]interface{}{"COL1": tc.expected}), out)
 		})
 	}
 }
 
 func TestFilter_ErrorColumnDoesNotExist(t *testing.T) {
-	a := qframe.New(map[string]interface{}{
+	input := qframe.New(map[string]interface{}{
 		"COL1": []int{1, 2, 3, 4, 5},
 	})
 
@@ -137,8 +136,8 @@ func TestFilter_ErrorColumnDoesNotExist(t *testing.T) {
 
 	for i, c := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
-			b := c.Filter(a)
-			assertErr(t, b.Err, "column does not exist")
+			out := input.Filter(c)
+			assertErr(t, out.Err, "column does not exist")
 		})
 	}
 }
@@ -150,8 +149,8 @@ func TestFilter_String(t *testing.T) {
 	}{
 		{f("COL1", ">", 3), `[">", "COL1", 3]`},
 		{f("COL1", ">", "3"), `[">", "COL1", "3"]`},
-		{not(f("COL1", ">", 3)), `["not", [">", "COL1", 3]]`},
-		{notf("COL1", ">", 3), `["not", [">", "COL1", 3]]`},
+		{not(f("COL1", ">", 3)), `["!", [">", "COL1", 3]]`},
+		{notf("COL1", ">", 3), `["!", [">", "COL1", 3]]`},
 		{and(f("COL1", ">", 3)), `["and", [">", "COL1", 3]]`},
 		{or(f("COL1", ">", 3)), `["or", [">", "COL1", 3]]`},
 		{

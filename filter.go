@@ -10,7 +10,7 @@ import (
 
 type FilterClause interface {
 	fmt.Stringer
-	Filter(qf QFrame) QFrame
+	filter(qf QFrame) QFrame
 	Err() error
 }
 
@@ -65,7 +65,7 @@ func (c AndClause) String() string {
 	return fmt.Sprintf(`["and", %s]`, clauseString(c.subClauses))
 }
 
-func (c AndClause) Filter(qf QFrame) QFrame {
+func (c AndClause) filter(qf QFrame) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -76,7 +76,7 @@ func (c AndClause) Filter(qf QFrame) QFrame {
 
 	filteredQf := &qf
 	for _, c := range c.subClauses {
-		newQf := c.Filter(*filteredQf)
+		newQf := c.filter(*filteredQf)
 		filteredQf = &newQf
 	}
 
@@ -142,7 +142,7 @@ func orFrames(original, lhs, rhs *QFrame) *QFrame {
 	return &newFrame
 }
 
-func (c OrClause) Filter(qf QFrame) QFrame {
+func (c OrClause) filter(qf QFrame) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -159,18 +159,18 @@ func (c OrClause) Filter(qf QFrame) QFrame {
 			filters = append(filters, filter.Filter(f))
 		} else {
 			if len(filters) > 0 {
-				newQf := qf.Filter(filters...)
+				newQf := qf.filter(filters...)
 				filteredQf = orFrames(&qf, filteredQf, &newQf)
 				filters = filters[:0]
 			}
 
-			newQf := c.Filter(qf)
+			newQf := c.filter(qf)
 			filteredQf = orFrames(&qf, filteredQf, &newQf)
 		}
 	}
 
 	if len(filters) > 0 {
-		newQf := qf.Filter(filters...)
+		newQf := qf.filter(filters...)
 		filteredQf = orFrames(&qf, filteredQf, &newQf)
 	}
 
@@ -189,8 +189,8 @@ func (c Filter) String() string {
 	return filter.Filter(c).String()
 }
 
-func (c Filter) Filter(qf QFrame) QFrame {
-	return qf.Filter(filter.Filter(c))
+func (c Filter) filter(qf QFrame) QFrame {
+	return qf.filter(filter.Filter(c))
 }
 
 func (c Filter) Err() error {
@@ -206,10 +206,10 @@ func (c NotClause) String() string {
 		return c.Err().Error()
 	}
 
-	return fmt.Sprintf(`["not", %s]`, c.subClause.String())
+	return fmt.Sprintf(`["!", %s]`, c.subClause.String())
 }
 
-func (c NotClause) Filter(qf QFrame) QFrame {
+func (c NotClause) filter(qf QFrame) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -221,10 +221,10 @@ func (c NotClause) Filter(qf QFrame) QFrame {
 	if fc, ok := c.subClause.(Filter); ok {
 		f := filter.Filter(fc)
 		f.Inverse = !f.Inverse
-		return qf.Filter(f)
+		return qf.filter(f)
 	}
 
-	newQf := c.subClause.Filter(qf)
+	newQf := c.subClause.filter(qf)
 	if newQf.Err != nil {
 		return newQf
 	}
@@ -254,7 +254,7 @@ func (c NullClause) String() string {
 	return ""
 }
 
-func (c NullClause) Filter(qf QFrame) QFrame {
+func (c NullClause) filter(qf QFrame) QFrame {
 	return qf
 }
 

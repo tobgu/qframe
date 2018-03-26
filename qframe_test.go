@@ -51,50 +51,48 @@ func assertTrue(t *testing.T, b bool) {
 func TestQFrame_FilterAgainstConstant(t *testing.T) {
 	table := []struct {
 		name     string
-		filters  []filter.Filter
+		clause   qframe.FilterClause
 		input    interface{}
 		expected interface{}
 	}{
 		{
 			name:     "built in greater than",
-			filters:  []filter.Filter{{Column: "COL1", Comparator: ">", Arg: 3}},
+			clause:   qframe.Filter{Column: "COL1", Comparator: ">", Arg: 3},
 			input:    []int{1, 2, 3, 4, 5},
 			expected: []int{4, 5}},
 		{
 			name:     "built in 'in' with int",
-			filters:  []filter.Filter{{Column: "COL1", Comparator: "in", Arg: []int{3, 5}}},
+			clause:   qframe.Filter{Column: "COL1", Comparator: "in", Arg: []int{3, 5}},
 			input:    []int{1, 2, 3, 4, 5},
 			expected: []int{3, 5}},
 		{
 			name:     "built in 'in' with float (truncated to int)",
-			filters:  []filter.Filter{{Column: "COL1", Comparator: "in", Arg: []float64{3.4, 5.1}}},
+			clause:   qframe.Filter{Column: "COL1", Comparator: "in", Arg: []float64{3.4, 5.1}},
 			input:    []int{1, 2, 3, 4, 5},
 			expected: []int{3, 5}},
 		{
-			name: "combined with OR",
-			filters: []filter.Filter{
-				{Column: "COL1", Comparator: ">", Arg: 4},
-				{Column: "COL1", Comparator: "<", Arg: 2}},
+			name:     "combined with OR",
+			clause:   qframe.Or(qframe.Filter{Column: "COL1", Comparator: ">", Arg: 4}, qframe.Filter{Column: "COL1", Comparator: "<", Arg: 2}),
 			input:    []int{1, 2, 3, 4, 5},
 			expected: []int{1, 5}},
 		{
 			name:     "inverse",
-			filters:  []filter.Filter{{Column: "COL1", Comparator: ">", Arg: 4, Inverse: true}},
+			clause:   qframe.Filter{Column: "COL1", Comparator: ">", Arg: 4, Inverse: true},
 			input:    []int{1, 2, 3, 4, 5},
 			expected: []int{1, 2, 3, 4}},
 		{
 			name:     "all_bits",
-			filters:  []filter.Filter{{Column: "COL1", Comparator: "all_bits", Arg: 6}},
+			clause:   qframe.Filter{Column: "COL1", Comparator: "all_bits", Arg: 6},
 			input:    []int{7, 2, 4, 1, 6},
 			expected: []int{7, 6}},
 		{
 			name:     "all_bits inverse",
-			filters:  []filter.Filter{{Column: "COL1", Comparator: "all_bits", Arg: 6, Inverse: true}},
+			clause:   qframe.Filter{Column: "COL1", Comparator: "all_bits", Arg: 6, Inverse: true},
 			input:    []int{7, 2, 4, 1, 6},
 			expected: []int{2, 4, 1}},
 		{
 			name:     "any_bits",
-			filters:  []filter.Filter{{Column: "COL1", Comparator: "any_bits", Arg: 6}},
+			clause:   qframe.Filter{Column: "COL1", Comparator: "any_bits", Arg: 6},
 			input:    []int{7, 2, 4, 1, 6},
 			expected: []int{7, 2, 4, 6}},
 	}
@@ -102,7 +100,7 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
 			input := qframe.New(map[string]interface{}{"COL1": tc.input})
-			output := input.Filter(tc.filters...)
+			output := input.Filter(tc.clause)
 			expected := qframe.New(map[string]interface{}{"COL1": tc.expected})
 			assertEquals(t, expected, output)
 		})
@@ -141,7 +139,7 @@ func TestQFrame_FilterColConstNull(t *testing.T) {
 					enums["COL1"] = nil
 				}
 				input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
-				output := input.Filter(filter.Filter{Column: "COL1", Comparator: comp.operation, Arg: tc.arg})
+				output := input.Filter(qframe.Filter{Column: "COL1", Comparator: comp.operation, Arg: tc.arg})
 				assertNotErr(t, output.Err)
 				if output.Len() != comp.expectCount {
 					fmt.Println(output.String())
@@ -185,7 +183,7 @@ func TestQFrame_FilterColColNull(t *testing.T) {
 					enums["COL2"] = nil
 				}
 				input := qframe.New(map[string]interface{}{"COL1": tc.inputCol1, "COL2": tc.inputCol2}, qframe.Enums(enums))
-				output := input.Filter(filter.Filter{Column: "COL1", Comparator: comp.operation, Arg: filter.ColumnName("COL2")})
+				output := input.Filter(qframe.Filter{Column: "COL1", Comparator: comp.operation, Arg: filter.ColumnName("COL2")})
 				assertNotErr(t, output.Err)
 				if output.Len() != comp.expectCount {
 					fmt.Println(output.String())
@@ -223,7 +221,7 @@ func TestQFrame_FilterIsNull(t *testing.T) {
 			}
 			input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
 			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(enums))
-			output := input.Filter(filter.Filter{Column: "COL1", Comparator: tc.operation, Inverse: tc.inverse})
+			output := input.Filter(qframe.Filter{Column: "COL1", Comparator: tc.operation, Inverse: tc.inverse})
 			assertNotErr(t, output.Err)
 			assertEquals(t, expected, output)
 		})
@@ -251,7 +249,7 @@ func TestQFrame_FilterNullArg(t *testing.T) {
 			}
 
 			input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
-			output := input.Filter(filter.Filter{Column: "COL1", Comparator: "<", Arg: tc.arg})
+			output := input.Filter(qframe.Filter{Column: "COL1", Comparator: "<", Arg: tc.arg})
 			assertErr(t, output.Err, "filter")
 		})
 	}
@@ -324,7 +322,7 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("Filter %s", tc.name), func(t *testing.T) {
 			input := qframe.New(tc.input, tc.configs...)
-			output := input.Filter(filter.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.ColumnName("COL1")})
+			output := input.Filter(qframe.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.ColumnName("COL1")})
 			expected := qframe.New(tc.expected, tc.configs...)
 			assertEquals(t, expected, output)
 		})
@@ -1014,15 +1012,15 @@ func TestQFrame_FilterEnum(t *testing.T) {
 		"COL1": []*string{&b, &c, &a, nil, &e, &d, nil}}, enums)
 
 	table := []struct {
-		filters  []filter.Filter
+		clause   qframe.FilterClause
 		expected map[string]interface{}
 	}{
 		{
-			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: "b"}},
+			qframe.Filter{Column: "COL1", Comparator: ">", Arg: "b"},
 			map[string]interface{}{"COL1": []*string{&c, &e, &d}},
 		},
 		{
-			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []string{"a", "b"}}},
+			qframe.Filter{Column: "COL1", Comparator: "in", Arg: []string{"a", "b"}},
 			map[string]interface{}{"COL1": []*string{&b, &a}},
 		},
 	}
@@ -1030,7 +1028,7 @@ func TestQFrame_FilterEnum(t *testing.T) {
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter enum %d", i), func(t *testing.T) {
 			expected := qframe.New(tc.expected, enums)
-			out := in.Filter(tc.filters...)
+			out := in.Filter(tc.clause)
 			assertEquals(t, expected, out)
 		})
 	}
@@ -1042,32 +1040,32 @@ func TestQFrame_FilterString(t *testing.T) {
 
 	table := []struct {
 		input    map[string]interface{}
-		filters  []filter.Filter
+		clause   qframe.FilterClause
 		expected map[string]interface{}
 	}{
 		{
 			withNil,
-			[]filter.Filter{{Column: "COL1", Comparator: ">", Arg: "b"}},
+			qframe.Filter{Column: "COL1", Comparator: ">", Arg: "b"},
 			map[string]interface{}{"COL1": []*string{&c, &e, &d}},
 		},
 		{
 			withNil,
-			[]filter.Filter{{Column: "COL1", Comparator: "<", Arg: "b"}},
+			qframe.Filter{Column: "COL1", Comparator: "<", Arg: "b"},
 			map[string]interface{}{"COL1": []*string{&a}},
 		},
 		{
 			withNil,
-			[]filter.Filter{{Column: "COL1", Comparator: "!=", Arg: "a"}},
+			qframe.Filter{Column: "COL1", Comparator: "!=", Arg: "a"},
 			map[string]interface{}{"COL1": []*string{&b, &c, nil, &e, &d, nil}},
 		},
 		{
 			withNil,
-			[]filter.Filter{{Column: "COL1", Comparator: "like", Arg: "b"}},
+			qframe.Filter{Column: "COL1", Comparator: "like", Arg: "b"},
 			map[string]interface{}{"COL1": []*string{&b}},
 		},
 		{
 			withNil,
-			[]filter.Filter{{Column: "COL1", Comparator: "in", Arg: []string{"a", "b"}}},
+			qframe.Filter{Column: "COL1", Comparator: "in", Arg: []string{"a", "b"}},
 			map[string]interface{}{"COL1": []*string{&b, &a}},
 		},
 	}
@@ -1076,7 +1074,7 @@ func TestQFrame_FilterString(t *testing.T) {
 		t.Run(fmt.Sprintf("Filter string %d", i), func(t *testing.T) {
 			in := qframe.New(tc.input)
 			expected := qframe.New(tc.expected)
-			out := in.Filter(tc.filters...)
+			out := in.Filter(tc.clause)
 			assertEquals(t, expected, out)
 		})
 	}
@@ -1129,7 +1127,7 @@ func TestQFrame_LikeFilterString(t *testing.T) {
 			t.Run(fmt.Sprintf("Enum %t, %s %s", len(enums) > 0, tc.comparator, tc.arg), func(t *testing.T) {
 				in := qframe.New(data, qframe.Enums(enums))
 				expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(enums))
-				out := in.Filter(filter.Filter{Column: "COL1", Comparator: tc.comparator, Arg: tc.arg})
+				out := in.Filter(qframe.Filter{Column: "COL1", Comparator: tc.comparator, Arg: tc.arg})
 				assertEquals(t, expected, out)
 			})
 		}
