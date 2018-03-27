@@ -745,6 +745,10 @@ func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 		data = lData
 	case *string:
 		data = ConstString{Val: t, Count: colLen}
+	case string:
+		data = ConstString{Val: &t, Count: colLen}
+	case filter.ColumnName:
+		return qf.Copy(dstCol, string(t))
 	default:
 		return qf.withErr(errors.New("apply0", "unknown apply type: %v", reflect.TypeOf(fn)))
 	}

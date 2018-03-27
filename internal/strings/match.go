@@ -75,7 +75,7 @@ func (m *RegexpMatcher) Matches(s string) bool {
 	return m.r.MatchString(s)
 }
 
-func stripPercent(s string) string {
+func trimPercent(s string) string {
 	if strings.HasPrefix(s, "%") {
 		s = s[1:]
 	}
@@ -122,30 +122,30 @@ func NewMatcher(comparatee string, caseSensitive bool) (Matcher, error) {
 		// Initial size, this will grow if needed
 		buf := make([]byte, 10)
 		if fuzzyStart && fuzzyEnd {
-			return &CIContainsMatcher{matchString: stripPercent(comparatee), buf: buf}, nil
+			return &CIContainsMatcher{matchString: trimPercent(comparatee), buf: buf}, nil
 		}
 
 		if fuzzyStart {
-			return &CISuffixMatcher{matchString: stripPercent(comparatee), buf: buf}, nil
+			return &CISuffixMatcher{matchString: trimPercent(comparatee), buf: buf}, nil
 		}
 
 		if fuzzyEnd {
-			return &CIPrefixMatcher{matchString: stripPercent(comparatee), buf: buf}, nil
+			return &CIPrefixMatcher{matchString: trimPercent(comparatee), buf: buf}, nil
 		}
 
 		return &CIExactMatcher{matchString: comparatee, buf: buf}, nil
 	}
 
 	if fuzzyStart && fuzzyEnd {
-		return &ContainsMatcher{matchString: stripPercent(comparatee)}, nil
+		return &ContainsMatcher{matchString: trimPercent(comparatee)}, nil
 	}
 
 	if fuzzyStart {
-		return &SuffixMatcher{matchString: stripPercent(comparatee)}, nil
+		return &SuffixMatcher{matchString: trimPercent(comparatee)}, nil
 	}
 
 	if fuzzyEnd {
-		return &PrefixMatcher{matchString: stripPercent(comparatee)}, nil
+		return &PrefixMatcher{matchString: trimPercent(comparatee)}, nil
 	}
 
 	return &ExactMatcher{matchString: comparatee}, nil
