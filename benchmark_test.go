@@ -5,8 +5,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"github.com/kniren/gota/dataframe"
-	"github.com/kniren/gota/series"
 	qf "github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/filter"
 	"io/ioutil"
@@ -56,26 +54,6 @@ const seed2 int64 = 2
 const seed3 int64 = 3
 const seed4 int64 = 4
 const frameSize = 100000
-
-func BenchmarkDataFrame_Filter(b *testing.B) {
-	data := dataframe.New(
-		series.New(genInts(seed1, frameSize), series.Int, "S1"),
-		series.New(genInts(seed2, frameSize), series.Int, "S2"),
-		series.New(genInts(seed3, frameSize), series.Int, "S3"),
-		series.New(genInts(seed4, frameSize), series.Int, "S4"))
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		newData := data.Filter(
-			dataframe.F{Colname: "S1", Comparator: series.Less, Comparando: frameSize / 10},
-			dataframe.F{Colname: "S2", Comparator: series.Less, Comparando: frameSize / 10},
-			dataframe.F{Colname: "S3", Comparator: series.Greater, Comparando: int(0.9 * frameSize)})
-		if newData.Nrow() != 27142 {
-			b.Errorf("Length was %d", newData.Nrow())
-		}
-	}
-}
 
 func exampleIntFrame(size int) qf.QFrame {
 	return qf.New(map[string]interface{}{
@@ -200,23 +178,6 @@ func BenchmarkQFrame_FilterNot(b *testing.B) {
 			}
 		}
 	})
-}
-
-func BenchmarkDataFrame_Sort(b *testing.B) {
-	data := dataframe.New(
-		series.New(genInts(seed1, frameSize), series.Int, "S1"),
-		series.New(genInts(seed2, frameSize), series.Int, "S2"),
-		series.New(genInts(seed3, frameSize), series.Int, "S3"),
-		series.New(genInts(seed4, frameSize), series.Int, "S4"))
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		newData := data.Arrange(dataframe.Sort("S1"), dataframe.RevSort("S2"))
-		if newData.Err != nil {
-			b.Errorf("Unexpected sort error: %s", newData.Err)
-		}
-	}
 }
 
 func BenchmarkQFrame_Sort(b *testing.B) {
@@ -345,25 +306,6 @@ func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
 	}
 }
 
-func BenchmarkDataFrame_ReadCSV(b *testing.B) {
-	rowCount := 100000
-	input := csvBytes(rowCount)
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		r := bytes.NewReader(input)
-		df := dataframe.ReadCSV(r)
-		if df.Err != nil {
-			b.Errorf("Unexpected CSV error: %s", df.Err)
-		}
-
-		if df.Nrow() != rowCount {
-			b.Errorf("Unexpected size: %d", df.Nrow())
-		}
-	}
-}
-
 func jsonRecords(rowCount int) []byte {
 	record := map[string]interface{}{
 		"INT1":    123,
@@ -439,25 +381,6 @@ func jsonColumns(rowCount int) []byte {
 		panic(err)
 	}
 	return result
-}
-
-func BenchmarkDataFrame_ReadJSON(b *testing.B) {
-	rowCount := 10000
-	input := jsonRecords(rowCount)
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		r := bytes.NewReader(input)
-		df := dataframe.ReadJSON(r)
-		if df.Err != nil {
-			b.Errorf("Unexpected JSON error: %s", df.Err)
-		}
-
-		if df.Nrow() != rowCount {
-			b.Errorf("Unexpected size: %d", df.Nrow())
-		}
-	}
 }
 
 func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
