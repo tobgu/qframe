@@ -354,7 +354,7 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 	return newDf
 }
 
-func (qf QFrame) columnNames() []string {
+func (qf QFrame) ColumnNames() []string {
 	result := make([]string, len(qf.columns))
 	for i, s := range qf.columns {
 		result[i] = s.name
@@ -365,7 +365,7 @@ func (qf QFrame) columnNames() []string {
 
 func (qf QFrame) columnsOrAll(columns []string) []string {
 	if len(columns) == 0 {
-		return qf.columnNames()
+		return qf.ColumnNames()
 	}
 
 	return columns
@@ -1218,3 +1218,8 @@ func (qf QFrame) ByteSize() int {
 // - Move benchmarks to own repo to get rid of dependencies only needed for the benchmarks. Make a benchmark script
 //   comparing old and new implementations. Find suitable dataset to compare with Pandas and Gota.
 // - Make package filter internal?
+// - Validation of column names, allowed characters and names (not true/false, not numbers only, not "null"?)
+// - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
+//   aggregation for example.
+// - Remove NullClause?
+// - Add different "cover types" for interface{} here and there to improve documentation?

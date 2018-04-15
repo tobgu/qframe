@@ -42,6 +42,7 @@ func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string
 	for r.Next() {
 		// TODO: What happens when the number of columns differ from number of
 		//       headers. When the number of columns is zero?
+		// Index out of range panics lurking here now because of missing checks.
 		if r.Err() != nil {
 			return nil, nil, r.Err()
 		}
