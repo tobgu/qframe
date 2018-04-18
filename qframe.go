@@ -1223,3 +1223,4 @@ func (qf QFrame) ByteSize() int {
 //   aggregation for example.
 // - Remove NullClause?
 // - Add different "cover types" for interface{} here and there to improve documentation?
+// - Change column package layout?

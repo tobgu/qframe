@@ -2,8 +2,10 @@ package hashgrouper
 
 import (
 	"bytes"
+	"github.com/golang/go/src/math/bits"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
+	"math"
 )
 
 /*
@@ -29,19 +31,17 @@ type table struct {
 	comparables   []column.Comparable
 	stats         GroupStats
 	hashBuf       *bytes.Buffer
+	loadFactor    float64
 	groupCount    uint32
 	collectIx     bool
-}
-
-func (t *table) loadFactor() float64 {
-	return float64(t.groupCount) / float64(len(t.entries))
 }
 
 func (t *table) grow() {
 	newLen := uint32(2 * len(t.entries))
 	newEntries := make([]tableEntry, newLen)
+	bitMask := newLen - 1
 	for _, e := range t.entries {
-		for pos := e.hash % newLen; ; pos = (pos + 1) % newLen {
+		for pos := e.hash & bitMask; ; pos = (pos + 1) & bitMask {
 			if !newEntries[pos].occupied {
 				newEntries[pos] = e
 				break
@@ -66,15 +66,15 @@ func (t *table) hash(i uint32) uint32 {
 const maxLoadFactor = 0.5
 
 func (t *table) insertEntry(i uint32) {
-	if t.loadFactor() > maxLoadFactor {
+	if t.loadFactor > maxLoadFactor {
 		t.grow()
 	}
 
 	hash := t.hash(i)
-	entriesLen := uint64(len(t.entries))
-	startPos := uint64(hash) % entriesLen
+	bitMask := uint64(len(t.entries) - 1)
+	startPos := uint64(hash) & bitMask
 	var dstEntry *tableEntry
-	for pos := startPos; dstEntry == nil; pos = (pos + 1) % entriesLen {
+	for pos := startPos; dstEntry == nil; pos = (pos + 1) & bitMask {
 		e := &t.entries[pos]
 		if !e.occupied || e.hash == hash && equals(t.comparables, i, e.firstPos) {
 			dstEntry = e
@@ -90,6 +90,7 @@ func (t *table) insertEntry(i uint32) {
 		dstEntry.firstPos = i
 		dstEntry.occupied = true
 		t.groupCount++
+		t.loadFactor = float64(t.groupCount) / float64(len(t.entries))
 	} else {
 		// Existing entry
 		if t.collectIx {
@@ -105,8 +106,12 @@ func (t *table) insertEntry(i uint32) {
 	}
 }
 
-func newTable(size int, comparables []column.Comparable, collectIx bool) *table {
-	return &table{entries: make([]tableEntry, size), comparables: comparables, collectIx: collectIx, hashBuf: new(bytes.Buffer)}
+func newTable(sizeExp int, comparables []column.Comparable, collectIx bool) *table {
+	return &table{
+		entries:     make([]tableEntry, intPow2(sizeExp)),
+		comparables: comparables,
+		collectIx:   collectIx,
+		hashBuf:     new(bytes.Buffer)}
 }
 
 func equals(comparables []column.Comparable, i, j uint32) bool {
@@ -126,16 +131,34 @@ type GroupStats struct {
 	LoadFactor           float64
 }
 
+func intMax(x, y int) int {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func intPow2(exp int) int {
+	return int(math.Pow(2, float64(exp)))
+}
+
+func calculateInitialSizeExp(ixLen int) int {
+	// Size is expressed as 2^x to keep the size a multiple of two.
+	// Initial size is picked fairly arbitrarily at the moment, we don't really know the distribution of
+	// values withing the index. Guarantee a minimum initial size of 8 (2³) for sanity.
+	fitSize := uint64(ixLen) / 4
+	return intMax(bits.Len64(fitSize), 3)
+}
+
 func groupIndex(ix index.Int, comparables []column.Comparable, collectIx bool) ([]tableEntry, GroupStats) {
-	// Initial size is picked fairly arbitrarily at the moment
-	initialSize := (len(ix) / 4) + 10
-	table := newTable(initialSize, comparables, collectIx)
+	initialSizeExp := calculateInitialSizeExp(len(ix))
+	table := newTable(initialSizeExp, comparables, collectIx)
 	for _, i := range ix {
 		table.insertEntry(i)
 	}
 
 	stats := table.stats
-	stats.LoadFactor = table.loadFactor()
+	stats.LoadFactor = table.loadFactor
 	stats.GroupCount = int(table.groupCount)
 	return table.entries, stats
 }
