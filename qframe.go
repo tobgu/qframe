@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"github.com/tobgu/qframe/internal/math/integer"
 )
 
 type namedColumn struct {
@@ -612,7 +613,7 @@ func (qf QFrame) String() string {
 	minColWidth := 5
 	for i, s := range qf.columns {
 		colHeader := s.name + "(" + s.DataType()[:1] + ")"
-		colWidths[i] = intMax(len(colHeader), minColWidth)
+		colWidths[i] = integer.Max(len(colHeader), minColWidth)
 		row[i] = fixLengthString(colHeader, " ", colWidths[i])
 	}
 	result = append(result, strings.Join(row, " "))
@@ -623,7 +624,7 @@ func (qf QFrame) String() string {
 	result = append(result, strings.Join(row, " "))
 
 	maxRowCount := 50
-	for i := 0; i < intMin(qf.Len(), maxRowCount); i++ {
+	for i := 0; i < integer.Min(qf.Len(), maxRowCount); i++ {
 		for j, s := range qf.columns {
 			row[j] = fixLengthString(s.StringAt(qf.index[i], "null"), " ", colWidths[j])
 		}

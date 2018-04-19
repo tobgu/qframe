@@ -2,10 +2,11 @@ package qframe
 
 import (
 	"fmt"
+	"strings"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
-	"strings"
+	"github.com/tobgu/qframe/internal/math/integer"
 )
 
 type FilterClause interface {
@@ -113,7 +114,7 @@ func orFrames(original, lhs, rhs *QFrame) *QFrame {
 		return rhs
 	}
 
-	resultIx := make(index.Int, 0, intMax(len(lhs.index), len(rhs.index)))
+	resultIx := make(index.Int, 0, integer.Max(len(lhs.index), len(rhs.index)))
 	lhsI, rhsI := 0, 0
 	for _, ix := range original.index {
 		found := false

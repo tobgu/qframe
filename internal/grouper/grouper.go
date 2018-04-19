@@ -5,7 +5,7 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
-	"math"
+	"github.com/tobgu/qframe/internal/math/integer"
 )
 
 /*
@@ -111,7 +111,7 @@ func (t *table) insertEntry(i uint32) {
 
 func newTable(sizeExp int, comparables []column.Comparable, collectIx bool) *table {
 	return &table{
-		entries:     make([]tableEntry, intPow2(sizeExp)),
+		entries:     make([]tableEntry, integer.Pow2(sizeExp)),
 		comparables: comparables,
 		collectIx:   collectIx,
 		hashBuf:     new(hash.Murm32)}
@@ -134,23 +134,12 @@ type GroupStats struct {
 	LoadFactor           float64
 }
 
-func intMax(x, y int) int {
-	if x < y {
-		return y
-	}
-	return x
-}
-
-func intPow2(exp int) int {
-	return int(math.Pow(2, float64(exp)))
-}
-
 func calculateInitialSizeExp(ixLen int) int {
 	// Size is expressed as 2^x to keep the size a multiple of two.
 	// Initial size is picked fairly arbitrarily at the moment, we don't really know the distribution of
 	// values withing the index. Guarantee a minimum initial size of 8 (2³) for sanity.
 	fitSize := uint64(ixLen) / 4
-	return intMax(bits.Len64(fitSize), 3)
+	return integer.Max(bits.Len64(fitSize), 3)
 }
 
 func groupIndex(ix index.Int, comparables []column.Comparable, collectIx bool) ([]tableEntry, GroupStats) {
