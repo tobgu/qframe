@@ -141,12 +141,26 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	}
 
 	data := make([]int, 0, len(indices))
+	var buf []int
 	for _, ix := range indices {
-		subS := c.subset(ix)
+		subS := c.subsetWithBuf(ix, &buf)
 		data = append(data, actualFn(subS.data))
 	}
 
 	return Column{data: data}, nil
+}
+
+func (c Column) subsetWithBuf(index index.Int, buf *[]int) Column {
+	if cap(*buf) < len(index) {
+		*buf = make([]int, 0, len(index))
+	}
+
+	data := (*buf)[:0]
+	for _, ix := range index {
+		data = append(data, c.data[ix])
+	}
+
+	return Column{data: data}
 }
 
 func (c Column) View(ix index.Int) View {
