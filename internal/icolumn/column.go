@@ -1,7 +1,6 @@
 package icolumn
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
@@ -11,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 	"unsafe"
+	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 func (c Column) StringAt(i uint32, _ string) string {
@@ -58,7 +58,7 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
+func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
 	x := &c.data[i]
 	b := (*[8]byte)(unsafe.Pointer(x))[:]
 	buf.Write(b)

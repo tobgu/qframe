@@ -1224,3 +1224,4 @@ func (qf QFrame) ByteSize() int {
 // - Remove NullClause?
 // - Add different "cover types" for interface{} here and there to improve documentation?
 // - Change column package layout?
+// - Clean up hasher/murmur3 naming and implementation, write some kind of description

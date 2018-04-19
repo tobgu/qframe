@@ -1,11 +1,11 @@
 package hashgrouper
 
 import (
-	"bytes"
 	"github.com/golang/go/src/math/bits"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 	"math"
+	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 /*
@@ -30,14 +30,16 @@ type table struct {
 	occupiedCount int
 	comparables   []column.Comparable
 	stats         GroupStats
-	hashBuf       *bytes.Buffer
+	hashBuf       *murmur3.Murm32
 	loadFactor    float64
 	groupCount    uint32
 	collectIx     bool
 }
 
+const growthFactor = 2
+
 func (t *table) grow() {
-	newLen := uint32(2 * len(t.entries))
+	newLen := uint32(growthFactor * len(t.entries))
 	newEntries := make([]tableEntry, newLen)
 	bitMask := newLen - 1
 	for _, e := range t.entries {
@@ -52,6 +54,7 @@ func (t *table) grow() {
 
 	t.stats.RelocationCount++
 	t.entries = newEntries
+	t.loadFactor = t.loadFactor / growthFactor
 }
 
 func (t *table) hash(i uint32) uint32 {
@@ -60,7 +63,7 @@ func (t *table) hash(i uint32) uint32 {
 		c.HashBytes(i, t.hashBuf)
 	}
 
-	return murmur32(t.hashBuf.Bytes())
+	return t.hashBuf.Hash()
 }
 
 const maxLoadFactor = 0.5
@@ -111,7 +114,7 @@ func newTable(sizeExp int, comparables []column.Comparable, collectIx bool) *tab
 		entries:     make([]tableEntry, intPow2(sizeExp)),
 		comparables: comparables,
 		collectIx:   collectIx,
-		hashBuf:     new(bytes.Buffer)}
+		hashBuf:     new(murmur3.Murm32)}
 }
 
 func equals(comparables []column.Comparable, i, j uint32) bool {

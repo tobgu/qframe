@@ -1,7 +1,6 @@
 package ecolumn
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
@@ -12,6 +11,7 @@ import (
 	"github.com/tobgu/qframe/types"
 	"reflect"
 	"strings"
+	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 type enumVal uint8
@@ -303,7 +303,7 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
+func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
 	buf.WriteByte(byte(c.column.data[i]))
 }
 

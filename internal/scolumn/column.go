@@ -1,16 +1,15 @@
 package scolumn
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
-	"github.com/tobgu/qframe/internal/hashgrouper"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"reflect"
+	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 //go:generate easyjson $GOFILE
@@ -141,20 +140,20 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *bytes.Buffer) {
-	x, isNull := c.column.stringAt(i)
+func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
+	x, isNull := c.column.bytesAt(i)
 	if isNull {
 		if c.equalNullValue == column.NotEqual {
 			// Use a random value here to avoid hash collisions when
 			// we don't consider null to equal null.
 			// Use a random value here to avoid hash collisions when
 			// we don't consider null to equal null.
-			hashgrouper.WriteFourRandomBytes(buf)
+			buf.WriteFourRandomBytes()
 		} else {
 			buf.WriteByte(0)
 		}
 	} else {
-		buf.WriteString(x)
+		buf.Write(x)
 	}
 }
 
@@ -296,6 +295,14 @@ func (c Column) stringAt(i uint32) (string, bool) {
 		return "", true
 	}
 	return qfstrings.UnsafeBytesToString(c.data[p.Offset() : p.Offset()+p.Len()]), false
+}
+
+func (c Column) bytesAt(i uint32) ([]byte, bool) {
+	p := c.pointers[i]
+	if p.IsNull() {
+		return nil, true
+	}
+	return c.data[p.Offset() : p.Offset()+p.Len()], false
 }
 
 func (c Column) stringCopyAt(i uint32) (string, bool) {

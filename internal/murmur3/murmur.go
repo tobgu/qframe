@@ -1,9 +1,12 @@
-package hashgrouper
+package murmur3
 
-import "unsafe"
+import (
+	"unsafe"
+	"math/rand"
+)
 
 /*
-The below is more or less a copy of the 32 bit hash found in
+The below is highly inspired by the 32 bit hash found in
 github.com/spaolacci/murmur3. See license below.
 
 LICENSE
@@ -39,11 +42,30 @@ const (
 	c2_32 uint32 = 0x1b873593
 )
 
-func murmur32(data []byte) uint32 {
-	seed := uint32(0)
-	h1 := seed
+type Murm32 struct {
+	totLen int
+	hash uint32
+	buf [4]byte
+	bufSize int8
+}
 
+func (m *Murm32) WriteByte(b byte) {
+	m.buf[m.bufSize] = b
+	m.bufSize++
+	m.flushBufIfNeeded()
+}
+
+func (m *Murm32) flushBufIfNeeded() {
+	if m.bufSize == int8(len(m.buf)) {
+		m.Write(m.buf[:])
+		m.bufSize = 0
+	}
+}
+
+func (m *Murm32) Write(data []byte) {
+	h1 := m.hash
 	nblocks := len(data) / 4
+	m.totLen += len(data)
 	var p uintptr
 	if len(data) > 0 {
 		p = uintptr(unsafe.Pointer(&data[0]))
@@ -62,30 +84,56 @@ func murmur32(data []byte) uint32 {
 	}
 
 	tail := data[nblocks*4:]
+	for _, d := range tail {
+		m.buf[m.bufSize] = d
+		m.bufSize++
+		m.flushBufIfNeeded()
+	}
 
+	m.hash = h1
+}
+
+func (m *Murm32) Reset() {
+	m.bufSize = 0
+	m.hash = 0
+	m.totLen = 0
+}
+
+func (m *Murm32) Hash() uint32 {
 	var k1 uint32
-	switch len(tail) & 3 {
+	h1 := m.hash
+	switch m.bufSize {
 	case 3:
-		k1 ^= uint32(tail[2]) << 16
+		k1 ^= uint32(m.buf[2]) << 16
 		fallthrough
 	case 2:
-		k1 ^= uint32(tail[1]) << 8
+		k1 ^= uint32(m.buf[1]) << 8
 		fallthrough
 	case 1:
-		k1 ^= uint32(tail[0])
+		k1 ^= uint32(m.buf[0])
 		k1 *= c1_32
 		k1 = (k1 << 15) | (k1 >> 17) // rotl32(k1, 15)
 		k1 *= c2_32
 		h1 ^= k1
+	case 0:
+		// Nothing to do
+	default:
+		panic("Unexpected buf length")
 	}
 
-	h1 ^= uint32(len(data))
+	h1 ^= uint32(m.totLen)
 
 	h1 ^= h1 >> 16
 	h1 *= 0x85ebca6b
 	h1 ^= h1 >> 13
 	h1 *= 0xc2b2ae35
 	h1 ^= h1 >> 16
-
 	return h1
+}
+
+func (m *Murm32) WriteFourRandomBytes() {
+	var nullHashBytes [4]byte
+	hashBytes := nullHashBytes[:]
+	rand.Read(hashBytes)
+	m.Write(hashBytes)
 }
