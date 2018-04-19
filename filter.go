@@ -29,9 +29,6 @@ type NotClause struct {
 	subClause FilterClause
 }
 
-// Convenience type to simplify clients when no filtering is to be done.
-type NullClause struct{}
-
 func anyFilterErr(clauses []FilterClause) error {
 	for _, c := range clauses {
 		if c.Err() != nil {
@@ -244,20 +241,4 @@ func (c NotClause) filter(qf QFrame) QFrame {
 
 func (c NotClause) Err() error {
 	return c.subClause.Err()
-}
-
-func Null() NullClause {
-	return NullClause{}
-}
-
-func (c NullClause) String() string {
-	return ""
-}
-
-func (c NullClause) filter(qf QFrame) QFrame {
-	return qf
-}
-
-func (c NullClause) Err() error {
-	return nil
 }
