@@ -15,6 +15,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/internal/scolumn"
+	qfsort "github.com/tobgu/qframe/internal/sort"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"io"
@@ -348,9 +349,8 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 	}
 
 	newDf := qf.withIndex(qf.index.Copy())
-	sorter := Sorter{index: newDf.index, columns: comparables}
-	sortDf(sorter)
-
+	sorter := qfsort.New(newDf.index, comparables)
+	sorter.Sort()
 	return newDf
 }
 

@@ -2,7 +2,7 @@
 // the interface type Interface replaced with a concrete type for performance reasons
 // the original licence text is available in the GO-LICENCE file.
 
-package qframe
+package sort
 
 import (
 	"github.com/tobgu/qframe/internal/column"
@@ -12,6 +12,15 @@ import (
 type Sorter struct {
 	index   index.Int
 	columns []column.Comparable
+}
+
+func New(ix index.Int, columns []column.Comparable) Sorter {
+	return Sorter{index: ix, columns: columns}
+}
+
+func (s Sorter) Sort() {
+	n := s.Len()
+	quickSort(s, 0, n, maxDepth(n))
 }
 
 func (s Sorter) Len() int {
@@ -223,14 +232,6 @@ func quickSort(data Sorter, a, b, maxDepth int) {
 		}
 		insertionSort(data, a, b)
 	}
-}
-
-// Sort sorts data.
-// It makes one call to data.Len to determine n, and O(n*log(n)) calls to
-// data.Less and data.Swap. The sort is not guaranteed to be stable.
-func sortDf(data Sorter) {
-	n := data.Len()
-	quickSort(data, 0, n, maxDepth(n))
 }
 
 // maxDepth returns a threshold at which quicksort should switch
