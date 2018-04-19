@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/scolumn"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"reflect"
 	"strings"
-	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 type enumVal uint8
@@ -303,7 +303,7 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
+func (c Comparable) HashBytes(i uint32, buf *hash.Murm32) {
 	buf.WriteByte(byte(c.column.data[i]))
 }
 

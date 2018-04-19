@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	// TODO: Make index a public package?
+	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
-	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 type Column interface {
@@ -43,6 +43,8 @@ const (
 type Comparable interface {
 	Compare(i, j uint32) CompareResult
 
-	// Write bytes to be used for hashing into buf
-	HashBytes(i uint32, buf *murmur3.Murm32)
+	// Write bytes to be used for hashing into buf. Using specific type for hash.Murm32
+	// here rather than the general Writer interface to avoid that objects escape to heap
+	// due to unknown target.
+	HashBytes(i uint32, buf *hash.Murm32)
 }

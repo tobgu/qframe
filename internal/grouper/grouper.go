@@ -1,11 +1,11 @@
-package hashgrouper
+package grouper
 
 import (
 	"github.com/golang/go/src/math/bits"
 	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"math"
-	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 /*
@@ -30,7 +30,7 @@ type table struct {
 	occupiedCount int
 	comparables   []column.Comparable
 	stats         GroupStats
-	hashBuf       *murmur3.Murm32
+	hashBuf       *hash.Murm32
 	loadFactor    float64
 	groupCount    uint32
 	collectIx     bool
@@ -73,13 +73,13 @@ func (t *table) insertEntry(i uint32) {
 		t.grow()
 	}
 
-	hash := t.hash(i)
+	hashSum := t.hash(i)
 	bitMask := uint64(len(t.entries) - 1)
-	startPos := uint64(hash) & bitMask
+	startPos := uint64(hashSum) & bitMask
 	var dstEntry *tableEntry
 	for pos := startPos; dstEntry == nil; pos = (pos + 1) & bitMask {
 		e := &t.entries[pos]
-		if !e.occupied || e.hash == hash && equals(t.comparables, i, e.firstPos) {
+		if !e.occupied || e.hash == hashSum && equals(t.comparables, i, e.firstPos) {
 			dstEntry = e
 		} else {
 			t.stats.InsertCollisions++
@@ -89,7 +89,7 @@ func (t *table) insertEntry(i uint32) {
 	// Update entry
 	if !dstEntry.occupied {
 		// Eden entry
-		dstEntry.hash = hash
+		dstEntry.hash = hashSum
 		dstEntry.firstPos = i
 		dstEntry.occupied = true
 		t.groupCount++
@@ -114,7 +114,7 @@ func newTable(sizeExp int, comparables []column.Comparable, collectIx bool) *tab
 		entries:     make([]tableEntry, intPow2(sizeExp)),
 		comparables: comparables,
 		collectIx:   collectIx,
-		hashBuf:     new(murmur3.Murm32)}
+		hashBuf:     new(hash.Murm32)}
 }
 
 func equals(comparables []column.Comparable, i, j uint32) bool {

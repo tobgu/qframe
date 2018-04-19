@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"reflect"
-	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 //go:generate easyjson $GOFILE
@@ -140,7 +140,7 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
+func (c Comparable) HashBytes(i uint32, buf *hash.Murm32) {
 	x, isNull := c.column.bytesAt(i)
 	if isNull {
 		if c.equalNullValue == column.NotEqual {
@@ -148,7 +148,7 @@ func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
 			// we don't consider null to equal null.
 			// Use a random value here to avoid hash collisions when
 			// we don't consider null to equal null.
-			buf.WriteFourRandomBytes()
+			buf.WriteRand32()
 		} else {
 			buf.WriteByte(0)
 		}

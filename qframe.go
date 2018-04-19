@@ -10,7 +10,7 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fcolumn"
-	"github.com/tobgu/qframe/internal/hashgrouper"
+	"github.com/tobgu/qframe/internal/grouper"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
@@ -409,7 +409,7 @@ func (qf QFrame) Distinct(configFns ...GroupByConfigFn) QFrame {
 	columns := qf.columnsOrAll(config.columns)
 	orders := qf.orders(columns)
 	comparables := qf.comparables(columns, orders, config.groupByNull)
-	newIx := hashgrouper.Distinct(qf.index, comparables)
+	newIx := grouper.Distinct(qf.index, comparables)
 	return qf.withIndex(newIx)
 }
 
@@ -471,7 +471,7 @@ func (qf QFrame) Select(columns ...string) QFrame {
 // Internal statistics for grouping. Clients should not depend on this for any
 // type of decision making. It is strictly "for info". The layout may change
 // if the underlying grouping mechanisms change.
-type GroupStats hashgrouper.GroupStats
+type GroupStats grouper.GroupStats
 
 type Grouper struct {
 	indices        []index.Int
@@ -537,7 +537,7 @@ func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
 
 	orders := qf.orders(config.columns)
 	comparables := qf.comparables(config.columns, orders, config.groupByNull)
-	indices, stats := hashgrouper.GroupBy(qf.index, comparables)
+	indices, stats := grouper.GroupBy(qf.index, comparables)
 	g.indices = indices
 	g.Stats = GroupStats(stats)
 	return g
@@ -1224,4 +1224,3 @@ func (qf QFrame) ByteSize() int {
 // - Remove NullClause?
 // - Add different "cover types" for interface{} here and there to improve documentation?
 // - Change column package layout?
-// - Clean up hasher/murmur3 naming and implementation, write some kind of description

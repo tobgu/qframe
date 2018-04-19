@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/types"
 	"reflect"
 	"strconv"
-	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 func (c Comparable) Compare(i, j uint32) column.CompareResult {
@@ -25,7 +25,7 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return c.ltValue
 }
 
-func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
+func (c Comparable) HashBytes(i uint32, buf *hash.Murm32) {
 	if c.data[i] {
 		buf.WriteByte(1)
 	}

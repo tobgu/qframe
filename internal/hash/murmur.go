@@ -1,12 +1,17 @@
-package murmur3
+package hash
 
 import (
-	"unsafe"
+	"fmt"
 	"math/rand"
+	"unsafe"
 )
 
 /*
-The below is highly inspired by the 32 bit hash found in
+The below hasher type is a is based on the Murmur3 algorithm but the handling of
+tail bytes (eg bytes that do not immediately fill out a four byte block) has been
+modified to reduce the need for copying data.
+
+The implementation is highly inspired by the 32 bit hash found in
 github.com/spaolacci/murmur3. See license below.
 
 LICENSE
@@ -43,25 +48,27 @@ const (
 )
 
 type Murm32 struct {
-	totLen int
-	hash uint32
-	buf [4]byte
-	bufSize int8
+	totLen   int
+	hash     uint32
+	tail     [4]byte
+	tailSize int8
 }
 
+// Write adds a byte as input to the hash.
 func (m *Murm32) WriteByte(b byte) {
-	m.buf[m.bufSize] = b
-	m.bufSize++
+	m.tail[m.tailSize] = b
+	m.tailSize++
 	m.flushBufIfNeeded()
 }
 
 func (m *Murm32) flushBufIfNeeded() {
-	if m.bufSize == int8(len(m.buf)) {
-		m.Write(m.buf[:])
-		m.bufSize = 0
+	if m.tailSize == int8(len(m.tail)) {
+		m.Write(m.tail[:])
+		m.tailSize = 0
 	}
 }
 
+// Write adds data as input to the hash.
 func (m *Murm32) Write(data []byte) {
 	h1 := m.hash
 	nblocks := len(data) / 4
@@ -70,6 +77,8 @@ func (m *Murm32) Write(data []byte) {
 	if len(data) > 0 {
 		p = uintptr(unsafe.Pointer(&data[0]))
 	}
+
+	// Hash full 4-byte blocks
 	p1 := p + uintptr(4*nblocks)
 	for ; p < p1; p += 4 {
 		k1 := *(*uint32)(unsafe.Pointer(p))
@@ -83,34 +92,39 @@ func (m *Murm32) Write(data []byte) {
 		h1 = h1*4 + h1 + 0xe6546b64
 	}
 
+	// Store any remaining bytes in buffer, hash and flush the buffer if needed
 	tail := data[nblocks*4:]
 	for _, d := range tail {
-		m.buf[m.bufSize] = d
-		m.bufSize++
+		m.tail[m.tailSize] = d
+		m.tailSize++
 		m.flushBufIfNeeded()
 	}
 
 	m.hash = h1
 }
 
+// Reset clears internal state so that the hasher can be reused
 func (m *Murm32) Reset() {
-	m.bufSize = 0
+	m.tailSize = 0
 	m.hash = 0
 	m.totLen = 0
 }
 
+// Hash returns the final hash value.
 func (m *Murm32) Hash() uint32 {
 	var k1 uint32
 	h1 := m.hash
-	switch m.bufSize {
+
+	// Process any bytes remaining
+	switch m.tailSize {
 	case 3:
-		k1 ^= uint32(m.buf[2]) << 16
+		k1 ^= uint32(m.tail[2]) << 16
 		fallthrough
 	case 2:
-		k1 ^= uint32(m.buf[1]) << 8
+		k1 ^= uint32(m.tail[1]) << 8
 		fallthrough
 	case 1:
-		k1 ^= uint32(m.buf[0])
+		k1 ^= uint32(m.tail[0])
 		k1 *= c1_32
 		k1 = (k1 << 15) | (k1 >> 17) // rotl32(k1, 15)
 		k1 *= c2_32
@@ -118,7 +132,7 @@ func (m *Murm32) Hash() uint32 {
 	case 0:
 		// Nothing to do
 	default:
-		panic("Unexpected buf length")
+		panic(fmt.Sprintf("Unexpected tail length %d, this is an implementation bug, please report it!", m.tailSize))
 	}
 
 	h1 ^= uint32(m.totLen)
@@ -131,7 +145,8 @@ func (m *Murm32) Hash() uint32 {
 	return h1
 }
 
-func (m *Murm32) WriteFourRandomBytes() {
+// WriteRand32 adds 32 random bits to the input data of the hash.
+func (m *Murm32) WriteRand32() {
 	var nullHashBytes [4]byte
 	hashBytes := nullHashBytes[:]
 	rand.Read(hashBytes)

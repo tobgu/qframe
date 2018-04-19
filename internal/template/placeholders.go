@@ -3,9 +3,9 @@ package template
 import (
 	"encoding/json"
 	"github.com/tobgu/qframe/internal/column"
+	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
-	"github.com/tobgu/qframe/internal/murmur3"
 )
 
 // This file contains definitions for data and functions that need to be added
@@ -49,5 +49,5 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *murmur3.Murm32) {
+func (c Comparable) HashBytes(i uint32, buf *hash.Murm32) {
 }
