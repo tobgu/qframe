@@ -80,6 +80,21 @@ func intComp(comparatee interface{}) (int, bool) {
 
 type intSet map[int]struct{}
 
+func interfaceSliceToIntSlice(ss []interface{}) ([]int, bool) {
+	result := make([]int, len(ss))
+	for i, s := range ss {
+		switch t := s.(type) {
+		case int:
+			result[i] = t
+		case float64:
+			result[i] = int(t)
+		default:
+			return nil, false
+		}
+	}
+	return result, true
+}
+
 func newIntSet(input interface{}) (intSet, bool) {
 	var result intSet
 	var ok bool
@@ -94,7 +109,12 @@ func newIntSet(input interface{}) (intSet, bool) {
 		for _, v := range t {
 			result[int(v)] = struct{}{}
 		}
+	case []interface{}:
+		if intSlice, innerOk := interfaceSliceToIntSlice(t); innerOk {
+			result, ok = newIntSet(intSlice)
+		}
 	}
+
 	return result, ok
 }
 

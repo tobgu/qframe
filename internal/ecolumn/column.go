@@ -331,6 +331,7 @@ func (c Column) filterWithBitset(index index.Int, bset *bitset, bIndex index.Boo
 }
 
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
+	comparatee = qfstrings.InterfaceSliceToStringSlice(comparatee)
 	switch comp := comparatee.(type) {
 	case string:
 		if compFunc, ok := filterFuncs1[comparator]; ok {

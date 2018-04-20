@@ -3,7 +3,6 @@ package qframe
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
@@ -14,6 +13,7 @@ import (
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
+	"github.com/tobgu/qframe/internal/math/integer"
 	"github.com/tobgu/qframe/internal/scolumn"
 	qfsort "github.com/tobgu/qframe/internal/sort"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"github.com/tobgu/qframe/internal/math/integer"
 )
 
 type namedColumn struct {
@@ -544,7 +543,12 @@ func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
 	return g
 }
 
-func (g Grouper) Aggregate(aggs ...aggregation.Aggregation) QFrame {
+type Aggregation struct {
+	Fn     interface{}
+	Column string
+}
+
+func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 	if g.Err != nil {
 		return QFrame{Err: g.Err}
 	}

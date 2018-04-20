@@ -505,7 +505,7 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 		input        map[string]interface{}
 		expected     map[string]interface{}
 		groupColumns []string
-		aggregations []aggregation.Aggregation
+		aggregations []qframe.Aggregation
 	}{
 		{
 			name: "built in aggregation function",
@@ -518,7 +518,7 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL.2": []int{0, 1, 1},
 				"COL.3": []int{3, 5, 7}},
 			groupColumns: []string{"COL.1", "COL.2"},
-			aggregations: []aggregation.Aggregation{aggregation.New("sum", "COL.3")},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL.3"}},
 		},
 		{
 			name: "user defined aggregation function",
@@ -529,7 +529,7 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL.1": []int{0, 1},
 				"COL.2": []int{3, 12}},
 			groupColumns: []string{"COL.1"},
-			aggregations: []aggregation.Aggregation{aggregation.New(ownSum, "COL.2")},
+			aggregations: []qframe.Aggregation{{Fn: ownSum, Column: "COL.2"}},
 		},
 		{
 			name: "empty qframe",
@@ -540,7 +540,7 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL.1": []int{},
 				"COL.2": []int{}},
 			groupColumns: []string{"COL.1"},
-			aggregations: []aggregation.Aggregation{aggregation.New("sum", "COL.2")},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL.2"}},
 		},
 		{
 			// This will trigger hash table relocations
@@ -552,7 +552,7 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL.1": incSlice(1000, 1),
 				"COL.2": incSlice(1000, 2)},
 			groupColumns: []string{"COL.1"},
-			aggregations: []aggregation.Aggregation{aggregation.New("sum", "COL.2")},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL.2"}},
 		},
 	}
 
@@ -982,7 +982,8 @@ func TestQFrame_ToJSONNaN(t *testing.T) {
 		orientation string
 		expected    string
 	}{
-		{orientation: "records", expected: `[{"FLOAT1":1.5},{"FLOAT1":NaN}]`},
+		{orientation: "records", expected: `[{"FLOAT1":1.5},{"FLOAT1":null}]`},
+		// TODO: Should also encode NaN as null, just as above
 		{orientation: "columns", expected: `{"FLOAT1":[1.5,NaN]}`},
 	}
 
@@ -1390,7 +1391,7 @@ func TestQFrame_AggregateStrings(t *testing.T) {
 				"COL2": []string{"x", "p", "y", "q", "z"},
 			}, qframe.Enums(tc.enums))
 			expected := qframe.New(map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x,y,z", "p,q"}})
-			out := input.GroupBy(qframe.GroupBy("COL1")).Aggregate(aggregation.New(aggregation.StrJoin(","), "COL2"))
+			out := input.GroupBy(qframe.GroupBy("COL1")).Aggregate(qframe.Aggregation{Fn: aggregation.StrJoin(","), Column: "COL2"})
 			assertEquals(t, expected, out.Sort(qframe.Order{Column: "COL1"}))
 		})
 	}
@@ -1423,7 +1424,7 @@ func TestQFrame_AggregateGroupByNull(t *testing.T) {
 				}
 				expected := qframe.New(map[string]interface{}{"COL4": col4})
 
-				out := input.GroupBy(qframe.GroupBy(column), qframe.GroupByNull(groupByNull)).Aggregate(aggregation.New(sum, "COL4"))
+				out := input.GroupBy(qframe.GroupBy(column), qframe.GroupByNull(groupByNull)).Aggregate(qframe.Aggregation{Fn: sum, Column: "COL4"})
 				assertEquals(t, expected, out.Sort(colNamesToOrders(column, "COL4")...).Select("COL4"))
 			})
 		}

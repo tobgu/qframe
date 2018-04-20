@@ -112,3 +112,24 @@ func ToUpper(bP *[]byte, s string) string {
 	*bP = b
 	return UnsafeBytesToString(b[:nbytes])
 }
+
+// InterfaceSliceToStringSlice converts a slice of interface{} to a slice of strings.
+// If the input is not a slice of interface{} it is returned unmodified. If the input
+// slice does not consist of strings (only) the input is returned unmodified.
+func InterfaceSliceToStringSlice(input interface{}) interface{} {
+	ifSlice, ok := input.([]interface{})
+	if !ok {
+		return input
+	}
+
+	result := make([]string, len(ifSlice))
+	for i, intfc := range ifSlice {
+		s, ok := intfc.(string)
+		if !ok {
+			return input
+		}
+		result[i] = s
+	}
+
+	return result
+}

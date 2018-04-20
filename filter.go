@@ -2,11 +2,11 @@ package qframe
 
 import (
 	"fmt"
-	"strings"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/math/integer"
+	"strings"
 )
 
 type FilterClause interface {
@@ -29,6 +29,9 @@ type OrClause comboClause
 type NotClause struct {
 	subClause FilterClause
 }
+
+// Convenience type to simplify clients when no filtering is to be done.
+type NullClause struct{}
 
 func anyFilterErr(clauses []FilterClause) error {
 	for _, c := range clauses {
@@ -242,4 +245,20 @@ func (c NotClause) filter(qf QFrame) QFrame {
 
 func (c NotClause) Err() error {
 	return c.subClause.Err()
+}
+
+func Null() NullClause {
+	return NullClause{}
+}
+
+func (c NullClause) String() string {
+	return ""
+}
+
+func (c NullClause) filter(qf QFrame) QFrame {
+	return qf
+}
+
+func (c NullClause) Err() error {
+	return nil
 }

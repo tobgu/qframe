@@ -23,7 +23,12 @@ func (c Column) StringAt(i uint32, naRep string) string {
 }
 
 func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
-	return strconv.AppendFloat(buf, c.data[i], 'f', -1, 64)
+	value := c.data[i]
+	if math.IsNaN(value) {
+		return append(buf, "null"...)
+	}
+
+	return strconv.AppendFloat(buf, value, 'f', -1, 64)
 }
 
 func (c Column) Marshaler(index index.Int) json.Marshaler {
