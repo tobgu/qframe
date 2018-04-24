@@ -10,11 +10,6 @@ import (
 	"strconv"
 )
 
-// TODO
-// - Auto cast int -> float for operations on float columns where the operand is an int?
-// - Tests
-// - Review all public QFrame functions so that they contain guards against Err execution.
-
 type functionsByArgCount struct {
 	singleArgs map[string]interface{}
 	doubleArgs map[string]interface{}
@@ -123,6 +118,7 @@ func (ctx *ExprCtx) setFunc(typ types.FunctionType, ac argCount, name string, fn
 	}
 }
 
+// TODO-C
 func (ctx *ExprCtx) SetFunc(name string, fn interface{}) error {
 	// Since there's such a flexibility in the function types that can be
 	// used and there is no static typing to support it this function
@@ -185,7 +181,7 @@ type Expression interface {
 	Err() error
 }
 
-func NewExpr(expr interface{}) Expression {
+func newExpr(expr interface{}) Expression {
 	// Try, in turn, to decode expr into a valid expression type.
 	if e, ok := expr.(Expression); ok {
 		return e
@@ -247,6 +243,7 @@ func (e colExpr) execute(qf QFrame, _ *ExprCtx) (QFrame, string) {
 	return qf, e.srcCol
 }
 
+// TODO-C
 func (e colExpr) Err() error {
 	return nil
 }
@@ -441,12 +438,12 @@ func newExprExpr(x interface{}) Expression {
 			return errorExpr{err: errors.New("newExprExpr", "invalid operation: %v", l[0])}
 		}
 
-		lhs := NewExpr(l[1])
+		lhs := newExpr(l[1])
 		if lhs.Err() != nil {
 			return errorExpr{err: errors.Propagate("newExprExpr", lhs.Err())}
 		}
 
-		rhs := NewExpr(l[2])
+		rhs := newExpr(l[2])
 		if rhs.Err() != nil {
 			return errorExpr{err: errors.Propagate("newExprExpr", rhs.Err())}
 		}
@@ -495,14 +492,17 @@ func (e errorExpr) Err() error {
 	return e.err
 }
 
+// TODO-C
 func Val(value interface{}) Expression {
-	return NewExpr(value)
+	return newExpr(value)
 }
 
+// TODO-C
 func Expr1(name, column string) Expression {
-	return NewExpr([]interface{}{name, column})
+	return newExpr([]interface{}{name, column})
 }
 
+// TODO-C
 func Expr2(name, val1, val2 interface{}) Expression {
-	return NewExpr([]interface{}{name, val1, val2})
+	return newExpr([]interface{}{name, val1, val2})
 }

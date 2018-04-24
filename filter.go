@@ -9,12 +9,16 @@ import (
 	"strings"
 )
 
+// FilterClause is an internal interface representing a filter of some kind.
 type FilterClause interface {
 	fmt.Stringer
 	filter(qf QFrame) QFrame
 	Err() error
 }
 
+// Filter is the lowest level in a filter clause.
+// It specifies the filter operation, which column to operate on and what
+// to filter/compare that column against.
 type Filter filter.Filter
 
 type comboClause struct {
@@ -22,15 +26,18 @@ type comboClause struct {
 	subClauses []FilterClause
 }
 
+// AndClause represents the logical conjunction of multiple clauses.
 type AndClause comboClause
 
+// OrClause represents the logical disjunction of multiple clauses.
 type OrClause comboClause
 
+// OrClause represents the logical inverse of of a filter clause.
 type NotClause struct {
 	subClause FilterClause
 }
 
-// Convenience type to simplify clients when no filtering is to be done.
+// NullClause is a convenience type to simplify clients when no filtering is to be done.
 type NullClause struct{}
 
 func anyFilterErr(clauses []FilterClause) error {
@@ -42,6 +49,7 @@ func anyFilterErr(clauses []FilterClause) error {
 	return nil
 }
 
+// And returns a new AndClause that represents the conjunction of the passed filter clauses.
 func And(clauses ...FilterClause) AndClause {
 	if len(clauses) == 0 {
 		return AndClause{err: errors.New("new and clause", "zero subclauses not allowed")}
@@ -59,6 +67,7 @@ func clauseString(clauses []FilterClause) string {
 	return strings.Join(reps, ", ")
 }
 
+// String returns a textual description of the filter.
 func (c AndClause) String() string {
 	if c.Err() != nil {
 		return c.Err().Error()
@@ -84,10 +93,12 @@ func (c AndClause) filter(qf QFrame) QFrame {
 	return *filteredQf
 }
 
+// Err returns any error that may have occurred during creation of the filter
 func (c AndClause) Err() error {
 	return c.err
 }
 
+// Or returns a new OrClause that represents the disjunction of the passed filter clauses.
 func Or(clauses ...FilterClause) OrClause {
 	if len(clauses) == 0 {
 		return OrClause{err: errors.New("new or clause", "zero subclauses not allowed")}
@@ -96,6 +107,7 @@ func Or(clauses ...FilterClause) OrClause {
 	return OrClause{subClauses: clauses, err: anyFilterErr(clauses)}
 }
 
+// String returns a textual description of the filter.
 func (c OrClause) String() string {
 	if c.Err() != nil {
 		return c.Err().Error()
@@ -178,10 +190,12 @@ func (c OrClause) filter(qf QFrame) QFrame {
 	return *filteredQf
 }
 
+// Err returns any error that may have occurred during creation of the filter
 func (c OrClause) Err() error {
 	return c.err
 }
 
+// String returns a textual description of the filter.
 func (c Filter) String() string {
 	if c.Err() != nil {
 		return c.Err().Error()
@@ -194,14 +208,17 @@ func (c Filter) filter(qf QFrame) QFrame {
 	return qf.filter(filter.Filter(c))
 }
 
+// Err returns any error that may have occurred during creation of the filter
 func (c Filter) Err() error {
 	return nil
 }
 
+// Not creates a new NotClause that represents the inverse of the passed filter clause.
 func Not(c FilterClause) NotClause {
 	return NotClause{subClause: c}
 }
 
+// String returns a textual description of the filter clause.
 func (c NotClause) String() string {
 	if c.Err() != nil {
 		return c.Err().Error()
@@ -243,14 +260,17 @@ func (c NotClause) filter(qf QFrame) QFrame {
 	return qf.withIndex(newIx)
 }
 
+// Err returns any error that may have occurred during creation of the filter
 func (c NotClause) Err() error {
 	return c.subClause.Err()
 }
 
+// Null returns a new NullClause
 func Null() NullClause {
 	return NullClause{}
 }
 
+// Err for NullClause always returns an empty string.
 func (c NullClause) String() string {
 	return ""
 }
@@ -259,6 +279,7 @@ func (c NullClause) filter(qf QFrame) QFrame {
 	return qf
 }
 
+// Err for NullClause always returns nil.
 func (c NullClause) Err() error {
 	return nil
 }

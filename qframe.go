@@ -165,7 +165,9 @@ func createColumn(name string, data interface{}, config *Config) (column.Column,
 	return localS, nil
 }
 
-func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
+// New creates a new QFrame with column content from data.
+// TODO-C Examples
+func New(data map[string]types.DataSlice, fns ...ConfigFunc) QFrame {
 	config := newConfig(fns)
 	if len(config.columnOrder) == 0 {
 		config.columnOrder = make([]string, 0, len(data))
@@ -219,11 +221,14 @@ func New(data map[string]interface{}, fns ...ConfigFunc) QFrame {
 	return QFrame{columns: s, columnsByName: sByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
 }
 
+// Contains reports if a columns with colName is present in the frame.
 func (qf QFrame) Contains(colName string) bool {
 	_, ok := qf.columnsByName[colName]
 	return ok
 }
 
+// Filter filters the frame according to the filters in clause.
+// TODO-C Examples
 func (qf QFrame) Filter(clause FilterClause) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -543,8 +548,9 @@ func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
 	return g
 }
 
+// TODO-C
 type Aggregation struct {
-	Fn     interface{}
+	Fn     types.SliceFuncOrBuiltInId
 	Column string
 }
 
@@ -601,7 +607,9 @@ func fixLengthString(s string, pad string, desiredLen int) string {
 	return s
 }
 
-// Simple string representation of the table
+// String returns a simple string representation of the table.
+// Output is currently capped to 50 rows. Use Slice followed by String if you want
+// to print rows that are not among the first 50.
 func (qf QFrame) String() string {
 	// There are a lot of potential improvements to this function at the moment:
 	// - Limit output, both columns and rows
@@ -644,6 +652,8 @@ func (qf QFrame) String() string {
 	return strings.Join(result, "\n")
 }
 
+// Slice returns a new QFrame consisting of rows [start, end[.
+// Note that the underlying storage is kept. Slicing a frame will not release memory used to store the columns.
 func (qf QFrame) Slice(start, end int) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -688,6 +698,7 @@ func (qf QFrame) setColumn(name string, c column.Column) QFrame {
 	return newF
 }
 
+// TODO-C
 func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -827,6 +838,7 @@ func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame 
 	return qf.setColumn(dstCol, resultColumn)
 }
 
+// TODO-C
 type Instruction struct {
 	Fn     interface{}
 	DstCol string
@@ -836,6 +848,8 @@ type Instruction struct {
 	SrcCol2 string
 }
 
+// TODO: Should this function be made private and only rely on Eval to do this. As it is now there
+//       is redundancy in the interface.
 func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	result := qf
 	for _, a := range instructions {
@@ -870,6 +884,7 @@ func (qf QFrame) Eval(destCol string, expr Expression, ctx *ExprCtx) QFrame {
 		return qf
 	}
 
+	// TODO: Might want to change this to take use functional arguments instead...
 	if ctx == nil {
 		ctx = NewDefaultExprCtx()
 	}
@@ -1222,3 +1237,6 @@ func (qf QFrame) ByteSize() int {
 //   aggregation for example.
 // - Add different "cover types" for interface{} here and there to improve documentation?
 // - Change column package layout?
+// - Remove column based json Read/Write until someone needs it?
+// - Make config package with subpackages named after what they configure?
+// - Move Grouper to own file
