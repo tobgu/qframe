@@ -1,8 +1,9 @@
 package qframe
 
 import (
-	"encoding/csv"
+	stdcsv "encoding/csv"
 	"fmt"
+	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
@@ -927,41 +928,9 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 //// IO ////
 ////////////
 
-type CsvConfig qfio.CsvConfig
-
-type CsvConfigFunc func(*CsvConfig)
-
-func EmptyNull(emptyNull bool) CsvConfigFunc {
-	return func(c *CsvConfig) {
-		c.EmptyNull = emptyNull
-	}
-}
-
-func Types(typs map[string]string) CsvConfigFunc {
-	return func(c *CsvConfig) {
-		c.Types = make(map[string]types.DataType, len(typs))
-		for k, v := range typs {
-			c.Types[k] = types.DataType(v)
-		}
-	}
-}
-
-func EnumValues(values map[string][]string) CsvConfigFunc {
-	return func(c *CsvConfig) {
-		c.EnumVals = make(map[string][]string)
-		for k, v := range values {
-			c.EnumVals[k] = v
-		}
-	}
-}
-
-func ReadCsv(reader io.Reader, confFuncs ...CsvConfigFunc) QFrame {
-	conf := &CsvConfig{}
-	for _, f := range confFuncs {
-		f(conf)
-	}
-
-	data, columns, err := qfio.ReadCsv(reader, qfio.CsvConfig(*conf))
+func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
+	conf := csv.NewConfig(confFuncs...)
+	data, columns, err := qfio.ReadCsv(reader, qfio.CsvConfig(conf))
 	if err != nil {
 		return QFrame{Err: err}
 	}
@@ -995,7 +964,7 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 		columns = append(columns, qf.columnsByName[name])
 	}
 
-	w := csv.NewWriter(writer)
+	w := stdcsv.NewWriter(writer)
 	err := w.Write(row)
 	if err != nil {
 		return err

@@ -2,10 +2,11 @@ package qframe_test
 
 import (
 	"bytes"
-	"encoding/csv"
+	stdcsv "encoding/csv"
 	"encoding/json"
 	"fmt"
 	qf "github.com/tobgu/qframe"
+	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/filter"
 	"io/ioutil"
 	"math/rand"
@@ -236,7 +237,7 @@ func BenchmarkQFrame_SortSorted(b *testing.B) {
 
 func csvBytes(rowCount int) []byte {
 	buf := new(bytes.Buffer)
-	writer := csv.NewWriter(buf)
+	writer := stdcsv.NewWriter(buf)
 	writer.Write([]string{"INT1", "INT2", "FLOAT1", "FLOAT2", "BOOL1", "STRING1", "STRING2"})
 	for i := 0; i < rowCount; i++ {
 		writer.Write([]string{"123", "1234567", "5.2534", "9834543.25", "true", fmt.Sprintf("Foo bar baz %d", i%10000), "ABCDEFGHIJKLMNOPQRSTUVWXYZ"})
@@ -249,7 +250,7 @@ func csvBytes(rowCount int) []byte {
 
 func csvEnumBytes(rowCount, cardinality int) []byte {
 	buf := new(bytes.Buffer)
-	writer := csv.NewWriter(buf)
+	writer := stdcsv.NewWriter(buf)
 	writer.Write([]string{"COL.1", "COL.2"})
 	for i := 0; i < rowCount; i++ {
 		writer.Write([]string{
@@ -293,7 +294,7 @@ func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				r := bytes.NewReader(input)
-				df := qf.ReadCsv(r, qf.Types(map[string]string{"COL.1": t, "COL.2": t}))
+				df := qf.ReadCsv(r, csv.Types(map[string]string{"COL.1": t, "COL.2": t}))
 				if df.Err != nil {
 					b.Errorf("Unexpected CSV error: %s", df.Err)
 				}
@@ -523,7 +524,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 	for _, tc := range table {
 		r := bytes.NewReader(input)
-		df := qf.ReadCsv(r, qf.Types(tc.types))
+		df := qf.ReadCsv(r, csv.Types(tc.types))
 		if tc.comparator == "" {
 			tc.comparator = "<"
 		}
@@ -572,7 +573,7 @@ func BenchmarkQFrame_ApplyEnum(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	df := qf.ReadCsv(r, qf.Types(map[string]string{"COL.1": "enum"}))
+	df := qf.ReadCsv(r, csv.Types(map[string]string{"COL.1": "enum"}))
 
 	benchApply(b, "Instruction with custom function", df, toUpper)
 	benchApply(b, "Instruction with built in function", df, "ToUpper")

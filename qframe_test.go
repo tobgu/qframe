@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/aggregation"
+	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/filter"
 	"math"
 	"reflect"
@@ -765,7 +766,7 @@ func TestQFrame_ReadCsv(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("ReadCsv %s", tc.name), func(t *testing.T) {
 			input := strings.Join(tc.inputHeaders, ",") + "\n" + tc.inputData
-			out := qframe.ReadCsv(strings.NewReader(input), qframe.EmptyNull(tc.emptyNull), qframe.Types(tc.types))
+			out := qframe.ReadCsv(strings.NewReader(input), csv.EmptyNull(tc.emptyNull), csv.Types(tc.types))
 			if tc.expectedErr != "" {
 				assertErr(t, out.Err, tc.expectedErr)
 			} else {
@@ -800,9 +801,9 @@ thu
 `
 		out := qframe.ReadCsv(
 			strings.NewReader(input),
-			qframe.EmptyNull(true),
-			qframe.Types(map[string]string{"day": "enum"}),
-			qframe.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+			csv.EmptyNull(true),
+			csv.Types(map[string]string{"day": "enum"}),
+			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
 		out = out.Sort(qframe.Order{Column: "day"})
 		expected := qframe.New(
 			map[string]interface{}{"day": []*string{nil, &mon, &mon, &tue, &wed, &thu, &thu, &sat, &sun}},
@@ -820,8 +821,8 @@ foo
 `
 		out := qframe.ReadCsv(
 			strings.NewReader(input),
-			qframe.Types(map[string]string{"day": "enum"}),
-			qframe.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+			csv.Types(map[string]string{"day": "enum"}),
+			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
 
 		assertErr(t, out.Err, "unknown enum value")
 	})
@@ -846,7 +847,7 @@ tue
 
 		out := qframe.ReadCsv(
 			strings.NewReader(input),
-			qframe.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
 
 		assertErr(t, out.Err, "specified for non enum column")
 	})

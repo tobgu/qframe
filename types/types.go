@@ -3,12 +3,25 @@ package types
 type DataType string
 
 const (
-	None   DataType = ""
-	Int             = "int"
-	String          = "string"
-	Float           = "float"
-	Bool            = "bool"
-	Enum            = "enum"
+	// None represents an unspecified data type.
+	// This is mainly used to indicate that the type of a column should be auto detected.
+	None DataType = ""
+
+	// Int translates into the Go int type. Missing values cannot be represented explicitly.
+	Int = "int"
+
+	// String translates into the Go *string type. nil represents a missing value.
+	String = "string"
+
+	// Float translates into the Go float64 type. NaN represents a missing value.
+	Float = "float"
+
+	// Bool translates into the Go bool type. Missing values cannot be represented explicitly.
+	Bool = "bool"
+
+	// Enum translates into the Go *string type. nil represents a missing value.
+	// An enum column can, at most, have 254 distinct values.
+	Enum = "enum"
 )
 
 // The different types of input that functions operating on columns can take
