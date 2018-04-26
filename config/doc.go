@@ -3,7 +3,7 @@ package config
 /*
 config acts as a base package for different configuration options used when creating or working with QFrames.
 
-Most of the configs use the "functional options" as presented here:
+Most of the configs use "functional options" as presented here:
 https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 While it is a nice way to overcome the lack of keyword arguments in Go to be able to extend function

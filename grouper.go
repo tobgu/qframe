@@ -7,9 +7,9 @@ import (
 	"github.com/tobgu/qframe/types"
 )
 
-// Internal statistics for grouping. Clients should not depend on this for any
-// type of decision making. It is strictly "for info". The layout may change
-// if the underlying grouping mechanisms change.
+// GroupStats contains internal statistics for grouping.
+// Clients should not depend on this for any type of decision making. It is strictly "for info".
+// The layout may change if the underlying grouping mechanisms change.
 type GroupStats grouper.GroupStats
 
 type Grouper struct {
@@ -19,37 +19,6 @@ type Grouper struct {
 	columnsByName  map[string]namedColumn
 	Err            error
 	Stats          GroupStats
-}
-
-type GroupByConfig struct {
-	columns     []string
-	groupByNull bool
-	// dropNulls?
-}
-
-type GroupByConfigFn func(c *GroupByConfig)
-
-func GroupBy(columns ...string) GroupByConfigFn {
-	return func(c *GroupByConfig) {
-		c.columns = columns
-	}
-}
-
-// Setting this to "true" means that nil/NaN values are grouped
-// together. Default "false".
-func GroupByNull(b bool) GroupByConfigFn {
-	return func(c *GroupByConfig) {
-		c.groupByNull = b
-	}
-}
-
-func newGroupByConfig(configFns []GroupByConfigFn) GroupByConfig {
-	var config GroupByConfig
-	for _, f := range configFns {
-		f(&config)
-	}
-
-	return config
 }
 
 // TODO-C

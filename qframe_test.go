@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
+	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/filter"
 	"math"
@@ -562,7 +563,7 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("GroupByAggregate %s", tc.name), func(t *testing.T) {
 			in := qframe.New(tc.input)
-			out := in.GroupBy(qframe.GroupBy(tc.groupColumns...)).Aggregate(tc.aggregations...)
+			out := in.GroupBy(groupby.Columns(tc.groupColumns...)).Aggregate(tc.aggregations...)
 
 			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders(tc.groupColumns...)...))
 		})
@@ -1394,7 +1395,7 @@ func TestQFrame_AggregateStrings(t *testing.T) {
 				"COL2": []string{"x", "p", "y", "q", "z"},
 			}, newqf.Enums(tc.enums))
 			expected := qframe.New(map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x,y,z", "p,q"}})
-			out := input.GroupBy(qframe.GroupBy("COL1")).Aggregate(qframe.Aggregation{Fn: aggregation.StrJoin(","), Column: "COL2"})
+			out := input.GroupBy(groupby.Columns("COL1")).Aggregate(qframe.Aggregation{Fn: aggregation.StrJoin(","), Column: "COL2"})
 			assertEquals(t, expected, out.Sort(qframe.Order{Column: "COL1"}))
 		})
 	}
@@ -1427,7 +1428,7 @@ func TestQFrame_AggregateGroupByNull(t *testing.T) {
 				}
 				expected := qframe.New(map[string]interface{}{"COL4": col4})
 
-				out := input.GroupBy(qframe.GroupBy(column), qframe.GroupByNull(groupByNull)).Aggregate(qframe.Aggregation{Fn: sum, Column: "COL4"})
+				out := input.GroupBy(groupby.Columns(column), groupby.Null(groupByNull)).Aggregate(qframe.Aggregation{Fn: sum, Column: "COL4"})
 				assertEquals(t, expected, out.Sort(colNamesToOrders(column, "COL4")...).Select("COL4"))
 			})
 		}

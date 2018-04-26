@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
+	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
@@ -362,7 +363,7 @@ func (qf QFrame) comparables(columns []string, orders []Order, groupByNull bool)
 	return result
 }
 
-func (qf QFrame) Distinct(configFns ...GroupByConfigFn) QFrame {
+func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -371,17 +372,17 @@ func (qf QFrame) Distinct(configFns ...GroupByConfigFn) QFrame {
 		return qf
 	}
 
-	config := newGroupByConfig(configFns)
+	config := groupby.NewConfig(configFns)
 
-	for _, col := range config.columns {
+	for _, col := range config.Columns {
 		if _, ok := qf.columnsByName[col]; !ok {
 			return qf.withErr(errors.New("Distinct", `unknown columns "%s"`, col))
 		}
 	}
 
-	columns := qf.columnsOrAll(config.columns)
+	columns := qf.columnsOrAll(config.Columns)
 	orders := qf.orders(columns)
-	comparables := qf.comparables(columns, orders, config.groupByNull)
+	comparables := qf.comparables(columns, orders, config.GroupByNull)
 	newIx := grouper.Distinct(qf.index, comparables)
 	return qf.withIndex(newIx)
 }
@@ -442,29 +443,29 @@ func (qf QFrame) Select(columns ...string) QFrame {
 }
 
 // Leaving out columns will make one large group over which aggregations can be done
-func (qf QFrame) GroupBy(configFns ...GroupByConfigFn) Grouper {
+func (qf QFrame) GroupBy(configFns ...groupby.ConfigFunc) Grouper {
 	if qf.Err != nil {
 		return Grouper{Err: qf.Err}
 	}
 
-	config := newGroupByConfig(configFns)
+	config := groupby.NewConfig(configFns)
 
-	if err := qf.checkColumns("GroupBy", config.columns); err != nil {
+	if err := qf.checkColumns("Columns", config.Columns); err != nil {
 		return Grouper{Err: err}
 	}
 
-	g := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: config.columns}
+	g := Grouper{columns: qf.columns, columnsByName: qf.columnsByName, groupedColumns: config.Columns}
 	if qf.Len() == 0 {
 		return g
 	}
 
-	if len(config.columns) == 0 {
+	if len(config.Columns) == 0 {
 		g.indices = []index.Int{qf.index}
 		return g
 	}
 
-	orders := qf.orders(config.columns)
-	comparables := qf.comparables(config.columns, orders, config.groupByNull)
+	orders := qf.orders(config.Columns)
+	comparables := qf.comparables(config.Columns, orders, config.GroupByNull)
 	indices, stats := grouper.GroupBy(qf.index, comparables)
 	g.indices = indices
 	g.Stats = GroupStats(stats)

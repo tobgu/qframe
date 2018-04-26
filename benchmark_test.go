@@ -7,6 +7,7 @@ import (
 	"fmt"
 	qf "github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/config/csv"
+	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/filter"
 	"io/ioutil"
 	"math/rand"
@@ -715,7 +716,7 @@ func BenchmarkGroupBy(b *testing.B) {
 				b.ResetTimer()
 				var stats qf.GroupStats
 				for i := 0; i < b.N; i++ {
-					grouper := df.GroupBy(qf.GroupBy(tc.cols...))
+					grouper := df.GroupBy(groupby.Columns(tc.cols...))
 					if grouper.Err != nil {
 						b.Errorf(grouper.Err.Error())
 					}
@@ -757,7 +758,7 @@ func BenchmarkDistinctNull(b *testing.B) {
 		b.Run(fmt.Sprintf("groupByNull=%v", tc.groupByNull), func(b *testing.B) {
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				out := df.Distinct(qf.GroupBy("COL1"), qf.GroupByNull(tc.groupByNull))
+				out := df.Distinct(groupby.Columns("COL1"), groupby.Null(tc.groupByNull))
 				if out.Err != nil {
 					b.Errorf(out.Err.Error())
 
