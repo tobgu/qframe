@@ -4,6 +4,7 @@ import (
 	stdcsv "encoding/csv"
 	"fmt"
 	"github.com/tobgu/qframe/config/csv"
+	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
@@ -790,14 +791,14 @@ func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction)
 	return newQf
 }
 
-func (qf QFrame) Eval(destCol string, expr Expression, ctx *ExprCtx) QFrame {
+func (qf QFrame) Eval(destCol string, expr Expression, ctx *eval.Context) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
 	// TODO: Might want to change this to take use functional arguments instead...
 	if ctx == nil {
-		ctx = NewDefaultExprCtx()
+		ctx = eval.NewDefaultCtx()
 	}
 
 	result, colName := expr.execute(qf, ctx)

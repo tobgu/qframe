@@ -2,163 +2,12 @@ package qframe
 
 import (
 	"fmt"
+	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/errors"
-	"github.com/tobgu/qframe/function"
-	"github.com/tobgu/qframe/types"
-	"math"
-	"reflect"
 	"strconv"
 )
 
-type functionsByArgCount struct {
-	singleArgs map[string]interface{}
-	doubleArgs map[string]interface{}
-}
-
-type functionsByArgType map[types.FunctionType]functionsByArgCount
-
-type argCount byte
-
-const (
-	argCountOne argCount = iota
-	argCountTwo
-)
-
-func (c argCount) String() string {
-	switch c {
-	case argCountOne:
-		return "Single argument"
-	case argCountTwo:
-		return "Double argument"
-	default:
-		return "Unknown argument count"
-	}
-}
-
-type ExprCtx struct {
-	functions functionsByArgType
-}
-
-func NewDefaultExprCtx() *ExprCtx {
-	// TODO: More functions
-	return &ExprCtx{
-		functionsByArgType{
-			types.FunctionTypeFloat: functionsByArgCount{
-				singleArgs: map[string]interface{}{
-					"abs": math.Abs,
-					"str": function.StrF,
-					"int": function.IntF,
-				},
-				doubleArgs: map[string]interface{}{
-					"+": function.PlusF,
-					"-": function.MinusF,
-					"*": function.MulF,
-					"/": function.DivF,
-				},
-			},
-			types.FunctionTypeInt: functionsByArgCount{
-				singleArgs: map[string]interface{}{
-					"abs":   function.AbsI,
-					"str":   function.StrI,
-					"bool":  function.BoolI,
-					"float": function.FloatI,
-				},
-				doubleArgs: map[string]interface{}{
-					"+": function.PlusI,
-					"-": function.MinusI,
-					"*": function.MulI,
-					"/": function.DivI,
-				},
-			},
-			types.FunctionTypeBool: functionsByArgCount{
-				singleArgs: map[string]interface{}{
-					"!":   function.NotB,
-					"str": function.StrB,
-					"int": function.IntB,
-				},
-				doubleArgs: map[string]interface{}{
-					"&":    function.AndB,
-					"|":    function.OrB,
-					"!=":   function.XorB,
-					"nand": function.NandB,
-				},
-			},
-			types.FunctionTypeString: functionsByArgCount{
-				singleArgs: map[string]interface{}{
-					"upper": function.UpperS,
-					"lower": function.LowerS,
-					"str":   function.StrS,
-					"len":   function.LenS,
-				},
-				doubleArgs: map[string]interface{}{
-					"+": function.ConcatS,
-				},
-			},
-		},
-	}
-}
-
-func (ctx *ExprCtx) getFunc(typ types.FunctionType, ac argCount, name string) (interface{}, bool) {
-	var fn interface{}
-	var ok bool
-	if ac == argCountOne {
-		fn, ok = ctx.functions[typ].singleArgs[name]
-	} else {
-		fn, ok = ctx.functions[typ].doubleArgs[name]
-	}
-
-	return fn, ok
-}
-
-func (ctx *ExprCtx) setFunc(typ types.FunctionType, ac argCount, name string, fn interface{}) {
-	if ac == argCountOne {
-		ctx.functions[typ].singleArgs[name] = fn
-	} else {
-		ctx.functions[typ].doubleArgs[name] = fn
-	}
-}
-
-// TODO-C
-func (ctx *ExprCtx) SetFunc(name string, fn interface{}) error {
-	// Since there's such a flexibility in the function types that can be
-	// used and there is no static typing to support it this function
-	// acts as the gate keeper for adding new functions.
-	var ac argCount
-	var typ types.FunctionType
-	switch fn.(type) {
-	// Int
-	case func(int, int) int:
-		ac, typ = argCountTwo, types.FunctionTypeInt
-	case func(int) int, func(int) bool, func(int) float64, func(int) *string:
-		ac, typ = argCountOne, types.FunctionTypeInt
-
-	// Float
-	case func(float64, float64) float64:
-		ac, typ = argCountTwo, types.FunctionTypeFloat
-	case func(float64) float64, func(float64) int, func(float64) bool, func(float64) *string:
-		ac, typ = argCountOne, types.FunctionTypeFloat
-
-	// Bool
-	case func(bool, bool) bool:
-		ac, typ = argCountTwo, types.FunctionTypeBool
-	case func(bool) bool, func(bool) int, func(bool) float64, func(bool) *string:
-		ac, typ = argCountOne, types.FunctionTypeBool
-
-	// String
-	case func(*string, *string) *string:
-		ac, typ = argCountTwo, types.FunctionTypeString
-	case func(*string) *string, func(*string) int, func(*string) float64, func(*string) bool:
-		ac, typ = argCountOne, types.FunctionTypeString
-
-	default:
-		return errors.New("SetFunc", "invalid function type for function \"%s\": %v", name, reflect.TypeOf(fn))
-	}
-
-	ctx.setFunc(typ, ac, name, fn)
-	return nil
-}
-
-func getFunc(ctx *ExprCtx, ac argCount, qf QFrame, colName, funcName string) (QFrame, interface{}) {
+func getFunc(ctx *eval.Context, ac eval.ArgCount, qf QFrame, colName, funcName string) (QFrame, interface{}) {
 	if qf.Err != nil {
 		return qf, nil
 	}
@@ -168,7 +17,7 @@ func getFunc(ctx *ExprCtx, ac argCount, qf QFrame, colName, funcName string) (QF
 		return qf.withErr(errors.Propagate("getFunc", err)), nil
 	}
 
-	fn, ok := ctx.getFunc(typ, ac, funcName)
+	fn, ok := ctx.GetFunc(typ, ac, funcName)
 	if !ok {
 		return qf.withErr(errors.New("getFunc", "Could not find %s %s function with name '%s'", typ, ac, funcName)), nil
 	}
@@ -177,7 +26,7 @@ func getFunc(ctx *ExprCtx, ac argCount, qf QFrame, colName, funcName string) (QF
 }
 
 type Expression interface {
-	execute(f QFrame, ctx *ExprCtx) (QFrame, string)
+	execute(f QFrame, ctx *eval.Context) (QFrame, string)
 	Err() error
 }
 
@@ -239,7 +88,7 @@ func newColExpr(x interface{}) (colExpr, bool) {
 	return colExpr{srcCol: srcCol}, cOk
 }
 
-func (e colExpr) execute(qf QFrame, _ *ExprCtx) (QFrame, string) {
+func (e colExpr) execute(qf QFrame, _ *eval.Context) (QFrame, string) {
 	return qf, e.srcCol
 }
 
@@ -291,7 +140,7 @@ func newConstExpr(x interface{}) (constExpr, bool) {
 	return constExpr{value: value}, isConst
 }
 
-func (e constExpr) execute(qf QFrame, _ *ExprCtx) (QFrame, string) {
+func (e constExpr) execute(qf QFrame, _ *eval.Context) (QFrame, string) {
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -322,8 +171,8 @@ func newUnaryExpr(x interface{}) (unaryExpr, bool) {
 	return unaryExpr{}, false
 }
 
-func (e unaryExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
-	qf, fn := getFunc(ctx, argCountOne, qf, e.srcCol, e.operation)
+func (e unaryExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, string) {
+	qf, fn := getFunc(ctx, eval.ArgCountOne, qf, e.srcCol, e.operation)
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -362,7 +211,7 @@ func newColConstExpr(x interface{}) (colConstExpr, bool) {
 	return colConstExpr{}, false
 }
 
-func (e colConstExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
+func (e colConstExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, string) {
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -401,8 +250,8 @@ func newColColExpr(x interface{}) (colColExpr, bool) {
 	return colColExpr{}, false
 }
 
-func (e colColExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
-	qf, fn := getFunc(ctx, argCountTwo, qf, e.srcCol1, e.operation)
+func (e colColExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, string) {
+	qf, fn := getFunc(ctx, eval.ArgCountTwo, qf, e.srcCol1, e.operation)
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -454,7 +303,7 @@ func newExprExpr(x interface{}) Expression {
 	return errorExpr{err: errors.New("newExprExpr", "Expected a list with three elements, was: %v", x)}
 }
 
-func (e exprExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
+func (e exprExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, string) {
 	result, lColName := e.lhs.execute(qf, ctx)
 	result, rColName := e.rhs.execute(result, ctx)
 	ccE, _ := newColColExpr([]interface{}{e.operation, lColName, rColName})
@@ -480,7 +329,7 @@ type errorExpr struct {
 	err error
 }
 
-func (e errorExpr) execute(qf QFrame, ctx *ExprCtx) (QFrame, string) {
+func (e errorExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, string) {
 	if qf.Err != nil {
 		return qf, ""
 	}

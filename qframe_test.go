@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/config/csv"
+	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/filter"
 	"math"
 	"reflect"
@@ -1598,9 +1599,9 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
-			var ctx *qframe.ExprCtx
+			var ctx *eval.Context
 			if tc.customFn != nil {
-				ctx = qframe.NewDefaultExprCtx()
+				ctx = eval.NewDefaultCtx()
 				err := ctx.SetFunc(tc.customFnName, tc.customFn)
 				assertNotErr(t, err)
 			}
