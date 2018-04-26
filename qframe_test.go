@@ -1599,11 +1599,12 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
-			var ctx *eval.Context
+			conf := make([]eval.ConfigFunc, 0)
 			if tc.customFn != nil {
-				ctx = eval.NewDefaultCtx()
+				ctx := eval.NewDefaultCtx()
 				err := ctx.SetFunc(tc.customFnName, tc.customFn)
 				assertNotErr(t, err)
+				conf = append(conf, eval.EvalContext(ctx))
 			}
 
 			if tc.dstCol == "" {
@@ -1613,7 +1614,7 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			tc.input[tc.dstCol] = tc.expected
 			expected := qframe.New(tc.input, qframe.Enums(tc.enums))
 
-			out := in.Eval(tc.dstCol, tc.expr, ctx)
+			out := in.Eval(tc.dstCol, tc.expr, conf...)
 
 			assertEquals(t, expected, out)
 		})

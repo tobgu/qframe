@@ -791,23 +791,19 @@ func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction)
 	return newQf
 }
 
-func (qf QFrame) Eval(destCol string, expr Expression, ctx *eval.Context) QFrame {
+func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
 
-	// TODO: Might want to change this to take use functional arguments instead...
-	if ctx == nil {
-		ctx = eval.NewDefaultCtx()
-	}
-
-	result, colName := expr.execute(qf, ctx)
+	conf := eval.NewConfig(ff...)
+	result, colName := expr.execute(qf, conf.Ctx)
 
 	// colName is often just a temporary name of a column created as a result of
 	// executing the expression. We want to rename this column to the requested
 	// destination columns name. Remove colName from the result if not present in
 	// the original frame to avoid polluting the frame with intermediate results.
-	result = result.Copy(destCol, colName)
+	result = result.Copy(dstCol, colName)
 	if !qf.Contains(colName) {
 		result = result.Drop(colName)
 	}
@@ -1119,4 +1115,4 @@ func (qf QFrame) ByteSize() int {
 // - Change column package layout?
 // - Remove column based json Read/Write until someone needs it?
 // - Make config package with subpackages named after what they configure?
-// - Move Grouper to own file
+// - Remove dep files

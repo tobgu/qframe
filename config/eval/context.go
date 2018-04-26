@@ -118,6 +118,7 @@ func (ctx *Context) setFunc(typ types.FunctionType, ac ArgCount, name string, fn
 
 // TODO-C
 func (ctx *Context) SetFunc(name string, fn interface{}) error {
+	// TODO: Check function name validity (eg must not start with $, more?)
 	// Since there's such a flexibility in the function types that can be
 	// used and there is no static typing to support it this function
 	// acts as the gate keeper for adding new functions.
