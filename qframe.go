@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
+	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
@@ -43,41 +44,6 @@ type QFrame struct {
 	Err           error
 }
 
-type Config struct {
-	columnOrder []string
-	enumColumns map[string][]string
-}
-
-type ConfigFunc func(c *Config)
-
-func newConfig(fns []ConfigFunc) *Config {
-	config := &Config{}
-	for _, fn := range fns {
-		fn(config)
-	}
-	return config
-}
-
-func ColumnOrder(columns ...string) ConfigFunc {
-	return func(c *Config) {
-		c.columnOrder = make([]string, len(columns))
-		copy(c.columnOrder, columns)
-	}
-}
-
-// If columns should be considered enums. The map key specifies the
-// columns name, the value if there is a fixed set of values and their
-// internal ordering. If value is nil or empty list the values will be
-// derived from the columns content and the ordering unspecified.
-func Enums(columns map[string][]string) ConfigFunc {
-	return func(c *Config) {
-		c.enumColumns = make(map[string][]string)
-		for k, v := range columns {
-			c.enumColumns[k] = v
-		}
-	}
-}
-
 func (qf QFrame) withErr(err error) QFrame {
 	return QFrame{Err: err, columns: qf.columns, columnsByName: qf.columnsByName, index: qf.index}
 }
@@ -106,7 +72,7 @@ type ConstBool struct {
 	Count int
 }
 
-func createColumn(name string, data interface{}, config *Config) (column.Column, error) {
+func createColumn(name string, data interface{}, config *newqf.Config) (column.Column, error) {
 	var localS column.Column
 
 	// TODO: Change this case to use strings directly for strings and enums
@@ -131,24 +97,24 @@ func createColumn(name string, data interface{}, config *Config) (column.Column,
 	case ConstFloat:
 		localS = fcolumn.NewConst(t.Val, t.Count)
 	case []*string:
-		if values, ok := config.enumColumns[name]; ok {
+		if values, ok := config.EnumColumns[name]; ok {
 			localS, err = ecolumn.New(t, values)
 			if err != nil {
 				return nil, errors.Propagate(fmt.Sprintf("New columns %s", name), err)
 			}
 			// Book keeping
-			delete(config.enumColumns, name)
+			delete(config.EnumColumns, name)
 		} else {
 			localS = scolumn.New(t)
 		}
 	case ConstString:
-		if values, ok := config.enumColumns[name]; ok {
+		if values, ok := config.EnumColumns[name]; ok {
 			localS, err = ecolumn.NewConst(t.Val, t.Count, values)
 			if err != nil {
 				return nil, errors.Propagate(fmt.Sprintf("New columns %s", name), err)
 			}
 			// Book keeping
-			delete(config.enumColumns, name)
+			delete(config.EnumColumns, name)
 		} else {
 			localS = scolumn.NewConst(t.Val, t.Count)
 		}
@@ -169,21 +135,21 @@ func createColumn(name string, data interface{}, config *Config) (column.Column,
 
 // New creates a new QFrame with column content from data.
 // TODO-C Examples
-func New(data map[string]types.DataSlice, fns ...ConfigFunc) QFrame {
-	config := newConfig(fns)
-	if len(config.columnOrder) == 0 {
-		config.columnOrder = make([]string, 0, len(data))
+func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
+	config := newqf.NewConfig(fns)
+	if len(config.ColumnOrder) == 0 {
+		config.ColumnOrder = make([]string, 0, len(data))
 		for name := range data {
-			config.columnOrder = append(config.columnOrder, name)
-			sort.Strings(config.columnOrder)
+			config.ColumnOrder = append(config.ColumnOrder, name)
+			sort.Strings(config.ColumnOrder)
 		}
 	}
 
-	if len(config.columnOrder) != len(data) {
+	if len(config.ColumnOrder) != len(data) {
 		return QFrame{Err: errors.New("New", "columns and columns order length do not match")}
 	}
 
-	for _, name := range config.columnOrder {
+	for _, name := range config.ColumnOrder {
 		if _, ok := data[name]; !ok {
 			return QFrame{Err: errors.New("New", `key "%s" does not exist in supplied data`, name)}
 		}
@@ -192,7 +158,7 @@ func New(data map[string]types.DataSlice, fns ...ConfigFunc) QFrame {
 	s := make([]namedColumn, len(data))
 	sByName := make(map[string]namedColumn, len(data))
 	firstLen, currentLen := 0, 0
-	for i, name := range config.columnOrder {
+	for i, name := range config.ColumnOrder {
 		col := data[name]
 		localS, err := createColumn(name, col, config)
 		if err != nil {
@@ -211,9 +177,9 @@ func New(data map[string]types.DataSlice, fns ...ConfigFunc) QFrame {
 		}
 	}
 
-	if len(config.enumColumns) > 0 {
+	if len(config.EnumColumns) > 0 {
 		colNames := make([]string, 0)
-		for k := range config.enumColumns {
+		for k := range config.EnumColumns {
 			colNames = append(colNames, k)
 		}
 
@@ -681,7 +647,7 @@ func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 		return qf.withErr(errors.New("apply0", "unknown apply type: %v", reflect.TypeOf(fn)))
 	}
 
-	c, err := createColumn(dstCol, data, newConfig(nil))
+	c, err := createColumn(dstCol, data, newqf.NewConfig(nil))
 	if err != nil {
 		return qf.withErr(err)
 	}
@@ -777,6 +743,7 @@ func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	return result
 }
 
+// TODO: FilteredEval instead?
 func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
 	filteredQf := qf.Filter(clause)
 	if filteredQf.Err != nil {
@@ -796,7 +763,7 @@ func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFr
 		return qf
 	}
 
-	conf := eval.NewConfig(ff...)
+	conf := eval.NewConfig(ff)
 	result, colName := expr.execute(qf, conf.Ctx)
 
 	// colName is often just a temporary name of a column created as a result of
@@ -926,16 +893,16 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 ////////////
 
 func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
-	conf := csv.NewConfig(confFuncs...)
+	conf := csv.NewConfig(confFuncs)
 	data, columns, err := qfio.ReadCsv(reader, qfio.CsvConfig(conf))
 	if err != nil {
 		return QFrame{Err: err}
 	}
 
-	return New(data, ColumnOrder(columns...))
+	return New(data, newqf.ColumnOrder(columns...))
 }
 
-func ReadJson(reader io.Reader, fns ...ConfigFunc) QFrame {
+func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	data, err := qfio.UnmarshalJson(reader)
 	if err != nil {
 		return QFrame{Err: err}

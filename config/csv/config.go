@@ -16,7 +16,7 @@ type ConfigFunc func(*Config)
 
 // NewConfig creates a new Config object.
 // This function should never be called from outside QFrame.
-func NewConfig(ff ...ConfigFunc) Config {
+func NewConfig(ff []ConfigFunc) Config {
 	conf := Config{}
 	for _, f := range ff {
 		f(&conf)

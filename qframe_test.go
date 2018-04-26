@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
+	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/filter"
 	"math"
 	"reflect"
@@ -140,7 +141,7 @@ func TestQFrame_FilterColConstNull(t *testing.T) {
 				if tc.isEnum {
 					enums["COL1"] = nil
 				}
-				input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
+				input := qframe.New(map[string]interface{}{"COL1": tc.input}, newqf.Enums(enums))
 				output := input.Filter(qframe.Filter{Column: "COL1", Comparator: comp.operation, Arg: tc.arg})
 				assertNotErr(t, output.Err)
 				if output.Len() != comp.expectCount {
@@ -184,7 +185,7 @@ func TestQFrame_FilterColColNull(t *testing.T) {
 					enums["COL1"] = nil
 					enums["COL2"] = nil
 				}
-				input := qframe.New(map[string]interface{}{"COL1": tc.inputCol1, "COL2": tc.inputCol2}, qframe.Enums(enums))
+				input := qframe.New(map[string]interface{}{"COL1": tc.inputCol1, "COL2": tc.inputCol2}, newqf.Enums(enums))
 				output := input.Filter(qframe.Filter{Column: "COL1", Comparator: comp.operation, Arg: filter.ColumnName("COL2")})
 				assertNotErr(t, output.Err)
 				if output.Len() != comp.expectCount {
@@ -221,8 +222,8 @@ func TestQFrame_FilterIsNull(t *testing.T) {
 			if tc.isEnum {
 				enums["COL1"] = nil
 			}
-			input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
-			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(enums))
+			input := qframe.New(map[string]interface{}{"COL1": tc.input}, newqf.Enums(enums))
+			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, newqf.Enums(enums))
 			output := input.Filter(qframe.Filter{Column: "COL1", Comparator: tc.operation, Inverse: tc.inverse})
 			assertNotErr(t, output.Err)
 			assertEquals(t, expected, output)
@@ -250,7 +251,7 @@ func TestQFrame_FilterNullArg(t *testing.T) {
 				enums["COL1"] = nil
 			}
 
-			input := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(enums))
+			input := qframe.New(map[string]interface{}{"COL1": tc.input}, newqf.Enums(enums))
 			output := input.Filter(qframe.Filter{Column: "COL1", Comparator: "<", Arg: tc.arg})
 			assertErr(t, output.Err, "filter")
 		})
@@ -263,7 +264,7 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 		comparator interface{}
 		input      map[string]interface{}
 		expected   map[string]interface{}
-		configs    []qframe.ConfigFunc
+		configs    []newqf.ConfigFunc
 	}{
 		{
 			name:       "built in int compare",
@@ -315,7 +316,7 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 			comparator: func(a, b *string) bool { return *a < *b },
 			input:      map[string]interface{}{"COL1": []string{"a", "b", "c"}, "COL2": []string{"o", "a", "q"}},
 			expected:   map[string]interface{}{"COL1": []string{"b"}, "COL2": []string{"a"}},
-			configs: []qframe.ConfigFunc{qframe.Enums(map[string][]string{
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{
 				"COL1": {"a", "b", "c", "o", "q"},
 				"COL2": {"a", "b", "c", "o", "q"},
 			})}},
@@ -780,7 +781,7 @@ func TestQFrame_ReadCsv(t *testing.T) {
 					}
 				}
 
-				assertEquals(t, qframe.New(tc.expected, qframe.ColumnOrder(tc.inputHeaders...), qframe.Enums(enums)), out)
+				assertEquals(t, qframe.New(tc.expected, newqf.ColumnOrder(tc.inputHeaders...), newqf.Enums(enums)), out)
 			}
 		})
 	}
@@ -808,7 +809,7 @@ thu
 		out = out.Sort(qframe.Order{Column: "day"})
 		expected := qframe.New(
 			map[string]interface{}{"day": []*string{nil, &mon, &mon, &tue, &wed, &thu, &thu, &sat, &sun}},
-			qframe.Enums(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+			newqf.Enums(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
 
 		assertNotErr(t, out.Err)
 		assertEquals(t, expected, out)
@@ -836,7 +837,7 @@ foo
 
 		out := qframe.New(
 			map[string]interface{}{"foo": input},
-			qframe.Enums(map[string][]string{"foo": nil}))
+			newqf.Enums(map[string][]string{"foo": nil}))
 
 		assertErr(t, out.Err, "max cardinality")
 	})
@@ -952,10 +953,10 @@ false,2.5,2,"b,c"
 }
 
 func TestQFrame_ToFromJSON(t *testing.T) {
-	config := []qframe.ConfigFunc{qframe.Enums(map[string][]string{"ENUM": {"aa", "bb"}})}
+	config := []newqf.ConfigFunc{newqf.Enums(map[string][]string{"ENUM": {"aa", "bb"}})}
 	table := []struct {
 		orientation string
-		configFuncs []qframe.ConfigFunc
+		configFuncs []newqf.ConfigFunc
 	}{
 		{orientation: "records"},
 		{orientation: "columns"},
@@ -1010,7 +1011,7 @@ func TestQFrame_ToJSONNaN(t *testing.T) {
 
 func TestQFrame_FilterEnum(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
-	enums := qframe.Enums(map[string][]string{"COL1": {"a", "b", "c", "d", "e"}})
+	enums := newqf.Enums(map[string][]string{"COL1": {"a", "b", "c", "d", "e"}})
 	in := qframe.New(map[string]interface{}{
 		"COL1": []*string{&b, &c, &a, nil, &e, &d, nil}}, enums)
 
@@ -1128,8 +1129,8 @@ func TestQFrame_LikeFilterString(t *testing.T) {
 
 		for _, tc := range table {
 			t.Run(fmt.Sprintf("Enum %t, %s %s", len(enums) > 0, tc.comparator, tc.arg), func(t *testing.T) {
-				in := qframe.New(data, qframe.Enums(enums))
-				expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(enums))
+				in := qframe.New(data, newqf.Enums(enums))
+				expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, newqf.Enums(enums))
 				out := in.Filter(qframe.Filter{Column: "COL1", Comparator: tc.comparator, Arg: tc.arg})
 				assertEquals(t, expected, out)
 			})
@@ -1141,7 +1142,7 @@ func TestQFrame_String(t *testing.T) {
 	a := qframe.New(map[string]interface{}{
 		"COLUMN1": []string{"Long content", "a", "b", "c"},
 		"COL2":    []int{3, 2, 1, 12345678910},
-	}, qframe.ColumnOrder("COL2", "COLUMN1"))
+	}, newqf.ColumnOrder("COL2", "COLUMN1"))
 
 	expected := `COL2(i) COLUMN1(s)
 ------- ----------
@@ -1167,7 +1168,7 @@ func TestQFrame_ByteSize(t *testing.T) {
 		"COL3": []float64{3.5, 2.0},
 		"COL4": []bool{true, false},
 		"COL5": []string{"1", "2"},
-	}, qframe.Enums(map[string][]string{"COL5": nil}))
+	}, newqf.Enums(map[string][]string{"COL5": nil}))
 	totalSize := a.ByteSize()
 
 	// Not so much of a test as lock down on behavior to detect changes
@@ -1289,11 +1290,11 @@ func TestQFrame_ApplySingleArgEnum(t *testing.T) {
 	A, B := "A", "B"
 	input := qframe.New(
 		map[string]interface{}{"COL1": []*string{&a, &b, nil, &a}},
-		qframe.Enums(map[string][]string{"COL1": nil}))
+		newqf.Enums(map[string][]string{"COL1": nil}))
 
 	expectedData := map[string]interface{}{"COL1": []*string{&A, &B, nil, &A}}
 	expectedNewGeneral := qframe.New(expectedData)
-	expectedNewBuiltIn := qframe.New(expectedData, qframe.Enums(map[string][]string{"COL1": nil}))
+	expectedNewBuiltIn := qframe.New(expectedData, newqf.Enums(map[string][]string{"COL1": nil}))
 
 	// General function
 	assertEquals(t, expectedNewGeneral, input.Apply(qframe.Instruction{Fn: toUpper, DstCol: "COL1", SrcCol1: "COL1"}))
@@ -1330,9 +1331,9 @@ func TestQFrame_ApplyDoubleArg(t *testing.T) {
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
-			in := qframe.New(tc.input, qframe.Enums(tc.enums))
+			in := qframe.New(tc.input, newqf.Enums(tc.enums))
 			tc.input["COL3"] = tc.expected
-			expected := qframe.New(tc.input, qframe.Enums(tc.enums))
+			expected := qframe.New(tc.input, newqf.Enums(tc.enums))
 			out := in.Apply(qframe.Instruction{Fn: tc.fn, DstCol: "COL3", SrcCol1: "COL1", SrcCol2: "COL2"})
 			assertEquals(t, expected, out)
 		})
@@ -1391,7 +1392,7 @@ func TestQFrame_AggregateStrings(t *testing.T) {
 			input := qframe.New(map[string]interface{}{
 				"COL1": []string{"a", "b", "a", "b", "a"},
 				"COL2": []string{"x", "p", "y", "q", "z"},
-			}, qframe.Enums(tc.enums))
+			}, newqf.Enums(tc.enums))
 			expected := qframe.New(map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"x,y,z", "p,q"}})
 			out := input.GroupBy(qframe.GroupBy("COL1")).Aggregate(qframe.Aggregation{Fn: aggregation.StrJoin(","), Column: "COL2"})
 			assertEquals(t, expected, out.Sort(qframe.Order{Column: "COL1"}))
@@ -1417,7 +1418,7 @@ func TestQFrame_AggregateGroupByNull(t *testing.T) {
 					"COL2": []*string{&a, &b, nil, &a, &b, nil},
 					"COL3": []float64{1, 2, math.NaN(), 1, 2, math.NaN()},
 					"COL4": []int{1, 2, 3, 10, 20, 30},
-				}, qframe.Enums(map[string][]string{"COL2": nil}))
+				}, newqf.Enums(map[string][]string{"COL2": nil}))
 
 				col4 := []int{3, 30, 11, 22}
 				if groupByNull {
@@ -1475,8 +1476,8 @@ func TestQFrame_InitWithConstantVal(t *testing.T) {
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
-			in := qframe.New(map[string]interface{}{"COL1": tc.input}, qframe.Enums(tc.enums))
-			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, qframe.Enums(tc.enums))
+			in := qframe.New(map[string]interface{}{"COL1": tc.input}, newqf.Enums(tc.enums))
+			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, newqf.Enums(tc.enums))
 			assertEquals(t, expected, in)
 		})
 	}
@@ -1521,7 +1522,7 @@ func TestQFrame_StringView(t *testing.T) {
 
 func TestQFrame_EnumView(t *testing.T) {
 	a, b := "a", "b"
-	input := qframe.New(map[string]interface{}{"COL1": []*string{&a, nil, &b}}, qframe.Enums(map[string][]string{"COL1": {"a", "b"}}))
+	input := qframe.New(map[string]interface{}{"COL1": []*string{&a, nil, &b}}, newqf.Enums(map[string][]string{"COL1": {"a", "b"}}))
 	input = input.Sort(qframe.Order{Column: "COL1"})
 	expected := []*string{nil, &a, &b}
 
@@ -1610,9 +1611,9 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			if tc.dstCol == "" {
 				tc.dstCol = "COL3"
 			}
-			in := qframe.New(tc.input, qframe.Enums(tc.enums))
+			in := qframe.New(tc.input, newqf.Enums(tc.enums))
 			tc.input[tc.dstCol] = tc.expected
-			expected := qframe.New(tc.input, qframe.Enums(tc.enums))
+			expected := qframe.New(tc.input, newqf.Enums(tc.enums))
 
 			out := in.Eval(tc.dstCol, tc.expr, conf...)
 

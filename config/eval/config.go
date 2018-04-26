@@ -1,5 +1,9 @@
 package eval
 
+// Config holds configuration for evaluating expressions on QFrames.
+// It should be considered a private implementation detail and should never be
+// referenced or used directly outside of the QFrame code. To manipulate it
+// use the functions returning ConfigFunc below.
 type Config struct {
 	Ctx *Context
 }
@@ -9,7 +13,7 @@ type ConfigFunc func(*Config)
 
 // NewConfig creates a new Config object.
 // This function should never be called from outside QFrame.
-func NewConfig(ff ...ConfigFunc) Config {
+func NewConfig(ff []ConfigFunc) Config {
 	result := Config{}
 	for _, f := range ff {
 		f(&result)
