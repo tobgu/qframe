@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/errors"
-	"github.com/tobgu/qframe/filter"
+	"github.com/tobgu/qframe/types"
 	"strconv"
 )
 
-func getFunc(ctx *eval.Context, ac eval.ArgCount, qf QFrame, colName filter.ColumnName, funcName string) (QFrame, interface{}) {
+func getFunc(ctx *eval.Context, ac eval.ArgCount, qf QFrame, colName types.ColumnName, funcName string) (QFrame, interface{}) {
 	if qf.Err != nil {
 		return qf, nil
 	}
@@ -27,7 +27,7 @@ func getFunc(ctx *eval.Context, ac eval.ArgCount, qf QFrame, colName filter.Colu
 }
 
 type Expression interface {
-	execute(f QFrame, ctx *eval.Context) (QFrame, filter.ColumnName)
+	execute(f QFrame, ctx *eval.Context) (QFrame, types.ColumnName)
 	Err() error
 }
 
@@ -68,11 +68,11 @@ func opIdentifier(x interface{}) (string, bool) {
 
 // This will just pass the src column on
 type colExpr struct {
-	srcCol filter.ColumnName
+	srcCol types.ColumnName
 }
 
-func colIdentifier(x interface{}) (filter.ColumnName, bool) {
-	srcCol, cOk := x.(filter.ColumnName)
+func colIdentifier(x interface{}) (types.ColumnName, bool) {
+	srcCol, cOk := x.(types.ColumnName)
 	return srcCol, cOk
 }
 
@@ -81,7 +81,7 @@ func newColExpr(x interface{}) (colExpr, bool) {
 	return colExpr{srcCol: srcCol}, cOk
 }
 
-func (e colExpr) execute(qf QFrame, _ *eval.Context) (QFrame, filter.ColumnName) {
+func (e colExpr) execute(qf QFrame, _ *eval.Context) (QFrame, types.ColumnName) {
 	return qf, e.srcCol
 }
 
@@ -90,11 +90,11 @@ func (e colExpr) Err() error {
 	return nil
 }
 
-func tempColName(qf QFrame, prefix string) filter.ColumnName {
+func tempColName(qf QFrame, prefix string) types.ColumnName {
 	for i := 0; i < 10000; i++ {
 		colName := prefix + "-temp-" + strconv.Itoa(i)
 		if !qf.Contains(colName) {
-			return filter.ColumnName(colName)
+			return types.ColumnName(colName)
 		}
 	}
 
@@ -123,7 +123,7 @@ func newConstExpr(x interface{}) (constExpr, bool) {
 	return constExpr{value: value}, isConst
 }
 
-func (e constExpr) execute(qf QFrame, _ *eval.Context) (QFrame, filter.ColumnName) {
+func (e constExpr) execute(qf QFrame, _ *eval.Context) (QFrame, types.ColumnName) {
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -139,7 +139,7 @@ func (e constExpr) Err() error {
 // Use the content of a single column and nothing else as input (eg. abs(x))
 type unaryExpr struct {
 	operation string
-	srcCol    filter.ColumnName
+	srcCol    types.ColumnName
 }
 
 func newUnaryExpr(x interface{}) (unaryExpr, bool) {
@@ -154,7 +154,7 @@ func newUnaryExpr(x interface{}) (unaryExpr, bool) {
 	return unaryExpr{}, false
 }
 
-func (e unaryExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, filter.ColumnName) {
+func (e unaryExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
 	qf, fn := getFunc(ctx, eval.ArgCountOne, qf, e.srcCol, e.operation)
 	if qf.Err != nil {
 		return qf, ""
@@ -171,7 +171,7 @@ func (e unaryExpr) Err() error {
 // Use the content of a single column and a constant as input (eg. age + 1)
 type colConstExpr struct {
 	operation string
-	srcCol    filter.ColumnName
+	srcCol    types.ColumnName
 	value     interface{}
 }
 
@@ -194,7 +194,7 @@ func newColConstExpr(x interface{}) (colConstExpr, bool) {
 	return colConstExpr{}, false
 }
 
-func (e colConstExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, filter.ColumnName) {
+func (e colConstExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -217,8 +217,8 @@ func (e colConstExpr) Err() error {
 // Use the content of two columns as input (eg. weight / length)
 type colColExpr struct {
 	operation string
-	srcCol1   filter.ColumnName
-	srcCol2   filter.ColumnName
+	srcCol1   types.ColumnName
+	srcCol2   types.ColumnName
 }
 
 func newColColExpr(x interface{}) (colColExpr, bool) {
@@ -233,7 +233,7 @@ func newColColExpr(x interface{}) (colColExpr, bool) {
 	return colColExpr{}, false
 }
 
-func (e colColExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, filter.ColumnName) {
+func (e colColExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
 	qf, fn := getFunc(ctx, eval.ArgCountTwo, qf, e.srcCol1, e.operation)
 	if qf.Err != nil {
 		return qf, ""
@@ -286,7 +286,7 @@ func newExprExpr(x interface{}) Expression {
 	return errorExpr{err: errors.New("newExprExpr", "Expected a list with three elements, was: %v", x)}
 }
 
-func (e exprExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, filter.ColumnName) {
+func (e exprExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
 	result, lColName := e.lhs.execute(qf, ctx)
 	result, rColName := e.rhs.execute(result, ctx)
 	ccE, _ := newColColExpr([]interface{}{e.operation, lColName, rColName})
@@ -294,7 +294,7 @@ func (e exprExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, filter.ColumnNa
 
 	// Drop intermediate results if not present in original frame
 	dropCols := make([]string, 0)
-	for _, c := range []filter.ColumnName{lColName, rColName} {
+	for _, c := range []types.ColumnName{lColName, rColName} {
 		s := string(c)
 		if !qf.Contains(s) {
 			dropCols = append(dropCols, s)
@@ -313,7 +313,7 @@ type errorExpr struct {
 	err error
 }
 
-func (e errorExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, filter.ColumnName) {
+func (e errorExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
 	if qf.Err != nil {
 		return qf, ""
 	}
@@ -331,7 +331,7 @@ func Val(value interface{}) Expression {
 }
 
 // TODO-C
-func Expr1(name string, column filter.ColumnName) Expression {
+func Expr1(name string, column types.ColumnName) Expression {
 	return newExpr([]interface{}{name, column})
 }
 

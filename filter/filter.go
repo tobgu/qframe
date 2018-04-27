@@ -31,10 +31,6 @@ var Inverse = map[string]string{
 	IsNull:    IsNotNull,
 }
 
-// Marker type to use in Filter.Arg to denote that the argument is
-// another column in the QFrame as opposed to a fixed value.
-type ColumnName string
-
 type Filter struct {
 	// Comparator may be a string referring to a built in or a function returning bool
 	Comparator interface{}

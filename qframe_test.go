@@ -9,7 +9,7 @@ import (
 	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
-	"github.com/tobgu/qframe/filter"
+	"github.com/tobgu/qframe/types"
 	"math"
 	"reflect"
 	"regexp"
@@ -187,7 +187,7 @@ func TestQFrame_FilterColColNull(t *testing.T) {
 					enums["COL2"] = nil
 				}
 				input := qframe.New(map[string]interface{}{"COL1": tc.inputCol1, "COL2": tc.inputCol2}, newqf.Enums(enums))
-				output := input.Filter(qframe.Filter{Column: "COL1", Comparator: comp.operation, Arg: filter.ColumnName("COL2")})
+				output := input.Filter(qframe.Filter{Column: "COL1", Comparator: comp.operation, Arg: col("COL2")})
 				assertNotErr(t, output.Err)
 				if output.Len() != comp.expectCount {
 					fmt.Println(output.String())
@@ -326,7 +326,7 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("Filter %s", tc.name), func(t *testing.T) {
 			input := qframe.New(tc.input, tc.configs...)
-			output := input.Filter(qframe.Filter{Comparator: tc.comparator, Column: "COL2", Arg: filter.ColumnName("COL1")})
+			output := input.Filter(qframe.Filter{Comparator: tc.comparator, Column: "COL2", Arg: col("COL1")})
 			expected := qframe.New(tc.expected, tc.configs...)
 			assertEquals(t, expected, output)
 		})
@@ -1542,8 +1542,8 @@ func TestQFrame_EnumView(t *testing.T) {
 	assertTrue(t, (*v.ItemAt(2) == *s[2]) && (*s[2] == *expected[2]))
 }
 
-func col(c string) filter.ColumnName {
-	return filter.ColumnName(c)
+func col(c string) types.ColumnName {
+	return types.ColumnName(c)
 }
 
 func TestQFrame_EvalSuccess(t *testing.T) {

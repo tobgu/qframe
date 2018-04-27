@@ -218,7 +218,7 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 			return qf.withErr(errors.New("Filter", `column does not exist, "%s"`, f.Column))
 		}
 
-		if name, ok := f.Arg.(filter.ColumnName); ok {
+		if name, ok := f.Arg.(types.ColumnName); ok {
 			argC, ok := qf.columnsByName[string(name)]
 			if !ok {
 				return qf.withErr(errors.New("Filter", `argument column does not exist, "%s"`, name))
@@ -642,7 +642,7 @@ func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 		data = ConstString{Val: t, Count: colLen}
 	case string:
 		data = ConstString{Val: &t, Count: colLen}
-	case filter.ColumnName:
+	case types.ColumnName:
 		return qf.Copy(dstCol, string(t))
 	default:
 		return qf.withErr(errors.New("apply0", "unknown apply type: %v", reflect.TypeOf(fn)))
