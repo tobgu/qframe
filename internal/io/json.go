@@ -98,7 +98,6 @@ func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
 	for colName, value := range r0 {
 		switch t := value.(type) {
 		case int:
-			println("T", t)
 			col := make([]int, len(records))
 			if err := fillInts(col, records, colName); err != nil {
 				return nil, err

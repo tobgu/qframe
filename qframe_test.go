@@ -1542,6 +1542,10 @@ func TestQFrame_EnumView(t *testing.T) {
 	assertTrue(t, (*v.ItemAt(2) == *s[2]) && (*s[2] == *expected[2]))
 }
 
+func col(c string) filter.ColumnName {
+	return filter.ColumnName(c)
+}
+
 func TestQFrame_EvalSuccess(t *testing.T) {
 	table := []struct {
 		name         string
@@ -1554,46 +1558,52 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 		enums        map[string][]string
 	}{
 		{
+			name:     "column copying",
+			expr:     qframe.Val(col("COL1")),
+			input:    map[string]interface{}{"COL1": []int{1, 2}},
+			dstCol:   "COL2",
+			expected: []int{1, 2}},
+		{
 			name:     "int col plus col",
-			expr:     qframe.Expr2("+", "COL1", "COL2"),
+			expr:     qframe.Expr2("+", col("COL1"), col("COL2")),
 			input:    map[string]interface{}{"COL1": []int{1, 2}, "COL2": []int{3, 4}},
 			expected: []int{4, 6}},
 		{
 			name:     "int col plus const minus const",
-			expr:     qframe.Expr2("-", qframe.Expr2("+", "COL1", 10), qframe.Val(1)),
+			expr:     qframe.Expr2("-", qframe.Expr2("+", col("COL1"), 10), qframe.Val(1)),
 			input:    map[string]interface{}{"COL1": []int{1, 2}},
 			expected: []int{10, 11}},
 		{
 			name:     "string plus itoa int",
-			expr:     qframe.Expr2("+", "COL1", qframe.Expr1("str", "COL2")),
+			expr:     qframe.Expr2("+", col("COL1"), qframe.Expr1("str", col("COL2"))),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []int{1, 2}},
 			expected: []string{"a1", "b2"}},
 		{
 			name:     "string plus string literal",
-			expr:     qframe.Expr2("+", "COL1", qframe.Val("'A'")),
+			expr:     qframe.Expr2("+", col("COL1"), qframe.Val("A")),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}},
 			expected: []string{"aA", "bA"}},
 		{
 			name:         "float custom func",
-			expr:         qframe.Expr2("pythagoras", "COL1", "COL2"),
+			expr:         qframe.Expr2("pythagoras", col("COL1"), col("COL2")),
 			input:        map[string]interface{}{"COL1": []float64{1, 2}, "COL2": []float64{1, 3}},
 			expected:     []float64{math.Sqrt(2), math.Sqrt(4 + 9)},
 			customFn:     func(x, y float64) float64 { return math.Sqrt(x*x + y*y) },
 			customFnName: "pythagoras"},
 		{
 			name:     "bool col and col",
-			expr:     qframe.Expr2("&", "COL1", "COL2"),
+			expr:     qframe.Expr2("&", col("COL1"), col("COL2")),
 			input:    map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, true}},
 			expected: []bool{true, false}},
 		{
 			name:     "enum col plus col",
-			expr:     qframe.Expr2("+", "COL1", "COL2"),
+			expr:     qframe.Expr2("+", col("COL1"), col("COL2")),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"A", "B"}},
 			expected: []string{"aA", "bB"},
 			enums:    map[string][]string{"COL1": nil, "COL2": nil}},
 		{
 			name:     "enum col plus string col, cast string to enum needed",
-			expr:     qframe.Expr2("+", qframe.Expr1("str", "COL1"), "COL2"),
+			expr:     qframe.Expr2("+", qframe.Expr1("str", col("COL1")), col("COL2")),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"A", "B"}},
 			expected: []string{"aA", "bB"},
 			enums:    map[string][]string{"COL1": nil}},

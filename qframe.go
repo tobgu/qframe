@@ -717,7 +717,7 @@ func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame 
 	return qf.setColumn(dstCol, resultColumn)
 }
 
-// TODO-C
+// TODO-C, make this an internal type
 type Instruction struct {
 	Fn     interface{}
 	DstCol string
@@ -765,7 +765,8 @@ func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFr
 	}
 
 	conf := eval.NewConfig(ff)
-	result, colName := expr.execute(qf, conf.Ctx)
+	result, col := expr.execute(qf, conf.Ctx)
+	colName := string(col)
 
 	// colName is often just a temporary name of a column created as a result of
 	// executing the expression. We want to rename this column to the requested
