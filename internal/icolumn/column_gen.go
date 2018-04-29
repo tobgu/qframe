@@ -63,7 +63,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		}
 		return result, nil
 	default:
-		return nil, fmt.Errorf("%s.apply2: cannot apply type %#v to column", c.DataType(), fn)
+		return nil, fmt.Errorf("%s.Apply1: cannot apply type %#v to column", c.DataType(), fn)
 	}
 }
 
@@ -72,12 +72,12 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	ss2, ok := s2.(Column)
 	if !ok {
-		return Column{}, fmt.Errorf("%s.apply2: invalid column type: %s", c.DataType(), s2.DataType())
+		return Column{}, fmt.Errorf("%s.Apply2: invalid column type: %s", c.DataType(), s2.DataType())
 	}
 
 	t, ok := fn.(func(int, int) int)
 	if !ok {
-		return Column{}, fmt.Errorf("%s.apply2: invalid function type: %#v", c.DataType(), fn)
+		return Column{}, fmt.Errorf("%s.Apply2: invalid function type: %#v", c.DataType(), fn)
 	}
 
 	result := make([]int, len(c.data))

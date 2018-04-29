@@ -32,7 +32,7 @@ type AndClause comboClause
 // OrClause represents the logical disjunction of multiple clauses.
 type OrClause comboClause
 
-// OrClause represents the logical inverse of of a filter clause.
+// NotClause represents the logical inverse of of a filter clause.
 type NotClause struct {
 	subClause FilterClause
 }

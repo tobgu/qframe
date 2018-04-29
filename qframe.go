@@ -717,7 +717,7 @@ func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame 
 	return qf.setColumn(dstCol, resultColumn)
 }
 
-// TODO-C, make this an internal type
+// TODO-C
 type Instruction struct {
 	Fn     interface{}
 	DstCol string
@@ -727,8 +727,7 @@ type Instruction struct {
 	SrcCol2 string
 }
 
-// TODO: Should this function be made private and only rely on Eval to do this. As it is now there
-//       is redundancy in the interface.
+// TODO-C
 func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	result := qf
 	for _, a := range instructions {
@@ -744,7 +743,7 @@ func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	return result
 }
 
-// TODO: FilteredEval instead?
+// TODO
 func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
 	filteredQf := qf.Filter(clause)
 	if filteredQf.Err != nil {
