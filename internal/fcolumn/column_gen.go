@@ -179,23 +179,27 @@ type Comparable struct {
 	equalNullValue column.CompareResult
 }
 
+// View is a view into a column that allows access to individual elements by index.
 type View struct {
 	data  []float64
 	index index.Int
 }
 
+// ItemAt returns the value at position i.
 func (v View) ItemAt(i int) float64 {
 	return v.data[v.index[i]]
 }
 
+// Len returns the column length.
 func (v View) Len() int {
 	return len(v.index)
 }
 
-// TODO: This forces an alloc, as an alternative a slice could be taken
-//       as input that can be (re)used by the client. Are there use cases
-//       where this would actually make sense?
+// Slice returns a slice containing a copy of the column data.
 func (v View) Slice() []float64 {
+	// TODO: This forces an alloc, as an alternative a slice could be taken
+	//       as input that can be (re)used by the client. Are there use cases
+	//       where this would actually make sense?
 	result := make([]float64, v.Len())
 	for i, j := range v.index {
 		result[i] = v.data[j]

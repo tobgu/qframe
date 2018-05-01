@@ -12,6 +12,7 @@ import (
 // The layout may change if the underlying grouping mechanisms change.
 type GroupStats grouper.GroupStats
 
+// Grouper contains groups of rows produced by the QFrame.GroupBy function.
 type Grouper struct {
 	indices        []index.Int
 	groupedColumns []string
@@ -21,12 +22,13 @@ type Grouper struct {
 	Stats          GroupStats
 }
 
-// TODO-C
+// Aggregation represents a function to apply to a column.
 type Aggregation struct {
 	Fn     types.SliceFuncOrBuiltInId
 	Column string
 }
 
+// Aggregate applies the given aggregations to all row groups in the Grouper.
 func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 	if g.Err != nil {
 		return QFrame{Err: g.Err}

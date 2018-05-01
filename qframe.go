@@ -38,6 +38,7 @@ func (ns namedColumn) ByteSize() int {
 	return ns.Column.ByteSize() + 2*8 + 8 + len(ns.name)
 }
 
+// TODO-C
 type QFrame struct {
 	columns       []namedColumn
 	columnsByName map[string]namedColumn
@@ -135,7 +136,8 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 }
 
 // New creates a new QFrame with column content from data.
-// TODO-C Examples
+// TODO-C: Copy data?
+// Time complexity O(m * n) where m = number of columns, n = number of rows.
 func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	config := newqf.NewConfig(fns)
 	if len(config.ColumnOrder) == 0 {
@@ -191,13 +193,14 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 }
 
 // Contains reports if a columns with colName is present in the frame.
+// Time complexity is O(1).
 func (qf QFrame) Contains(colName string) bool {
 	_, ok := qf.columnsByName[colName]
 	return ok
 }
 
 // Filter filters the frame according to the filters in clause.
-// TODO-C Examples
+// Time complexity O(m * n) where m = number of columns to filter by, n = number of rows.
 func (qf QFrame) Filter(clause FilterClause) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -267,6 +270,9 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 	return qf.withIndex(qf.index.Filter(bIndex))
 }
 
+// Equals compares this QFrame to another QFrame.
+// If the QFrames are equal (true, "") will be returned else (false, <string describing why>) will be returned.
+// Time complexity O(m * n) where m = number of columns to group by, n = number of rows.
 func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 	if len(qf.index) != len(other.index) {
 		return false, "Different length"
@@ -290,6 +296,8 @@ func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 	return true, ""
 }
 
+// Len returns the number of rows in the QFrame.
+// Time complexity O(1).
 func (qf QFrame) Len() int {
 	if qf.Err != nil {
 		return -1
@@ -298,11 +306,17 @@ func (qf QFrame) Len() int {
 	return qf.index.Len()
 }
 
+// Order is used to specify how sorting should be performed.
 type Order struct {
-	Column  string
+	// Column is the name of the column to sort by.
+	Column string
+
+	// Reverse specifies if sorting should be performed ascending (false, default) or descending (true)
 	Reverse bool
 }
 
+// Sort returns a new QFrame sorted according to the orders specified.
+// Time complexity O(m * n * log(n)) where m = number of columns to sort by, n = number of rows in QFrame.
 func (qf QFrame) Sort(orders ...Order) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -328,6 +342,8 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 	return newDf
 }
 
+// ColumnNames returns the names of all columns in the QFrame.
+// Time complexity O(n) where n = number of columns.
 func (qf QFrame) ColumnNames() []string {
 	result := make([]string, len(qf.columns))
 	for i, s := range qf.columns {
@@ -363,6 +379,9 @@ func (qf QFrame) comparables(columns []string, orders []Order, groupByNull bool)
 	return result
 }
 
+// Distinct returns a new QFrame that only contains unique rows with respect to the specified columns.
+// If no columns are given Distinct will return rows where allow columns are unique.
+// Time complexity O(m * n) where m = number of columns to compare for distinctness, n = number of rows.
 func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -397,19 +416,17 @@ func (qf QFrame) checkColumns(operation string, columns []string) error {
 	return nil
 }
 
+// Drop creates a new projection of te QFrame without the specified columns.
+// Time complexity O(1).
 func (qf QFrame) Drop(columns ...string) QFrame {
 	if qf.Err != nil || len(columns) == 0 {
 		return qf
 	}
 
-	dropColumns := make(map[string]struct{}, len(columns))
-	for _, c := range columns {
-		dropColumns[c] = struct{}{}
-	}
-
+	sSet := qfstrings.NewStringSet(columns)
 	selectColumns := make([]string, 0)
 	for _, c := range qf.columns {
-		if _, ok := dropColumns[c.name]; !ok {
+		if !sSet.Contains(c.name) {
 			selectColumns = append(selectColumns, c.name)
 		}
 	}
@@ -417,6 +434,8 @@ func (qf QFrame) Drop(columns ...string) QFrame {
 	return qf.Select(selectColumns...)
 }
 
+// Select creates a new projection of the QFrame containing only the specified columns.
+// Time complexity O(1).
 func (qf QFrame) Select(columns ...string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -442,7 +461,10 @@ func (qf QFrame) Select(columns ...string) QFrame {
 	return QFrame{columns: newColumns, columnsByName: newColumnsByName, index: qf.index}
 }
 
-// Leaving out columns will make one large group over which aggregations can be done
+// GroupBy groups rows together for which the values of specified columns are the same.
+// Aggregations on the groups can be executed on the returned Grouper object.
+// Leaving out columns to group by will make one large group over which aggregations can be done.
+// Time complexity O(m * n) where m = number of columns to group by, n = number of rows.
 func (qf QFrame) GroupBy(configFns ...groupby.ConfigFunc) Grouper {
 	if qf.Err != nil {
 		return Grouper{Err: qf.Err}
@@ -533,6 +555,7 @@ func (qf QFrame) String() string {
 
 // Slice returns a new QFrame consisting of rows [start, end[.
 // Note that the underlying storage is kept. Slicing a frame will not release memory used to store the columns.
+// Time complexity O(1).
 func (qf QFrame) Slice(start, end int) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -577,7 +600,13 @@ func (qf QFrame) setColumn(name string, c column.Column) QFrame {
 	return newF
 }
 
-// TODO-C
+// Copy copies the content of dstCol into srcCol.
+//
+// dstCol - Name of the column to copy to.
+// srcCol - Name of the column to copy from.
+//
+// Time complexity O(1). Under the hood no actual copy takes place. The columns
+// will share the underlying data. Since the frame is immutable this is safe.
 func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -596,6 +625,7 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 	return qf.setColumn(dstCol, namedColumn.Column)
 }
 
+// apply0 is a helper function for zero argument applies.
 func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -656,6 +686,7 @@ func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 	return qf.setColumn(dstCol, c)
 }
 
+// apply1 is a helper function for single argument applies.
 func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -692,6 +723,7 @@ func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
 	return qf.setColumn(dstCol, resultColumn)
 }
 
+// apply2 is a helper function for zero argument applies.
 func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -717,17 +749,25 @@ func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame 
 	return qf.setColumn(dstCol, resultColumn)
 }
 
-// TODO-C
+// Instruction describes an operation that will be applied to a row in the QFrame.
 type Instruction struct {
-	Fn     interface{}
+	// Fn is the function to apply.
+	Fn interface{}
+
+	// DstCol is the name of the column that the result of applying Fn should be stored in.
 	DstCol string
 
-	// Optional fields
+	// SrcCol1 is the first column to take arguments to Fn from.
+	// This field is optional and only needs to be specified if Fn takes one or more arguments.
 	SrcCol1 string
+
+	// SrcCol2 is the second column to take arguments to Fn from.
+	// This field is optional and only needs to be specified if Fn takes two arguments.
 	SrcCol2 string
 }
 
-// TODO-C
+// Apply applies instructions to each row in the QFrame.
+// Time complexity O(m * n),
 func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	result := qf
 	for _, a := range instructions {
@@ -743,7 +783,10 @@ func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	return result
 }
 
-// TODO
+// FilteredApply works like Apply but allows adding a filter which limits the
+// rows to which the instructions are applied to. Any rows not matching the filter
+// will be assigned the zero value of the column type.
+// Time complexity O(n).
 func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
 	filteredQf := qf.Filter(clause)
 	if filteredQf.Err != nil {
@@ -758,6 +801,9 @@ func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction)
 	return newQf
 }
 
+// Eval evaluates an expression assigning the result to dstCol.
+//
+// Time complexity O(n).
 func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -779,10 +825,23 @@ func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFr
 	return result
 }
 
+/////////////
+/// Views ///
+/////////////
+
+// TODO: Generate the views from a template...
+
+// FloatView provides a "view" into a float column and can be used for access to individual elements.
 type FloatView struct {
 	fcolumn.View
 }
 
+// FloatView returns a view into a float column identified by name.
+//
+// name - Name of the column.
+//
+// Returns an error if the column is missing or of wrong type.
+// Time complexity O(1).
 func (qf QFrame) FloatView(name string) (FloatView, error) {
 	namedColumn, ok := qf.columnsByName[name]
 	if !ok {
@@ -799,10 +858,17 @@ func (qf QFrame) FloatView(name string) (FloatView, error) {
 	return FloatView{fCol.View(qf.index)}, nil
 }
 
+// IntView provides a "view" into an int column and can be used for access to individual elements.
 type IntView struct {
 	icolumn.View
 }
 
+// FloatView returns a view into an int column identified by name.
+//
+// name - Name of the column.
+//
+// Returns an error if the column is missing or of wrong type.
+// Time complexity O(1).
 func (qf QFrame) IntView(name string) (IntView, error) {
 	namedColumn, ok := qf.columnsByName[name]
 	if !ok {
@@ -893,6 +959,8 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 //// IO ////
 ////////////
 
+// ReadCsv returns a QFrame with data, in CSV format, taken from reader.
+// Time complexity O(m * n) where m = number of columns, n = number of rows.
 func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	conf := csv.NewConfig(confFuncs)
 	data, columns, err := qfio.ReadCsv(reader, qfio.CsvConfig(conf))
@@ -903,6 +971,8 @@ func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	return New(data, newqf.ColumnOrder(columns...))
 }
 
+// ReadCsv returns a QFrame with data, in JSON format, taken from reader.
+// Time complexity O(m * n) where m = number of columns, n = number of rows.
 func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	data, err := qfio.UnmarshalJson(reader)
 	if err != nil {
@@ -912,7 +982,10 @@ func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	return New(data, fns...)
 }
 
-// This is currently fairly slow. Could probably be a lot speedier with
+// ToCsv writes the data in the QFrame, in CSV format, to writer.
+// Time complexity O(m * n) where m = number of rows, n = number of columns.
+//
+// This is function is currently unoptimized. Could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
 func (qf QFrame) ToCsv(writer io.Writer) error {
 	if qf.Err != nil {
@@ -947,6 +1020,8 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 	return nil
 }
 
+// ToJson writes the data in the QFrame, in JSON format, to writer.
+// Time complexity O(m * n) where m = number of rows, n = number of columns.
 func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	if qf.Err != nil {
 		return errors.Propagate("ToJson", qf.Err)
@@ -1033,9 +1108,11 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 	return err
 }
 
-// Return a best effort guess of the current size occupied by the frame.
+// ByteSize returns a best effort estimate of the current size occupied by the QFrame.
+//
 // This does not factor for cases where multiple, different, frames reference
-// the underlying data.
+// the same underlying data.
+// Time complexity O(m) where m is the number of columns in the QFrame.
 func (qf QFrame) ByteSize() int {
 	totalSize := 0
 	for k, v := range qf.columnsByName {

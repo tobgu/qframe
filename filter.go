@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// FilterClause is an internal interface representing a filter of some kind.
+// FilterClause is an internal interface representing a filter of some kind that can be applied on a QFrame.
 type FilterClause interface {
 	fmt.Stringer
 	filter(qf QFrame) QFrame

@@ -26,8 +26,11 @@ func getFunc(ctx *eval.Context, ac eval.ArgCount, qf QFrame, colName types.Colum
 	return qf, fn
 }
 
+// Expression is an internal interface representing an expression that can be executed on a QFrame.
 type Expression interface {
 	execute(f QFrame, ctx *eval.Context) (QFrame, types.ColumnName)
+
+	// Err returns an error if the expression could not be constructed for some reason.
 	Err() error
 }
 
