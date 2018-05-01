@@ -758,16 +758,16 @@ type Instruction struct {
 	DstCol string
 
 	// SrcCol1 is the first column to take arguments to Fn from.
-	// This field is optional and only needs to be specified if Fn takes one or more arguments.
+	// This field is optional and must only be set if Fn takes one or more arguments.
 	SrcCol1 string
 
 	// SrcCol2 is the second column to take arguments to Fn from.
-	// This field is optional and only needs to be specified if Fn takes two arguments.
+	// This field is optional and must only be set if Fn takes two arguments.
 	SrcCol2 string
 }
 
 // Apply applies instructions to each row in the QFrame.
-// Time complexity O(m * n),
+// Time complexity O(m * n), where m = number of instructions, n = number of rows.
 func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	result := qf
 	for _, a := range instructions {
@@ -786,7 +786,7 @@ func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 // FilteredApply works like Apply but allows adding a filter which limits the
 // rows to which the instructions are applied to. Any rows not matching the filter
 // will be assigned the zero value of the column type.
-// Time complexity O(n).
+// Time complexity O(m * n), where m = number of instructions, n = number of rows.
 func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
 	filteredQf := qf.Filter(clause)
 	if filteredQf.Err != nil {
@@ -1135,13 +1135,12 @@ func (qf QFrame) ByteSize() int {
 //   than the stdlib version.
 
 // TODO:
-// - It would also be nice if null could be interpreted as NaN for floats. Should not be impossible
+// - It would also be nice if null could be interpreted as NaN for floats when reading JSON. Should not be impossible
 //   using the generated easyjson code as starting point for columns based format and by refining type
 //   detection for the record based read. That would also allow proper parsing of integers for record
 //   format rather than making them floats.
 // - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
 //   interface.
-// - Documentation
 // - Use https://goreportcard.com
 // - More serialization and deserialization tests
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
@@ -1159,5 +1158,6 @@ func (qf QFrame) ByteSize() int {
 // - Add different "cover types" for interface{} here and there to improve documentation?
 // - Change column package layout?
 // - Remove column based json Read/Write until someone needs it?
-// - Make config package with subpackages named after what they configure?
 // - Remove dep files
+// - Make examples
+// - Write README

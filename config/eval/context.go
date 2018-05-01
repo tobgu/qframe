@@ -15,6 +15,7 @@ type functionsByArgCount struct {
 
 type functionsByArgType map[types.FunctionType]functionsByArgCount
 
+// ArgCount is the number of arguments passed to a function to be evaluated.
 type ArgCount byte
 
 const (
@@ -22,6 +23,7 @@ const (
 	ArgCountTwo
 )
 
+// String returns a string representation of the ArgCount
 func (c ArgCount) String() string {
 	switch c {
 	case ArgCountOne:
@@ -33,10 +35,15 @@ func (c ArgCount) String() string {
 	}
 }
 
+// Context describes the context in which an expression is executed.
+// It maps function names to actual functions.
 type Context struct {
 	functions functionsByArgType
 }
 
+// NewDefaultCtx creates a default context containing a base set of functions.
+// It can be used as is or enhanced with other/more functions. See the source code
+// for the current set of functions.
 func NewDefaultCtx() *Context {
 	// TODO: More functions
 	return &Context{
@@ -96,6 +103,8 @@ func NewDefaultCtx() *Context {
 	}
 }
 
+// GetFunc returns a reference to a function matching the given function type, argument count and name.
+// If no matching function is found in the context the second return value is set to false.
 func (ctx *Context) GetFunc(typ types.FunctionType, ac ArgCount, name string) (interface{}, bool) {
 	var fn interface{}
 	var ok bool
@@ -116,7 +125,7 @@ func (ctx *Context) setFunc(typ types.FunctionType, ac ArgCount, name string, fn
 	}
 }
 
-// TODO-C
+// SetFunc inserts a function into the context under the given name.
 func (ctx *Context) SetFunc(name string, fn interface{}) error {
 	// TODO: Check function name validity (eg must not start with $, more?)
 	// Since there's such a flexibility in the function types that can be
@@ -131,19 +140,19 @@ func (ctx *Context) SetFunc(name string, fn interface{}) error {
 	case func(int) int, func(int) bool, func(int) float64, func(int) *string:
 		ac, typ = ArgCountOne, types.FunctionTypeInt
 
-		// Float
+	// Float
 	case func(float64, float64) float64:
 		ac, typ = ArgCountTwo, types.FunctionTypeFloat
 	case func(float64) float64, func(float64) int, func(float64) bool, func(float64) *string:
 		ac, typ = ArgCountOne, types.FunctionTypeFloat
 
-		// Bool
+	// Bool
 	case func(bool, bool) bool:
 		ac, typ = ArgCountTwo, types.FunctionTypeBool
 	case func(bool) bool, func(bool) int, func(bool) float64, func(bool) *string:
 		ac, typ = ArgCountOne, types.FunctionTypeBool
 
-		// String
+	// String
 	case func(*string, *string) *string:
 		ac, typ = ArgCountTwo, types.FunctionTypeString
 	case func(*string) *string, func(*string) int, func(*string) float64, func(*string) bool:
