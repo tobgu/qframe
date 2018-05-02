@@ -4,7 +4,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-// Code generated from template/filters.go DO NOT EDIT
+// Code generated from template/... DO NOT EDIT
 
 func eq(index index.Int, column []bool, comp bool, bIndex index.Bool) {
 	for i, x := range bIndex {

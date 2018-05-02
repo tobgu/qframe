@@ -4,7 +4,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-// Code generated from template/filters.go DO NOT EDIT
+// Code generated from template/... DO NOT EDIT
 
 func lt(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
 	for i, x := range bIndex {

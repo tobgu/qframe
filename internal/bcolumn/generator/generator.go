@@ -26,7 +26,7 @@ func colColComparison(name, operator string) template.Spec {
 func GenerateFilters() (*bytes.Buffer, error) {
 	// If adding more filters here make sure to also add a reference to them
 	// in the corresponding filter map so that they can be looked up.
-	return template.Generate("bcolumn", []template.Spec{
+	return template.GenerateFilters("bcolumn", []template.Spec{
 		colConstComparison("eq", "=="), // Go eq ("==") differs from qframe eq ("=")
 		colConstComparison("neq", filter.Neq),
 		colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")

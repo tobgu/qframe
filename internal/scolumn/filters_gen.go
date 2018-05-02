@@ -4,7 +4,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-// Code generated from template/filters.go DO NOT EDIT
+// Code generated from template/... DO NOT EDIT
 
 func lt(index index.Int, c Column, comparatee string, bIndex index.Bool) error {
 	for i, x := range bIndex {

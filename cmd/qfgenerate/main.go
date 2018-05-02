@@ -9,6 +9,7 @@ import (
 	egenerator "github.com/tobgu/qframe/internal/ecolumn/generator"
 	fgenerator "github.com/tobgu/qframe/internal/fcolumn/generator"
 	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
+	qfgenerator "github.com/tobgu/qframe/internal/qframe/generator"
 	sgenerator "github.com/tobgu/qframe/internal/scolumn/generator"
 	"go/format"
 	"os"
@@ -33,6 +34,7 @@ func main() {
 		"bfilter": bgenerator.GenerateFilters,
 		"efilter": egenerator.GenerateFilters,
 		"sfilter": sgenerator.GenerateFilters,
+		"qframe":  qfgenerator.GenerateQFrame,
 	}
 
 	generator, ok := generators[*source]
