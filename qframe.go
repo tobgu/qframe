@@ -993,8 +993,6 @@ func (qf QFrame) ByteSize() int {
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
 // - Add different "cover types" for interface{} here and there to improve documentation?
-// - Change column package layout?
-// - Remove column based json Read/Write until someone needs it?
 // - Make examples
 // - Write README
 
