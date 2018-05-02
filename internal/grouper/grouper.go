@@ -1,7 +1,7 @@
 package grouper
 
 import (
-	"github.com/golang/go/src/math/bits"
+	"math/bits"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
