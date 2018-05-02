@@ -15,3 +15,9 @@ vet: generate
 cov: generate
 	go test github.com/tobgu/qframe/... -coverprofile=coverage.out -coverpkg=all
 	go tool cover -html=coverage.out
+
+deps:
+	go get -t ./...
+
+dev-deps: deps
+	go get github.com/cheekybits/genny
