@@ -1,7 +1,6 @@
 package column
 
 import (
-	"encoding/json"
 	"fmt"
 	// TODO: Make index a public package?
 	"github.com/tobgu/qframe/internal/hash"
@@ -18,7 +17,6 @@ type Column interface {
 	Aggregate(indices []index.Int, fn interface{}) (Column, error)
 	StringAt(i uint32, naRep string) string
 	AppendByteStringAt(buf []byte, i uint32) []byte
-	Marshaler(index index.Int) json.Marshaler
 	ByteSize() int
 	Len() int
 

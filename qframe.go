@@ -899,9 +899,9 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 	return nil
 }
 
-// ToJson writes the data in the QFrame, in JSON format, to writer.
+// ToJson writes the data in the QFrame, in JSON format one record per row, to writer.
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
-func (qf QFrame) ToJson(writer io.Writer, orient string) error {
+func (qf QFrame) ToJson(writer io.Writer) error {
 	if qf.Err != nil {
 		return errors.Propagate("ToJson", qf.Err)
 	}
@@ -913,77 +913,41 @@ func (qf QFrame) ToJson(writer io.Writer, orient string) error {
 		colByteNames = append(colByteNames, qfstrings.QuotedBytes(name))
 	}
 
-	if orient == "records" {
-		// Custom JSON generator for records due to performance reasons
-		jsonBuf := []byte{'['}
-		_, err := writer.Write(jsonBuf)
-		if err != nil {
-			return err
-		}
-
-		for i, ix := range qf.index {
-			jsonBuf = jsonBuf[:0]
-			if i > 0 {
-				jsonBuf = append(jsonBuf, byte(','))
-			}
-
-			jsonBuf = append(jsonBuf, byte('{'))
-
-			for j, col := range columns {
-				jsonBuf = append(jsonBuf, colByteNames[j]...)
-				jsonBuf = append(jsonBuf, byte(':'))
-				jsonBuf = col.AppendByteStringAt(jsonBuf, ix)
-				jsonBuf = append(jsonBuf, byte(','))
-			}
-
-			if jsonBuf[len(jsonBuf)-1] == ',' {
-				jsonBuf = jsonBuf[:len(jsonBuf)-1]
-			}
-
-			jsonBuf = append(jsonBuf, byte('}'))
-
-			_, err = writer.Write(jsonBuf)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = writer.Write([]byte{']'})
-		return err
-	}
-
-	// Column/columns orientation
-	jsonBuf := []byte{'{'}
+	// Custom JSON generator for records due to performance reasons
+	jsonBuf := []byte{'['}
 	_, err := writer.Write(jsonBuf)
 	if err != nil {
 		return err
 	}
 
-	for i, col := range columns {
+	for i, ix := range qf.index {
 		jsonBuf = jsonBuf[:0]
 		if i > 0 {
-			jsonBuf = append(jsonBuf, ',')
+			jsonBuf = append(jsonBuf, byte(','))
 		}
 
-		jsonBuf = append(jsonBuf, colByteNames[i]...)
-		jsonBuf = append(jsonBuf, ':')
+		jsonBuf = append(jsonBuf, byte('{'))
+
+		for j, col := range columns {
+			jsonBuf = append(jsonBuf, colByteNames[j]...)
+			jsonBuf = append(jsonBuf, byte(':'))
+			jsonBuf = col.AppendByteStringAt(jsonBuf, ix)
+			jsonBuf = append(jsonBuf, byte(','))
+		}
+
+		if jsonBuf[len(jsonBuf)-1] == ',' {
+			jsonBuf = jsonBuf[:len(jsonBuf)-1]
+		}
+
+		jsonBuf = append(jsonBuf, byte('}'))
+
 		_, err = writer.Write(jsonBuf)
-		if err != nil {
-			return err
-		}
-
-		m := col.Marshaler(qf.index)
-		b, err := m.MarshalJSON()
-		if err != nil {
-			return err
-		}
-		_, err = writer.Write(b)
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = writer.Write([]byte{'}'})
+	_, err = writer.Write([]byte{']'})
 	return err
 }
 
@@ -1009,7 +973,7 @@ func (qf QFrame) ByteSize() int {
 	return totalSize
 }
 
-// TODO:
+// TODO?
 // - It would also be nice if null could be interpreted as NaN for floats when reading JSON. Should not be impossible
 //   using the generated easyjson code as starting point for columns based format and by refining type
 //   detection for the record based read. That would also allow proper parsing of integers for record
@@ -1034,7 +998,7 @@ func (qf QFrame) ByteSize() int {
 // - Make examples
 // - Write README
 
-// TODO performance:
+// TODO performance?
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
 // - Test https://github.com/pierrec/xxHash instead of murmur for hashing?

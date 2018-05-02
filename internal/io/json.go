@@ -1,13 +1,10 @@
 package io
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 )
-
-//go:generate easyjson $GOFILE
 
 type JsonRecords []map[string]interface{}
 
@@ -128,81 +125,15 @@ func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
 	return result, nil
 }
 
-//easyjson:json
-type JsonInt []int
-
-//easyjson:json
-type JsonFloat64 []float64
-
-//easyjson:json
-type JsonBool []bool
-
-//easyjson:json
-type JsonString []*string
-
 // UnmarshalJson transforms JSON containing data records or columns into a map of columns
-// that can be used to create a dataframe.
-// If the JSON string starts with a "[" records are assumed, if it starts with '{' columns
-// are assumed. Reading columns is currently 4x - 5x faster than reading records.
+// that can be used to create a QFrame.
 func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
-	br := bufio.NewReader(r)
-	bytes, err := br.Peek(1)
+	var records JsonRecords
+	decoder := json.NewDecoder(r)
+	err := decoder.Decode(&records)
 	if err != nil {
 		return nil, err
 	}
 
-	if bytes[0] == []byte(`{`)[0] {
-		var columns JsonColumns
-		decoder := json.NewDecoder(br)
-		err = decoder.Decode(&columns)
-		if err != nil {
-			return nil, err
-		}
-
-		result := make(map[string]interface{}, len(columns))
-		for colName, rawValue := range columns {
-			intDest := &JsonInt{}
-			if err = intDest.UnmarshalJSON(rawValue); err == nil {
-				result[colName] = []int(*intDest)
-				continue
-			}
-
-			floatDest := &JsonFloat64{}
-			if err = floatDest.UnmarshalJSON(rawValue); err == nil {
-				result[colName] = []float64(*floatDest)
-				continue
-			}
-
-			boolDest := &JsonBool{}
-			if err = boolDest.UnmarshalJSON(rawValue); err == nil {
-				result[colName] = []bool(*boolDest)
-				continue
-			}
-
-			strDest := &JsonString{}
-			if err = strDest.UnmarshalJSON(rawValue); err == nil {
-				result[colName] = []*string(*strDest)
-				continue
-			}
-
-			if err != nil {
-				return nil, fmt.Errorf("json decoding could not find matching type for column %s", colName)
-			}
-		}
-
-		return result, nil
-	}
-
-	if bytes[0] == []byte(`[`)[0] {
-		var records JsonRecords
-		decoder := json.NewDecoder(br)
-		err = decoder.Decode(&records)
-		if err != nil {
-			return nil, err
-		}
-
-		return jsonRecordsToData(records)
-	}
-
-	return nil, fmt.Errorf("unrecognized start of JSON document: %v", bytes[0])
+	return jsonRecordsToData(records)
 }

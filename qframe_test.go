@@ -889,15 +889,6 @@ func TestQFrame_ReadJson(t *testing.T) {
 		expected map[string]interface{}
 	}{
 		{
-			input: `{"STRING1": ["a", "b"], "INT1": [1, 2], "FLOAT1": [1.5, 2.5], "BOOL1": [true, false]}`,
-			expected: map[string]interface{}{
-				"STRING1": []string{"a", "b"}, "INT1": []int{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
-		},
-		{
-			input:    `{"STRING1": ["FOO", null]}`,
-			expected: map[string]interface{}{"STRING1": []*string{&testString, nil}},
-		},
-		{
 			input: `[
 				{"STRING1": "a", "INT1": 1, "FLOAT1": 1.5, "BOOL1": true},
 				{"STRING1": "b", "INT1": 2, "FLOAT1": 2.5, "BOOL1": false}]`,
@@ -955,58 +946,34 @@ false,2.5,2,"b,c"
 
 func TestQFrame_ToFromJSON(t *testing.T) {
 	config := []newqf.ConfigFunc{newqf.Enums(map[string][]string{"ENUM": {"aa", "bb"}})}
-	table := []struct {
-		orientation string
-		configFuncs []newqf.ConfigFunc
-	}{
-		{orientation: "records"},
-		{orientation: "columns"},
-	}
+	buf := new(bytes.Buffer)
+	data := map[string]interface{}{
+		"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}, "ENUM": []string{"aa", "bb"}}
+	originalDf := qframe.New(data, config...)
+	assertNotErr(t, originalDf.Err)
 
-	for i, tc := range table {
-		t.Run(fmt.Sprintf("ToFromJSON %d", i), func(t *testing.T) {
-			buf := new(bytes.Buffer)
-			data := map[string]interface{}{
-				"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}, "ENUM": []string{"aa", "bb"}}
-			originalDf := qframe.New(data, config...)
-			assertNotErr(t, originalDf.Err)
+	err := originalDf.ToJson(buf)
+	assertNotErr(t, err)
 
-			err := originalDf.ToJson(buf, tc.orientation)
-			assertNotErr(t, err)
-
-			jsonDf := qframe.ReadJson(buf, config...)
-			assertNotErr(t, jsonDf.Err)
-			assertEquals(t, originalDf, jsonDf)
-		})
-	}
+	jsonDf := qframe.ReadJson(buf, config...)
+	assertNotErr(t, jsonDf.Err)
+	assertEquals(t, originalDf, jsonDf)
 }
 
 func TestQFrame_ToJSONNaN(t *testing.T) {
-	table := []struct {
-		orientation string
-		expected    string
-	}{
-		{orientation: "records", expected: `[{"FLOAT1":1.5},{"FLOAT1":null}]`},
-		// TODO: Should also encode NaN as null, just as above
-		{orientation: "columns", expected: `{"FLOAT1":[1.5,NaN]}`},
-	}
+	buf := new(bytes.Buffer)
 
-	for i, tc := range table {
-		t.Run(fmt.Sprintf("ToFromJSON %d", i), func(t *testing.T) {
-			buf := new(bytes.Buffer)
+	// Test the special case NaN, this can currently be encoded but not
+	// decoded by the JSON parsers.
+	data := map[string]interface{}{"FLOAT1": []float64{1.5, math.NaN()}}
+	originalDf := qframe.New(data)
+	assertNotErr(t, originalDf.Err)
 
-			// Test the special case NaN, this can currently be encoded but not
-			// decoded by the JSON parsers.
-			data := map[string]interface{}{"FLOAT1": []float64{1.5, math.NaN()}}
-			originalDf := qframe.New(data)
-			assertNotErr(t, originalDf.Err)
-
-			err := originalDf.ToJson(buf, tc.orientation)
-			assertNotErr(t, err)
-			if buf.String() != tc.expected {
-				t.Errorf("Not equal: %s ||| %s", buf.String(), tc.expected)
-			}
-		})
+	err := originalDf.ToJson(buf)
+	assertNotErr(t, err)
+	expected := `[{"FLOAT1":1.5},{"FLOAT1":null}]`
+	if buf.String() != expected {
+		t.Errorf("Not equal: %s ||| %s", buf.String(), expected)
 	}
 }
 

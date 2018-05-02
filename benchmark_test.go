@@ -404,25 +404,6 @@ func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_FromJSONColumns(b *testing.B) {
-	rowCount := 10000
-	input := jsonColumns(rowCount)
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		r := bytes.NewReader(input)
-		df := qf.ReadJson(r)
-		if df.Err != nil {
-			b.Errorf("Unexpected JSON error: %s", df.Err)
-		}
-
-		if df.Len() != rowCount {
-			b.Errorf("Unexpected size: %d", df.Len())
-		}
-	}
-}
-
 func BenchmarkQFrame_ToCsv(b *testing.B) {
 	rowCount := 100000
 	input := exampleData(rowCount)
@@ -443,7 +424,7 @@ func BenchmarkQFrame_ToCsv(b *testing.B) {
 	}
 }
 
-func toJson(b *testing.B, orient string) {
+func toJson(b *testing.B) {
 	rowCount := 100000
 	input := exampleData(rowCount)
 	df := qf.New(input)
@@ -456,7 +437,7 @@ func toJson(b *testing.B, orient string) {
 
 	for i := 0; i < b.N; i++ {
 		buf := new(bytes.Buffer)
-		err := df.ToJson(buf, orient)
+		err := df.ToJson(buf)
 		if err != nil {
 			b.Errorf("Unexpected ToCsv error: %s", err)
 		}
@@ -464,11 +445,7 @@ func toJson(b *testing.B, orient string) {
 }
 
 func BenchmarkQFrame_ToJsonRecords(b *testing.B) {
-	toJson(b, "records")
-}
-
-func BenchmarkQFrame_ToJsonColumns(b *testing.B) {
-	toJson(b, "columns")
+	toJson(b)
 }
 
 func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {

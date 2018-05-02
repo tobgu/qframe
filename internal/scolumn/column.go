@@ -1,7 +1,6 @@
 package scolumn
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
@@ -11,11 +10,6 @@ import (
 	"github.com/tobgu/qframe/types"
 	"reflect"
 )
-
-//go:generate easyjson $GOFILE
-
-//easyjson:json
-type JsonString []*string
 
 var stringApplyFuncs = map[string]func(index.Int, Column) interface{}{
 	"ToUpper": toUpper,
@@ -74,11 +68,6 @@ func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
 	}
 	str := qfstrings.UnsafeBytesToString(c.data[p.Offset() : p.Offset()+p.Len()])
 	return qfstrings.AppendQuotedString(buf, str)
-}
-
-func (c Column) Marshaler(index index.Int) json.Marshaler {
-	// TODO: This is a very inefficient way of marshalling to JSON
-	return JsonString(c.stringSlice(index))
 }
 
 func (c Column) ByteSize() int {

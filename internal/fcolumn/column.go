@@ -1,12 +1,10 @@
 package fcolumn
 
 import (
-	"encoding/json"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
-	"github.com/tobgu/qframe/internal/io"
 	"github.com/tobgu/qframe/types"
 	"math"
 	"reflect"
@@ -29,10 +27,6 @@ func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
 	}
 
 	return strconv.AppendFloat(buf, value, 'f', -1, 64)
-}
-
-func (c Column) Marshaler(index index.Int) json.Marshaler {
-	return io.JsonFloat64(c.subset(index).data)
 }
 
 func (c Column) ByteSize() int {

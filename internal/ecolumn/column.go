@@ -1,7 +1,6 @@
 package ecolumn
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
@@ -214,35 +213,6 @@ func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
 	}
 
 	return qfstrings.AppendQuotedString(buf, c.values[enum])
-}
-
-type marshaler struct {
-	Column
-	index index.Int
-}
-
-func (m marshaler) MarshalJSON() ([]byte, error) {
-	buf := make([]byte, 0, len(m.index))
-	buf = append(buf, '[')
-	for i, ix := range m.index {
-		if i > 0 {
-			buf = append(buf, ',')
-		}
-
-		enum := m.data[ix]
-		if enum.isNull() {
-			buf = append(buf, "null"...)
-		} else {
-			buf = qfstrings.AppendQuotedString(buf, m.values[enum])
-		}
-	}
-
-	buf = append(buf, ']')
-	return buf, nil
-}
-
-func (c Column) Marshaler(index index.Int) json.Marshaler {
-	return marshaler{Column: c, index: index}
 }
 
 func (c Column) ByteSize() int {
