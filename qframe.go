@@ -1009,10 +1009,6 @@ func (qf QFrame) ByteSize() int {
 	return totalSize
 }
 
-// TODO filter
-// - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
-//   than the stdlib version.
-
 // TODO:
 // - It would also be nice if null could be interpreted as NaN for floats when reading JSON. Should not be impossible
 //   using the generated easyjson code as starting point for columns based format and by refining type
@@ -1027,17 +1023,18 @@ func (qf QFrame) ByteSize() int {
 // - ApplyN?
 // - Add option to drop NaN/Null before grouping?
 // - Consider changing most API functions to take variadic "config functions" for better future proofing.
-// - Make Filter and Eval APIs more similar
 // - Are special cases in aggregations that do not rely on index order worth the extra code for the increase in
 //   performance allowed by avoiding use of the index?
-// - Make package filter internal?
 // - Validation of column names, allowed characters and names (not true/false, not numbers only, not "null"?)
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
 // - Add different "cover types" for interface{} here and there to improve documentation?
 // - Change column package layout?
 // - Remove column based json Read/Write until someone needs it?
-// - Remove dep files
 // - Make examples
 // - Write README
+
+// TODO performance:
+// - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
+//   than the stdlib version.
 // - Test https://github.com/pierrec/xxHash instead of murmur for hashing?
