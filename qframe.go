@@ -626,7 +626,7 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 }
 
 // apply0 is a helper function for zero argument applies.
-func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
+func (qf QFrame) apply0(fn types.DataFuncOrBuiltInId, dstCol string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -687,7 +687,7 @@ func (qf QFrame) apply0(fn interface{}, dstCol string) QFrame {
 }
 
 // apply1 is a helper function for single argument applies.
-func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
+func (qf QFrame) apply1(fn types.DataFuncOrBuiltInId, dstCol, srcCol string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -724,7 +724,7 @@ func (qf QFrame) apply1(fn interface{}, dstCol, srcCol string) QFrame {
 }
 
 // apply2 is a helper function for zero argument applies.
-func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame {
+func (qf QFrame) apply2(fn types.DataFuncOrBuiltInId, dstCol, srcCol1, srcCol2 string) QFrame {
 	if qf.Err != nil {
 		return qf
 	}
@@ -752,7 +752,7 @@ func (qf QFrame) apply2(fn interface{}, dstCol, srcCol1, srcCol2 string) QFrame 
 // Instruction describes an operation that will be applied to a row in the QFrame.
 type Instruction struct {
 	// Fn is the function to apply.
-	Fn interface{}
+	Fn types.DataFuncOrBuiltInId
 
 	// DstCol is the name of the column that the result of applying Fn should be stored in.
 	DstCol string
@@ -983,7 +983,6 @@ func (qf QFrame) ByteSize() int {
 // - Use https://goreportcard.com
 // - More serialization and deserialization tests
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
-// - Document public functions
 // - ApplyN?
 // - Add option to drop NaN/Null before grouping?
 // - Consider changing most API functions to take variadic "config functions" for better future proofing.
@@ -992,7 +991,6 @@ func (qf QFrame) ByteSize() int {
 // - Validation of column names, allowed characters and names (not true/false, not numbers only, not "null"?)
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
-// - Add different "cover types" for interface{} here and there to improve documentation?
 // - Make examples
 // - Write README
 
