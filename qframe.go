@@ -54,21 +54,29 @@ func (qf QFrame) withIndex(ix index.Int) QFrame {
 	return QFrame{Err: qf.Err, columns: qf.columns, columnsByName: qf.columnsByName, index: ix}
 }
 
+// ConstString describes a string column with only one value. It can be used
+// during during construction of new QFrames.
 type ConstString struct {
 	Val   *string
 	Count int
 }
 
+// ConstString describes a string column with only one value. It can be used
+// during during construction of new QFrames.
 type ConstInt struct {
 	Val   int
 	Count int
 }
 
+// ConstFloat describes a string column with only one value. It can be used
+// during during construction of new QFrames.
 type ConstFloat struct {
 	Val   float64
 	Count int
 }
 
+// ConstFloat describes a string column with only one value. It can be used
+// during during construction of new QFrames.
 type ConstBool struct {
 	Val   bool
 	Count int
@@ -136,7 +144,7 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 }
 
 // New creates a new QFrame with column content from data.
-// TODO-C: Copy data?
+// TODO-C: Copy data of option set?
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	config := newqf.NewConfig(fns)
@@ -839,6 +847,8 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 ////////////
 
 // ReadCsv returns a QFrame with data, in CSV format, taken from reader.
+// Column data types are auto detected if not explicitly specified.
+//
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	conf := csv.NewConfig(confFuncs)
@@ -850,7 +860,7 @@ func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	return New(data, newqf.ColumnOrder(columns...))
 }
 
-// ReadCsv returns a QFrame with data, in JSON format, taken from reader.
+// ReadJson returns a QFrame with data, in JSON format, taken from reader.
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	data, err := qfio.UnmarshalJson(reader)
@@ -993,6 +1003,7 @@ func (qf QFrame) ByteSize() int {
 //   aggregation for example.
 // - Make examples
 // - Write README
+// - Add function to produce documentation for all built in functions? Default evaluation context, etc?
 
 // TODO performance?
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better

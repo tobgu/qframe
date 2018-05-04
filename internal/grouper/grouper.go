@@ -1,11 +1,11 @@
 package grouper
 
 import (
-	"math/bits"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/math/integer"
+	"math/bits"
 )
 
 /*
