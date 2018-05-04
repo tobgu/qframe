@@ -1187,7 +1187,7 @@ func TestQFrame_ApplyZeroArg(t *testing.T) {
 		{name: "bool fn", expected: []bool{true, true}, fn: func() bool { return true }},
 		{name: "bool const", expected: []bool{false, false}, fn: false},
 		{name: "string fn", expected: []*string{&a, &a}, fn: func() *string { return &a }},
-		{name: "bool const", expected: []*string{&b, &b}, fn: &b},
+		{name: "string const", expected: []*string{&b, &b}, fn: &b},
 	}
 
 	for _, tc := range table {

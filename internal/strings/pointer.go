@@ -2,10 +2,18 @@ package strings
 
 import "fmt"
 
+// Pointer identifies a string within a StringBlob.
 // Max individual string size 2^28 byte ~ 268 Mb
 // Max total size 2^35 byte ~ 34 Gb
 type Pointer uint64
 
+// StringBlob represents a set of strings.
+// The underlying data is stored in a byte blob which can be interpreted through
+// the pointers which identifies the start and end of individual strings in the blob.
+//
+// This structure is used instead of a slice of strings or a slice of
+// string pointers is to avoid that the GC has to scan all pointers which
+// takes quite some time with large/many live frames.
 type StringBlob struct {
 	Pointers []Pointer
 	Data     []byte

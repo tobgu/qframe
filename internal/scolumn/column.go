@@ -269,10 +269,10 @@ func NewConst(val *string, count int) Column {
 		}
 	} else {
 		sLen := len(*val)
-		data = make([]byte, 0, count*sLen)
+		data = make([]byte, 0, sLen)
+		data = append(data, *val...)
 		for i := range pointers {
-			pointers[i] = qfstrings.NewPointer(i*sLen, sLen, false)
-			data = append(data, *val...)
+			pointers[i] = qfstrings.NewPointer(0, sLen, false)
 		}
 	}
 
