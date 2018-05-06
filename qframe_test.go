@@ -678,6 +678,14 @@ func TestQFrame_ReadCsv(t *testing.T) {
 				"foo": []int{1, 3},
 				"bar": []int{2, 4}},
 		},
+		/*		{
+				name:         "empty lines ok",
+				inputHeaders: []string{"foo", "bar"},
+				inputData:    "1,2\n\n3,4\n",
+				expected: map[string]interface{}{
+					"foo": []int{1, 3},
+					"bar": []int{2, 4}},
+			}, */
 		{
 			name:         "mixed",
 			inputHeaders: []string{"int", "float", "bool", "string"},

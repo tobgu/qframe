@@ -1001,7 +1001,6 @@ func (qf QFrame) ByteSize() int {
 // - Validation of column names, allowed characters and names (not true/false, not numbers only, not "null"?)
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
-// - Make examples
 // - Write README
 // - Add function to produce documentation for all built in functions? Default evaluation context, etc?
 

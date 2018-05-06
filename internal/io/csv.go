@@ -1,9 +1,9 @@
 package io
 
 import (
-	"bitbucket.org/weberc2/fastcsv"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/ecolumn"
+	"github.com/tobgu/qframe/internal/fastcsv"
 	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"io"
@@ -17,13 +17,14 @@ type bytePointer struct {
 }
 
 type CsvConfig struct {
-	EmptyNull bool
-	Types     map[string]types.DataType
-	EnumVals  map[string][]string
+	EmptyNull        bool
+	IgnoreEmptyLines bool
+	Types            map[string]types.DataType
+	EnumVals         map[string][]string
 }
 
 func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string, error) {
-	r := csv.NewReader(reader)
+	r := fastcsv.NewReader(reader)
 	byteHeader, err := r.Read()
 	if err != nil {
 		return nil, nil, err
