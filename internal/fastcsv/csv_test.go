@@ -70,6 +70,10 @@ func TestRead(t *testing.T) {
 		Input:  "\"abc\",\"123\"\n\"def\",\"456\"",
 		Wanted: [][]string{{"abc", "123"}, {"def", "456"}},
 	}, {
+		Title:  "SomeQuoted",
+		Input:  `hello,"hello2",hello3`,
+		Wanted: [][]string{{"hello", "hello2", "hello3"}},
+	}, {
 		Title:  "QuotedFieldsWithComma",
 		Input:  "\"a,b,c\",\"d,e,f\"",
 		Wanted: [][]string{{"a,b,c", "d,e,f"}},

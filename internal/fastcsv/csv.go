@@ -141,6 +141,7 @@ func (fs *fields) next() bool {
 
 	if first := fs.buffer.data[fs.buffer.cursor]; first == '"' {
 		fs.field, fs.hitEOL, fs.err = nextQuotedField(&fs.buffer)
+		fs.fieldStart = fs.buffer.cursor
 		return fs.err == nil || fs.err == io.EOF
 	}
 	return fs.nextUnquotedField()
