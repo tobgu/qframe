@@ -34,7 +34,7 @@ Or it can be a string identifying a built in function.
 For example:
     "sum"
 
-NOTE: Reference arguments (eg. slices) must never be assumed to be valid after that the passed function returns.
+IMPORTANT: Reference arguments (eg. slices) must never be assumed to be valid after that the passed function returns.
 Under the hood reuse and other performance enhancements may trigger unexpected behaviour if this is ever done.
 If, for some reason, you want to retain the data a copy must be made.
 */
@@ -65,7 +65,7 @@ Or it can be a string identifying a built in function.
 For example:
     "abs"
 
-NOTE: Pointer arguments (eg. *string) must never be assumed to be valid after that the passed function returns.
+IMPORTANT: Pointer arguments (eg. *string) must never be assumed to be valid after that the passed function returns.
 Under the hood reuse and other performance enhancements may trigger unexpected behaviour if this is ever done.
 If, for some reason, you want to retain the data a copy must be made.
 */

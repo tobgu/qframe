@@ -88,7 +88,6 @@ func (e colExpr) execute(qf QFrame, _ *eval.Context) (QFrame, types.ColumnName) 
 	return qf, e.srcCol
 }
 
-// TODO-C
 func (e colExpr) Err() error {
 	return nil
 }
@@ -328,17 +327,17 @@ func (e errorExpr) Err() error {
 	return e.err
 }
 
-// TODO-C
+// TODO-DOC
 func Val(value interface{}) Expression {
 	return newExpr(value)
 }
 
-// TODO-C
+// TODO-DOC
 func Expr1(name string, column types.ColumnName) Expression {
 	return newExpr([]interface{}{name, column})
 }
 
-// TODO-C
+// TODO-DOC
 func Expr2(name, val1, val2 interface{}) Expression {
 	e := newExpr([]interface{}{name, val1, val2})
 	return e

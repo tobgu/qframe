@@ -38,7 +38,7 @@ func (ns namedColumn) ByteSize() int {
 	return ns.Column.ByteSize() + 2*8 + 8 + len(ns.name)
 }
 
-// TODO-C
+// TODO-DOC
 type QFrame struct {
 	columns       []namedColumn
 	columnsByName map[string]namedColumn
@@ -144,7 +144,6 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 }
 
 // New creates a new QFrame with column content from data.
-// TODO-C: Copy data of option set?
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	config := newqf.NewConfig(fns)
@@ -760,6 +759,10 @@ func (qf QFrame) apply2(fn types.DataFuncOrBuiltInId, dstCol, srcCol1, srcCol2 s
 // Instruction describes an operation that will be applied to a row in the QFrame.
 type Instruction struct {
 	// Fn is the function to apply.
+	//
+	// IMPORTANT: For pointer and reference types you must not assume that the data passed argument
+	// to this function is valid after the function returns. If you plan to keep it around you need
+	// to take a copy of the data.
 	Fn types.DataFuncOrBuiltInId
 
 	// DstCol is the name of the column that the result of applying Fn should be stored in.

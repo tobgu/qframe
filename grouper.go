@@ -24,7 +24,14 @@ type Grouper struct {
 
 // Aggregation represents a function to apply to a column.
 type Aggregation struct {
-	Fn     types.SliceFuncOrBuiltInId
+	// Fn is the aggregatoin function to apply.
+	//
+	// IMPORTANT: For pointer and reference types you must not assume that the data passed argument
+	// to this function is valid after the function returns. If you plan to keep it around you need
+	// to take a copy of the data.
+	Fn types.SliceFuncOrBuiltInId
+
+	// Column is the name of the column to apply the aggregation to.
 	Column string
 }
 

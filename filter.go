@@ -17,8 +17,7 @@ type FilterClause interface {
 }
 
 // Filter is the lowest level in a filter clause.
-// It specifies the filter operation, which column to operate on and what
-// to filter/compare that column against.
+// See the docs for filter.Filter for an in depth description of the fields.
 type Filter filter.Filter
 
 type comboClause struct {
