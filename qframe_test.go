@@ -670,6 +670,7 @@ func TestQFrame_ReadCsv(t *testing.T) {
 		expected         map[string]interface{}
 		types            map[string]string
 		expectedErr      string
+		delimiter        byte
 	}{
 		{
 			name:         "base",
@@ -678,6 +679,15 @@ func TestQFrame_ReadCsv(t *testing.T) {
 			expected: map[string]interface{}{
 				"foo": []int{1, 3},
 				"bar": []int{2, 4}},
+		},
+		{
+			name:         "tab delimiter",
+			inputHeaders: []string{"foo", "bar"},
+			inputData:    "1\t2\n3\t4\n",
+			expected: map[string]interface{}{
+				"foo": []int{1, 3},
+				"bar": []int{2, 4}},
+			delimiter: '\t',
 		},
 		{
 			name:             "empty lines ignored, multiple columns",
@@ -792,8 +802,16 @@ func TestQFrame_ReadCsv(t *testing.T) {
 
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("ReadCsv %s", tc.name), func(t *testing.T) {
-			input := strings.Join(tc.inputHeaders, ",") + "\n" + tc.inputData
-			out := qframe.ReadCsv(strings.NewReader(input), csv.EmptyNull(tc.emptyNull), csv.Types(tc.types), csv.IgnoreEmptyLines(tc.ignoreEmptyLines))
+			if tc.delimiter == 0 {
+				tc.delimiter = ','
+			}
+
+			input := strings.Join(tc.inputHeaders, string([]byte{tc.delimiter})) + "\n" + tc.inputData
+			out := qframe.ReadCsv(strings.NewReader(input),
+				csv.EmptyNull(tc.emptyNull),
+				csv.Types(tc.types),
+				csv.IgnoreEmptyLines(tc.ignoreEmptyLines),
+				csv.Delimiter(tc.delimiter))
 			if tc.expectedErr != "" {
 				assertErr(t, out.Err, tc.expectedErr)
 			} else {

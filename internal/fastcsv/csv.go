@@ -31,6 +31,7 @@ type fields struct {
 	fieldStart int
 	buffer     bufferedReader
 	hitEOL     bool
+	delimiter  byte
 	field      []byte
 	err        error
 }
@@ -66,7 +67,7 @@ func (fs *fields) nextUnquotedField() bool {
 
 		// handle byte
 		switch ch {
-		case ',':
+		case fs.delimiter:
 			fs.field = fs.buffer.data[fs.fieldStart : fs.buffer.cursor-sizeDelim]
 			fs.fieldStart = fs.buffer.cursor
 			return true
@@ -80,7 +81,7 @@ func (fs *fields) nextUnquotedField() bool {
 	}
 }
 
-func nextQuotedField(buffer *bufferedReader) ([]byte, bool, error) {
+func nextQuotedField(buffer *bufferedReader, delimiter byte) ([]byte, bool, error) {
 	// skip past the initial quote rune
 	buffer.cursor++
 	start := buffer.cursor
@@ -99,7 +100,7 @@ func nextQuotedField(buffer *bufferedReader) ([]byte, bool, error) {
 
 		// handle byte
 		switch ch {
-		case ',':
+		case delimiter:
 			if quoteCount%2 != 0 {
 				return buffer.data[start:writeCursor], false, nil
 			}
@@ -140,7 +141,7 @@ func (fs *fields) next() bool {
 	}
 
 	if first := fs.buffer.data[fs.buffer.cursor]; first == '"' {
-		fs.field, fs.hitEOL, fs.err = nextQuotedField(&fs.buffer)
+		fs.field, fs.hitEOL, fs.err = nextQuotedField(&fs.buffer, fs.delimiter)
 		fs.fieldStart = fs.buffer.cursor
 		return fs.err == nil || fs.err == io.EOF
 	}
@@ -209,10 +210,11 @@ func (r *Reader) Read() ([][]byte, error) {
 }
 
 // Constructs a new Reader from a source CSV io.Reader
-func NewReader(r io.Reader) Reader {
+func NewReader(r io.Reader, delimiter byte) Reader {
 	return Reader{
 		fields: fields{
-			buffer: bufferedReader{r: r, data: make([]byte, 0, 1024)},
+			buffer:    bufferedReader{r: r, data: make([]byte, 0, 1024)},
+			delimiter: delimiter,
 		},
 		fieldsBuffer: make([][]byte, 0, 16),
 	}

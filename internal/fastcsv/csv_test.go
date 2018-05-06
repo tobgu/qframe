@@ -126,6 +126,7 @@ func TestRead(t *testing.T) {
 						r:    strings.NewReader(testCase.Input),
 						data: make([]byte, 0, testCase.BufferCap),
 					},
+					delimiter: ',',
 				},
 				fieldsBuffer: make([][]byte, 0, 16),
 			}
@@ -170,7 +171,7 @@ func BenchmarkRead(b *testing.B) {
 	})
 	b.Run("FastCsv", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			r := NewReader(bytes.NewReader(data))
+			r := NewReader(bytes.NewReader(data), ',')
 			for {
 				if _, err := r.Read(); err != nil {
 					if err == io.EOF {
@@ -196,7 +197,7 @@ func BenchmarkRead(b *testing.B) {
 	})
 	b.Run("FastCsvQuoted", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			r := NewReader(bytes.NewReader(quotedData))
+			r := NewReader(bytes.NewReader(quotedData), ',')
 			for {
 				if _, err := r.Read(); err != nil {
 					if err == io.EOF {

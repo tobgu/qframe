@@ -17,7 +17,7 @@ type ConfigFunc func(*Config)
 // NewConfig creates a new Config object.
 // This function should never be called from outside QFrame.
 func NewConfig(ff []ConfigFunc) Config {
-	conf := Config{}
+	conf := Config{Delimiter: ','}
 	for _, f := range ff {
 		f(&conf)
 	}
@@ -43,6 +43,16 @@ func IgnoreEmptyLines(ignoreEmptyLines bool) ConfigFunc {
 	}
 }
 
+// Delimiter configures the delimiter/separator between columns.
+// Only byte representable delimiters are supported. Default is ','.
+//
+// delimiter - The delimiter to use.
+func Delimiter(delimiter byte) ConfigFunc {
+	return func(c *Config) {
+		c.Delimiter = delimiter
+	}
+}
+
 // Types is used set types for certain columns.
 // If types are not given a best effort attempt will be done to auto detected the type.
 //
@@ -58,7 +68,7 @@ func Types(typs map[string]string) ConfigFunc {
 
 // EnumValues is used to list the possible values and internal order of these values for an enum column.
 //
-// values - map column name -> list of valid values
+// values - map column name -> list of valid values.
 //
 // Enum columns that do not specify the values are automatically assigned values based on the content
 // of the column. The ordering between these values is undefined. It hence doesn't make much sense to

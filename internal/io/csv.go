@@ -19,6 +19,7 @@ type bytePointer struct {
 type CsvConfig struct {
 	EmptyNull        bool
 	IgnoreEmptyLines bool
+	Delimiter        byte
 	Types            map[string]types.DataType
 	EnumVals         map[string][]string
 }
@@ -28,7 +29,7 @@ func isEmptyLine(fields [][]byte) bool {
 }
 
 func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string, error) {
-	r := fastcsv.NewReader(reader)
+	r := fastcsv.NewReader(reader, conf.Delimiter)
 	byteHeader, err := r.Read()
 	if err != nil {
 		return nil, nil, err
