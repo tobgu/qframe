@@ -40,7 +40,7 @@ func assertErr(t *testing.T, err error, expectedErr string) {
 		return
 	}
 
-	if !strings.Contains(err.Error(), expectedErr) {
+	if !strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedErr)) {
 		t.Errorf("Expected error to contain: %s, was: %s", expectedErr, err.Error())
 	}
 }
@@ -662,13 +662,14 @@ func TestQFrame_ReadCsv(t *testing.T) {
 	*/
 	a, b, c, empty := "a", "b", "c", ""
 	table := []struct {
-		name         string
-		inputHeaders []string
-		inputData    string
-		emptyNull    bool
-		expected     map[string]interface{}
-		types        map[string]string
-		expectedErr  string
+		name             string
+		inputHeaders     []string
+		inputData        string
+		emptyNull        bool
+		ignoreEmptyLines bool
+		expected         map[string]interface{}
+		types            map[string]string
+		expectedErr      string
 	}{
 		{
 			name:         "base",
@@ -678,14 +679,29 @@ func TestQFrame_ReadCsv(t *testing.T) {
 				"foo": []int{1, 3},
 				"bar": []int{2, 4}},
 		},
-		/*		{
-				name:         "empty lines ok",
-				inputHeaders: []string{"foo", "bar"},
-				inputData:    "1,2\n\n3,4\n",
-				expected: map[string]interface{}{
-					"foo": []int{1, 3},
-					"bar": []int{2, 4}},
-			}, */
+		{
+			name:             "empty lines ignored, multiple columns",
+			inputHeaders:     []string{"foo", "bar"},
+			inputData:        "1,2\n\n3,4\n",
+			ignoreEmptyLines: true,
+			expected: map[string]interface{}{
+				"foo": []int{1, 3},
+				"bar": []int{2, 4}},
+		},
+		{
+			name:         "column count mismatch results in error",
+			inputHeaders: []string{"foo", "bar"},
+			inputData:    "1,2\n33\n3,4\n",
+			expectedErr:  "Wrong number of columns",
+		},
+		{
+			name:             "empty lines kept, single column",
+			inputHeaders:     []string{"foo"},
+			inputData:        "1\n\n3\n",
+			ignoreEmptyLines: false,
+			expected: map[string]interface{}{
+				"foo": []float64{1, math.NaN(), 3}},
+		},
 		{
 			name:         "mixed",
 			inputHeaders: []string{"int", "float", "bool", "string"},
@@ -777,7 +793,7 @@ func TestQFrame_ReadCsv(t *testing.T) {
 	for _, tc := range table {
 		t.Run(fmt.Sprintf("ReadCsv %s", tc.name), func(t *testing.T) {
 			input := strings.Join(tc.inputHeaders, ",") + "\n" + tc.inputData
-			out := qframe.ReadCsv(strings.NewReader(input), csv.EmptyNull(tc.emptyNull), csv.Types(tc.types))
+			out := qframe.ReadCsv(strings.NewReader(input), csv.EmptyNull(tc.emptyNull), csv.Types(tc.types), csv.IgnoreEmptyLines(tc.ignoreEmptyLines))
 			if tc.expectedErr != "" {
 				assertErr(t, out.Err, tc.expectedErr)
 			} else {

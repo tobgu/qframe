@@ -23,6 +23,10 @@ type CsvConfig struct {
 	EnumVals         map[string][]string
 }
 
+func isEmptyLine(fields [][]byte) bool {
+	return len(fields) == 1 && len(fields[0]) == 0
+}
+
 func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string, error) {
 	r := fastcsv.NewReader(reader)
 	byteHeader, err := r.Read()
@@ -40,15 +44,28 @@ func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string
 	// All bytes in a column
 	colBytes := make([][]byte, len(headers))
 
+	row := 1
 	for r.Next() {
-		// TODO: What happens when the number of columns differ from number of
-		//       headers. When the number of columns is zero?
-		// Index out of range panics lurking here now because of missing checks.
 		if r.Err() != nil {
 			return nil, nil, r.Err()
 		}
 
-		for i, col := range r.Fields() {
+		row++
+		fields := r.Fields()
+		if len(fields) != len(headers) {
+			if isEmptyLine(fields) && conf.IgnoreEmptyLines {
+				continue
+			}
+
+			return nil, nil, errors.New("ReadCsv", "Wrong number of columns on line %d, expected %d, was %d",
+				row, len(headers), len(fields))
+		}
+
+		if isEmptyLine(fields) && conf.IgnoreEmptyLines {
+			continue
+		}
+
+		for i, col := range fields {
 			start := len(colBytes[i])
 			colBytes[i] = append(colBytes[i], col...)
 			colPointers[i] = append(colPointers[i], bytePointer{start: uint32(start), end: uint32(len(colBytes[i]))})

@@ -33,6 +33,16 @@ func EmptyNull(emptyNull bool) ConfigFunc {
 	}
 }
 
+// IgnoreEmptyLines configures if a line without any characters should be ignored or interpreted
+// as a zero length string.
+//
+// ignoreEmptyLines - If set to true empty lines will not produce any data.
+func IgnoreEmptyLines(ignoreEmptyLines bool) ConfigFunc {
+	return func(c *Config) {
+		c.IgnoreEmptyLines = ignoreEmptyLines
+	}
+}
+
 // Types is used set types for certain columns.
 // If types are not given a best effort attempt will be done to auto detected the type.
 //
