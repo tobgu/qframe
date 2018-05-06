@@ -7,7 +7,7 @@ between the two frames.
 
 The design of QFrame has mainly be driven by the requirements from
 [qocache](https://github.com/tobgu/qocache) but it is in many aspects
-a general purpose dataframe. Any suggestions for added/improved
+a general purpose data frame. Any suggestions for added/improved
 functionality to support a wider scope is always of interest as long
 as they don't conflict with the requirements from qocache!
 
@@ -33,12 +33,19 @@ Many operations on QFrames only affect the index, the underlying
 data remains the same.
 
 ## Functionality
+TODO
 
 ### IO
+TODO
 
 ### Filtering
+TODO
+
+### Grouping and aggregation
+TODO
 
 ### Data manipulation
+TODO
 
 ## Examples
 Examples of the most common operations are available in the
@@ -52,7 +59,7 @@ Examples of the most common operations are available in the
 * A string column cannot contain more than a total of 34 Gb (2^35 byte).
 
 ## Performance
-There are a number of benchmarks in [qbench](https://godoc.org/github.com/tobgu/qframe)
+There are a number of benchmarks in [qbench](https://github.com/tobgu/qbench)
 comparing qframe to Pandas and Gota where applicable.
 
 ## Other data frames
