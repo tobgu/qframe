@@ -9,7 +9,7 @@ import (
 //go:generate qfgenerate -source=qframe -dst-file=../../../qframe_gen.go
 
 const viewTemplate = `
-// {{.Type}}View provides a "view" into an {{.lowerType}} column and can be used for access to individual elements.
+// {{.type}}View provides a "view" into an {{.lowerType}} column and can be used for access to individual elements.
 type {{.type}}View struct {
 	{{.package}}.View
 }

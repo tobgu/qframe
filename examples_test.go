@@ -81,7 +81,7 @@ func ExampleQFrame_sortWithEnum() {
 	// Dims = 2 x 3
 }
 
-func ExampleQFrame_readCsv() {
+func ExampleReadCsv() {
 	input := `COL1,COL2
 a,1.5
 b,2.25

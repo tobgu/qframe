@@ -12,7 +12,7 @@ import (
 
 // Code generated from template/... DO NOT EDIT
 
-// <no value>View provides a "view" into an int column and can be used for access to individual elements.
+// IntView provides a "view" into an int column and can be used for access to individual elements.
 type IntView struct {
 	icolumn.View
 }
@@ -40,7 +40,7 @@ func (qf QFrame) IntView(colName string) (IntView, error) {
 	return IntView{View: col.View(qf.index)}, nil
 }
 
-// <no value>View provides a "view" into an float column and can be used for access to individual elements.
+// FloatView provides a "view" into an float column and can be used for access to individual elements.
 type FloatView struct {
 	fcolumn.View
 }
@@ -68,7 +68,7 @@ func (qf QFrame) FloatView(colName string) (FloatView, error) {
 	return FloatView{View: col.View(qf.index)}, nil
 }
 
-// <no value>View provides a "view" into an bool column and can be used for access to individual elements.
+// BoolView provides a "view" into an bool column and can be used for access to individual elements.
 type BoolView struct {
 	bcolumn.View
 }
@@ -96,7 +96,7 @@ func (qf QFrame) BoolView(colName string) (BoolView, error) {
 	return BoolView{View: col.View(qf.index)}, nil
 }
 
-// <no value>View provides a "view" into an string column and can be used for access to individual elements.
+// StringView provides a "view" into an string column and can be used for access to individual elements.
 type StringView struct {
 	scolumn.View
 }
@@ -124,7 +124,7 @@ func (qf QFrame) StringView(colName string) (StringView, error) {
 	return StringView{View: col.View(qf.index)}, nil
 }
 
-// <no value>View provides a "view" into an enum column and can be used for access to individual elements.
+// EnumView provides a "view" into an enum column and can be used for access to individual elements.
 type EnumView struct {
 	ecolumn.View
 }

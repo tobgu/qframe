@@ -1,5 +1,5 @@
 /*
-config acts as a base package for different configuration options used when creating or working with QFrames.
+Package config acts as a base package for different configuration options used when creating or working with QFrames.
 
 Most of the configs use "functional options" as presented here:
 https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis

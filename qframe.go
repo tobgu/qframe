@@ -38,7 +38,8 @@ func (ns namedColumn) ByteSize() int {
 	return ns.Column.ByteSize() + 2*8 + 8 + len(ns.name)
 }
 
-// TODO-DOC
+// QFrame holds a number of columns together and offers methods for filtering,
+// group+aggregate and data manipulation.
 type QFrame struct {
 	columns       []namedColumn
 	columnsByName map[string]namedColumn
@@ -207,6 +208,15 @@ func (qf QFrame) Contains(colName string) bool {
 }
 
 // Filter filters the frame according to the filters in clause.
+//
+// Filters are applied via depth first traversal of the provided filter clause from left
+// to right. Use the following rules of thumb for best performance when consructing filters:
+//
+// 1. Cheap filters (eg. integer comparisons, ...) should go to the left of more
+//    expensive ones (eg. string regex, ...).
+// 2. High impact filters (eg. filters that you expect will drop a lot of data) should go to
+//    the left of low impact filters.
+//
 // Time complexity O(m * n) where m = number of columns to filter by, n = number of rows.
 func (qf QFrame) Filter(clause FilterClause) QFrame {
 	if qf.Err != nil {
