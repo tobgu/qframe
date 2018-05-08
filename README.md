@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/tobgu/qframe.png)](https://travis-ci.org/tobgu/qframe)
+[![Build Status](https://travis-ci.org/tobgu/qframe.png)](https://travis-ci.org/tobgu/qframe) [![Go Report Card](https://goreportcard.com/badge/github.com/tobgu/qframe)](https://goreportcard.com/report/github.com/tobgu/qframe)
 
 QFrame is an immutable data frame. Any operations on a QFrame results in
 a new QFrame, the original QFrame remains unchanged. This can be done

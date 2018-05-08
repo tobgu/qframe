@@ -62,7 +62,7 @@ type ConstString struct {
 	Count int
 }
 
-// ConstString describes a string column with only one value. It can be used
+// ConstInt describes a string column with only one value. It can be used
 // during during construction of new QFrames.
 type ConstInt struct {
 	Val   int
@@ -76,7 +76,7 @@ type ConstFloat struct {
 	Count int
 }
 
-// ConstFloat describes a string column with only one value. It can be used
+// ConstBool describes a string column with only one value. It can be used
 // during during construction of new QFrames.
 type ConstBool struct {
 	Val   bool
@@ -824,7 +824,11 @@ func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction)
 
 // Eval evaluates an expression assigning the result to dstCol.
 //
-// Time complexity O(n).
+// Eval can be considered an abstraction over Apply. For example it handles management
+// of intermediate/temporary columns that are needed as part of evaluating more complex
+// expressions.
+//
+// Time complexity O(m*n) where m = number of clauses in the expression, n = number of rows.
 func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -1014,7 +1018,6 @@ func (qf QFrame) ByteSize() int {
 // - Validation of column names, allowed characters and names (not true/false, not numbers only, not "null"?)
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
-// - Write README
 // - Add function to produce documentation for all built in functions? Default evaluation context, etc?
 
 // TODO performance?

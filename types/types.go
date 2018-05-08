@@ -24,7 +24,7 @@ const (
 	Enum = "enum"
 )
 
-// The different types of input that functions operating on columns can take
+// FunctionType represents the different types of input that functions operating on columns can take.
 type FunctionType byte
 
 const (

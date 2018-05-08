@@ -137,7 +137,7 @@ type GroupStats struct {
 func calculateInitialSizeExp(ixLen int) int {
 	// Size is expressed as 2^x to keep the size a multiple of two.
 	// Initial size is picked fairly arbitrarily at the moment, we don't really know the distribution of
-	// values withing the index. Guarantee a minimum initial size of 8 (2³) for sanity.
+	// values within the index. Guarantee a minimum initial size of 8 (2³) for sanity.
 	fitSize := uint64(ixLen) / 4
 	return integer.Max(bits.Len64(fitSize), 3)
 }

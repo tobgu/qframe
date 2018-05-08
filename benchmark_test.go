@@ -376,15 +376,6 @@ func exampleData(rowCount int) map[string]interface{} {
 		"STRING2": stringSlice("ABCDEFGHIJKLMNOPQRSTUVWXYZ", rowCount)}
 }
 
-func jsonColumns(rowCount int) []byte {
-	record := exampleData(rowCount)
-	result, err := json.Marshal(record)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
 func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
 	rowCount := 10000
 	input := jsonRecords(rowCount)
