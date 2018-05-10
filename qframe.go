@@ -398,6 +398,9 @@ func (qf QFrame) comparables(columns []string, orders []Order, groupByNull bool)
 
 // Distinct returns a new QFrame that only contains unique rows with respect to the specified columns.
 // If no columns are given Distinct will return rows where allow columns are unique.
+//
+// The order of the returned rows in undefined.
+//
 // Time complexity O(m * n) where m = number of columns to compare for distinctness, n = number of rows.
 func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 	if qf.Err != nil {
@@ -481,6 +484,9 @@ func (qf QFrame) Select(columns ...string) QFrame {
 // GroupBy groups rows together for which the values of specified columns are the same.
 // Aggregations on the groups can be executed on the returned Grouper object.
 // Leaving out columns to group by will make one large group over which aggregations can be done.
+//
+// The order of the rows in the Grouper is undefined.
+//
 // Time complexity O(m * n) where m = number of columns to group by, n = number of rows.
 func (qf QFrame) GroupBy(configFns ...groupby.ConfigFunc) Grouper {
 	if qf.Err != nil {
@@ -1007,12 +1013,10 @@ func (qf QFrame) ByteSize() int {
 //   format rather than making them floats.
 // - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
 //   interface.
-// - Use https://goreportcard.com
 // - More serialization and deserialization tests
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
 // - ApplyN?
 // - Add option to drop NaN/Null before grouping?
-// - Consider changing most API functions to take variadic "config functions" for better future proofing.
 // - Are special cases in aggregations that do not rely on index order worth the extra code for the increase in
 //   performance allowed by avoiding use of the index?
 // - Validation of column names, allowed characters and names (not true/false, not numbers only, not "null"?)

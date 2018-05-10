@@ -5,7 +5,7 @@ a new QFrame, the original QFrame remains unchanged. This can be done
 fairly efficiently since much of the underlying data will be shared
 between the two frames.
 
-The design of QFrame has mainly be driven by the requirements from
+The design of QFrame has mainly been driven by the requirements from
 [qocache](https://github.com/tobgu/qocache) but it is in many aspects
 a general purpose data frame. Any suggestions for added/improved
 functionality to support a wider scope is always of interest as long
@@ -39,8 +39,8 @@ compatible way.
 
 ## Usage
 Below are some examples of common use cases. The list is not exhaustive
-in any way. For a complete description including more examples see the
-[docs](https://godoc.org/github.com/tobgu/qframe).
+in any way. For a complete description of all operations including more
+examples see the [docs](https://godoc.org/github.com/tobgu/qframe).
 
 ### IO
 QFrames can currently be read from and written to CSV and record
@@ -93,8 +93,8 @@ Dims = 2 x 2
 ### Grouping and aggregation
 Grouping and aggregation are two different steps. The function
 used in the aggregation step takes a slice of elements and
-returns an elements. For floats this function signature matches
-many of thestatistical functions in [Gonum](https://github.com/gonum/gonum)
+returns an element. For floats this function signature matches
+many of the statistical functions in [Gonum](https://github.com/gonum/gonum)
 which can hence be applied directly.
 
 ```go
@@ -124,7 +124,7 @@ Dims = 2 x 3
 
 ### Data manipulation
 There are two different functions by which data can be manipulated,
-`QFrame.Apply` and `QFrame.Eval`.
+`Apply` and `Eval`.
 `Eval` is slightly more high level and takes a more data driven approach
 but basically boils down to a bunch of `Apply` in the end.
 
@@ -168,7 +168,7 @@ Examples of the most common operations are available in the
 
 ## Performance/benchmarks
 There are a number of benchmarks in [qbench](https://github.com/tobgu/qbench)
-comparing qframe to Pandas and Gota where applicable.
+comparing QFrame to Pandas and Gota where applicable.
 
 ## Other data frames
 The work on QFrame has been inspired by [Python Pandas](https://pandas.pydata.org/)
@@ -176,7 +176,7 @@ and [Gota](https://github.com/kniren/gota).
 
 ## Contribute
 Want to contribute? Great! Open an issue on Github and let the discussions
-begin! Below are some instructions for working with QFrame.
+begin! Below are some instructions for working with the QFrame repo.
 
 ### Install dependencies
 `make dev-deps`
