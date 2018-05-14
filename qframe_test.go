@@ -1181,7 +1181,7 @@ func TestQFrame_ByteSize(t *testing.T) {
 	}, newqf.Enums(map[string][]string{"COL5": nil}))
 	totalSize := a.ByteSize()
 
-	// Not so much of a test as lock down on behavior to detect changes
+	// This is not so much of as a test as lock down on behavior to detect changes
 	expectedSize := 740
 	if totalSize != expectedSize {
 		t.Errorf("Unexpected byte size: %d != %d", totalSize, expectedSize)
@@ -1641,3 +1641,37 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 		})
 	}
 }
+
+/*
+Test cases
+----------
+- Invalid column names
+- Invalid function names in evaluation context
+- Eval with missing function
+- Expression building error cases
+- Zero length and/or filter clauses
+- Aggregation errors, what could this be?
+- Bool aggregation using built in "majority"
+- Filter boolean, built in
+- Sort by boolean
+- Group by boolean
+- Sort enum with null values
+- Enum column with too many unique values
+- Enum Equals other column, not equal
+- Enums, filter by invalid operator, on unknown value and using custom function
+- FLoat, filter by invalid operator, on wrong arg type, using custom function
+- Int, filter against float arg,
+- Int, ToJson  with int column
+- String, filter with invalid arguments
+- Column order, missing columns, invalid length
+- Enum column config, columns mentioned that are not of type enum
+- Filter on missing column name
+- Equal frames that are not equal for different reasons
+- Distinct by missing column
+- Select on missing column
+- Group by missing column
+- Group by no columns
+- Slice with invalid indices
+- Copy with missing source column
+- Use Apply to copy column
+*/
