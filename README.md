@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/tobgu/qframe.png)](https://travis-ci.org/tobgu/qframe) [![Go Report Card](https://goreportcard.com/badge/github.com/tobgu/qframe)](https://goreportcard.com/report/github.com/tobgu/qframe)
 
-QFrame is an immutable data frame. Any operations on a QFrame results in
+QFrame is an immutable data frame that support filtering, aggregation
+and data manipulation. Any operations on a QFrame results in
 a new QFrame, the original QFrame remains unchanged. This can be done
 fairly efficiently since much of the underlying data will be shared
 between the two frames.
@@ -10,6 +11,7 @@ The design of QFrame has mainly been driven by the requirements from
 a general purpose data frame. Any suggestions for added/improved
 functionality to support a wider scope is always of interest as long
 as they don't conflict with the requirements from qocache!
+See [Contribute](#contribute).
 
 ## Design goals
 * Performance
@@ -177,6 +179,18 @@ and [Gota](https://github.com/kniren/gota).
 ## Contribute
 Want to contribute? Great! Open an issue on Github and let the discussions
 begin! Below are some instructions for working with the QFrame repo.
+
+### Ideas for further work
+Below are some ideas of areas where contributions would be welcome.
+
+* Support for more input and output formats.
+* Support for additional column formats.
+* Support for using the [Arrow](https://github.com/apache/arrow) format for columns.
+* General CPU and memory optimizations.
+* Improve documentation.
+* More analytical functionality.
+* Dataset joins.
+* Improved interoperability with other libraries in the Go data science eco system.
 
 ### Install dependencies
 `make dev-deps`
