@@ -167,6 +167,10 @@ Examples of the most common operations are available in the
 * The CSV parser only handles ASCII characters as separators.
 * Individual strings cannot be longer than 268 Mb (2^28 byte).
 * A string column cannot contain more than a total of 34 Gb (2^35 byte).
+* At the moment you cannot rely on any of the errors returned to
+  fulfill anything else than the `Error` interface. In the future
+  this will hopefully be improved to provide more help in identifying
+  the root cause of errors.
 
 ## Performance/benchmarks
 There are a number of benchmarks in [qbench](https://github.com/tobgu/qbench)
@@ -191,6 +195,7 @@ Below are some ideas of areas where contributions would be welcome.
 * More analytical functionality.
 * Dataset joins.
 * Improved interoperability with other libraries in the Go data science eco system.
+* Improve string representation of QFrames.
 
 ### Install dependencies
 `make dev-deps`

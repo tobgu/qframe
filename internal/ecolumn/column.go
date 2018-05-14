@@ -534,7 +534,7 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 		// is not given, etc.).
 		return scolumn.New(result), nil
 	case string:
-		// No built in functions for strings at this stage
+		// No built in functions for enums at this stage
 		return nil, errors.New("enum.apply2", "unknown built in function %s", t)
 	default:
 		return nil, errors.New("enum.apply2", "cannot apply type %#v to column", fn)

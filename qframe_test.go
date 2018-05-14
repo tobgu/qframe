@@ -1444,7 +1444,7 @@ func TestQFrame_AggregateGroupByNull(t *testing.T) {
 	}
 }
 
-func TestQFrame_InitWithConstantVal(t *testing.T) {
+func TestQFrame_NewWithConstantVal(t *testing.T) {
 	a := "a"
 	table := []struct {
 		name     string
@@ -1489,6 +1489,61 @@ func TestQFrame_InitWithConstantVal(t *testing.T) {
 			in := qframe.New(map[string]interface{}{"COL1": tc.input}, newqf.Enums(tc.enums))
 			expected := qframe.New(map[string]interface{}{"COL1": tc.expected}, newqf.Enums(tc.enums))
 			assertEquals(t, expected, in)
+		})
+	}
+}
+
+func TestQFrame_NewErrors(t *testing.T) {
+	table := []struct {
+		input map[string]interface{}
+		err   string
+	}{
+		{
+			input: map[string]interface{}{"": []int{1}},
+			err:   "must not be empty"},
+		{
+			input: map[string]interface{}{"'foo'": []int{1}},
+			err:   `must not be quoted: 'foo'`},
+		{
+			input: map[string]interface{}{`"foo"`: []int{1}},
+			err:   `must not be quoted: "foo"`},
+		{
+			input: map[string]interface{}{"$foo": []int{1}},
+			err:   "must not start with $"},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.err, func(t *testing.T) {
+			f := qframe.New(tc.input)
+			assertErr(t, f.Err, tc.err)
+		})
+	}
+}
+
+func TestQFrame_OperationErrors(t *testing.T) {
+	// Catch all test case for various errors caused by invalid input parameters
+	// to various functions on the QFrame.
+	table := []struct {
+		name string
+		fn   func(f qframe.QFrame) qframe.QFrame
+		err  string
+	}{
+		{
+			name: "Copy with invalid destination column name",
+			fn:   func(f qframe.QFrame) qframe.QFrame { return f.Copy("$A", "COL1") },
+			err:  "must not start with $"},
+		{
+			name: "Apply with invalid destination column name",
+			fn:   func(f qframe.QFrame) qframe.QFrame { return f.Apply(qframe.Instruction{Fn: 1, DstCol: "$A"}) },
+			err:  "must not start with $"},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.err, func(t *testing.T) {
+			input := map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{11, 12, 13}}
+			f := qframe.New(input)
+			newF := tc.fn(f)
+			assertErr(t, newF.Err, tc.err)
 		})
 	}
 }

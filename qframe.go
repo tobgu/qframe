@@ -144,10 +144,41 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 	return localS, nil
 }
 
+func isQuoted(s string) bool {
+	return len(s) > 2 &&
+		((strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'")) ||
+			(strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`)))
+}
+
+func checkColName(name string) error {
+	if len(name) == 0 {
+		return errors.New("checkColName", "column name must not be empty")
+	}
+
+	if isQuoted(name) {
+		// Reserved for future use
+		return errors.New("checkColName", "column name must not be quoted: %s", name)
+	}
+
+	// Reserved for future use of variables in Eval
+	if strings.HasPrefix(name, "$") {
+		return errors.New("checkColName", "column name must not start with $: %s", name)
+	}
+
+	return nil
+}
+
 // New creates a new QFrame with column content from data.
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	config := newqf.NewConfig(fns)
+
+	for colName := range data {
+		if err := checkColName(colName); err != nil {
+			return QFrame{Err: errors.Propagate("New", err)}
+		}
+	}
+
 	if len(config.ColumnOrder) == 0 {
 		config.ColumnOrder = make([]string, 0, len(data))
 		for name := range data {
@@ -166,19 +197,19 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 		}
 	}
 
-	s := make([]namedColumn, len(data))
-	sByName := make(map[string]namedColumn, len(data))
+	columns := make([]namedColumn, len(data))
+	colByName := make(map[string]namedColumn, len(data))
 	firstLen, currentLen := 0, 0
 	for i, name := range config.ColumnOrder {
 		col := data[name]
-		localS, err := createColumn(name, col, config)
+		localCol2, err := createColumn(name, col, config)
 		if err != nil {
 			return QFrame{Err: err}
 		}
 
-		s[i] = namedColumn{name: name, Column: localS, pos: i}
-		sByName[name] = s[i]
-		currentLen = localS.Len()
+		columns[i] = namedColumn{name: name, Column: localCol2, pos: i}
+		colByName[name] = columns[i]
+		currentLen = localCol2.Len()
 		if firstLen == 0 {
 			firstLen = currentLen
 		}
@@ -197,7 +228,7 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 		return QFrame{Err: errors.New("New", "unknown enum columns: %v", colNames)}
 	}
 
-	return QFrame{columns: s, columnsByName: sByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
+	return QFrame{columns: columns, columnsByName: colByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
 }
 
 // Contains reports if a columns with colName is present in the frame.
@@ -600,12 +631,16 @@ func (qf QFrame) Slice(start, end int) QFrame {
 }
 
 func (qf QFrame) setColumn(name string, c column.Column) QFrame {
+	if err := checkColName(name); err != nil {
+		return qf.withErr(errors.Propagate("setColumn", err))
+	}
+
 	newF := qf.withIndex(qf.index)
-	existingS, overwrite := qf.columnsByName[name]
+	existingCol, overwrite := qf.columnsByName[name]
 	newColCount := len(qf.columns)
 	pos := newColCount
 	if overwrite {
-		pos = existingS.pos
+		pos = existingCol.pos
 	} else {
 		newColCount++
 	}
@@ -637,7 +672,7 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 
 	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("Instruction", "no such columns: %s", srcCol))
+		return qf.withErr(errors.New("Copy", "no such column: %s", srcCol))
 	}
 
 	if dstCol == srcCol {
@@ -717,7 +752,7 @@ func (qf QFrame) apply1(fn types.DataFuncOrBuiltInId, dstCol, srcCol string) QFr
 
 	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("apply1", "no such columns: %s", srcCol))
+		return qf.withErr(errors.New("apply1", "no such column: %s", srcCol))
 	}
 
 	srcColumn := namedColumn.Column
@@ -754,13 +789,13 @@ func (qf QFrame) apply2(fn types.DataFuncOrBuiltInId, dstCol, srcCol1, srcCol2 s
 
 	namedSrcColumn1, ok := qf.columnsByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("apply2", "no such columns: %s", srcCol1))
+		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol1))
 	}
 	srcColumn1 := namedSrcColumn1.Column
 
 	namedSrcColumn2, ok := qf.columnsByName[srcCol2]
 	if !ok {
-		return qf.withErr(errors.New("apply2", "no such columns: %s", srcCol2))
+		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol2))
 	}
 	srcColumn2 := namedSrcColumn2.Column
 
@@ -794,6 +829,7 @@ type Instruction struct {
 }
 
 // Apply applies instructions to each row in the QFrame.
+//
 // Time complexity O(m * n), where m = number of instructions, n = number of rows.
 func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	result := qf
@@ -813,6 +849,7 @@ func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 // FilteredApply works like Apply but allows adding a filter which limits the
 // rows to which the instructions are applied to. Any rows not matching the filter
 // will be assigned the zero value of the column type.
+//
 // Time complexity O(m * n), where m = number of instructions, n = number of rows.
 func (qf QFrame) FilteredApply(clause FilterClause, instructions ...Instruction) QFrame {
 	filteredQf := qf.Filter(clause)
@@ -897,7 +934,7 @@ func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 // ToCsv writes the data in the QFrame, in CSV format, to writer.
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
 //
-// This is function is currently unoptimized. Could probably be a lot speedier with
+// This is function is currently unoptimized. It could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
 func (qf QFrame) ToCsv(writer io.Writer) error {
 	if qf.Err != nil {
@@ -933,6 +970,7 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 }
 
 // ToJson writes the data in the QFrame, in JSON format one record per row, to writer.
+//
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
 func (qf QFrame) ToJson(writer io.Writer) error {
 	if qf.Err != nil {
@@ -988,6 +1026,7 @@ func (qf QFrame) ToJson(writer io.Writer) error {
 //
 // This does not factor for cases where multiple, different, frames reference
 // the same underlying data.
+//
 // Time complexity O(m) where m is the number of columns in the QFrame.
 func (qf QFrame) ByteSize() int {
 	totalSize := 0
@@ -1011,7 +1050,7 @@ func (qf QFrame) ByteSize() int {
 //   using the generated easyjson code as starting point for columns based format and by refining type
 //   detection for the record based read. That would also allow proper parsing of integers for record
 //   format rather than making them floats.
-// - Support access by x, y (to support GoNum matrix interface), or support returning a datatype that supports that
+// - Support access by x, y (to support GoNum matrix interface), or support returning a data type that supports that
 //   interface.
 // - More serialization and deserialization tests
 // - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
