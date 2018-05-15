@@ -1,4 +1,7 @@
-[![Build Status](https://travis-ci.org/tobgu/qframe.png)](https://travis-ci.org/tobgu/qframe) [![Go Report Card](https://goreportcard.com/badge/github.com/tobgu/qframe)](https://goreportcard.com/report/github.com/tobgu/qframe)
+[![Build Status](https://travis-ci.org/tobgu/qframe.png)](https://travis-ci.org/tobgu/qframe)
+[![gocover.run](https://gocover.run/github.com/tobgu/qframe.svg?style=flat&tag=1.10)](https://gocover.run?tag=1.10&repo=github.com%2Ftobgu%2Fqframe)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tobgu/qframe)](https://goreportcard.com/report/github.com/tobgu/qframe)
+[![GoDoc](https://godoc.org/github.com/tobgu/qframe?status.svg)](https://godoc.org/github.com/tobgu/qframe)
 
 QFrame is an immutable data frame that support filtering, aggregation
 and data manipulation. Any operations on a QFrame results in
