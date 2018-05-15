@@ -1568,6 +1568,14 @@ func TestQFrame_OperationErrors(t *testing.T) {
 				return f.Eval("COL3", expr).Err
 			},
 			err: "Could not find Int function"},
+		{
+			name: "Zero clause OR filter not allowed",
+			fn: func(f qframe.QFrame) error { return f.Filter(qframe.Or()).Err },
+			err: "zero subclauses not allowed"},
+		{
+			name: "Zero clause AND filter not allowed",
+			fn: func(f qframe.QFrame) error { return f.Filter(qframe.And()).Err },
+			err: "zero subclauses not allowed"},
 	}
 
 	for _, tc := range table {
@@ -1732,7 +1740,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Zero length and/or filter clauses
 - Aggregation errors, what could this be?
 - Bool aggregation using built in "majority"
 - Filter boolean, built in
