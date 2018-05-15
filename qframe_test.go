@@ -1543,10 +1543,35 @@ func TestQFrame_OperationErrors(t *testing.T) {
 				return ctx.SetFunc("$foo", func(i int) int { return i })
 			},
 			err: "must not start with $"},
+		{
+			name: "Missing function in eval",
+			fn: func(f qframe.QFrame) error {
+				expr := qframe.Expr1("foo", types.ColumnName("COL1"))
+				return f.Eval("COL3", expr).Err
+			},
+			err: "Could not find Int function"},
+		{
+			name: "Error in lhs of composed expression",
+			fn: func(f qframe.QFrame) error {
+				expr := qframe.Expr2("+",
+					qframe.Expr1("foo", types.ColumnName("COL1")),
+					qframe.Expr1("abs", types.ColumnName("COL2")))
+				return f.Eval("COL3", expr).Err
+			},
+			err: "Could not find Int function"},
+		{
+			name: "Error in rhs of composed expression",
+			fn: func(f qframe.QFrame) error {
+				expr := qframe.Expr2("+",
+					qframe.Expr1("abs", types.ColumnName("COL2")),
+					qframe.Expr1("foo", types.ColumnName("COL1")))
+				return f.Eval("COL3", expr).Err
+			},
+			err: "Could not find Int function"},
 	}
 
 	for _, tc := range table {
-		t.Run(tc.err, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			input := map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{11, 12, 13}}
 			f := qframe.New(input)
 			err := tc.fn(f)
@@ -1707,8 +1732,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Eval with missing function
-- Expression building error cases
 - Zero length and/or filter clauses
 - Aggregation errors, what could this be?
 - Bool aggregation using built in "majority"
