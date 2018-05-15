@@ -37,6 +37,18 @@ sort order of these columns.
 Many operations on QFrames only affect the index, the underlying
 data remains the same.
 
+Many functions and methods in qframe take the empty interface as parameter,
+for functions to be applied or string references to internal functions
+for example.
+These always correspond to a union/sum type with a fixed set of valid types
+that are checked in runtime through type switches (there's hardly any
+reflection applied in QFrame for performance reasons).
+Which types are valid depends on the function called and the column type
+that is affected. Modelling this statically is hard/impossible in Go,
+hence the dynamic approach. If you plan to use QFrame with datasets
+with fixed layout and types it should be a small task to write tiny
+wrappers for the types you are using to regain static type safety.
+
 API functions that require configuration parameters make use of
 [functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
 to allow more options to be easily added in the future in a backwards
@@ -203,7 +215,13 @@ Below are some ideas of areas where contributions would be welcome.
 ### Install dependencies
 `make dev-deps`
 
-### Run tests
+### Tests
+Please contribute tests together with any code. The tests should be
+written against the public API to avoid lockdown of the implementation
+and internal structure which would make it more difficult to change in
+the future.
+
+Run tests:
 `make test`
 
 This will also trigger code to be regenerated.
