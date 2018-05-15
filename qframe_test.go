@@ -1570,12 +1570,28 @@ func TestQFrame_OperationErrors(t *testing.T) {
 			err: "Could not find Int function"},
 		{
 			name: "Zero clause OR filter not allowed",
-			fn: func(f qframe.QFrame) error { return f.Filter(qframe.Or()).Err },
-			err: "zero subclauses not allowed"},
+			fn:   func(f qframe.QFrame) error { return f.Filter(qframe.Or()).Err },
+			err:  "zero subclauses not allowed"},
 		{
 			name: "Zero clause AND filter not allowed",
-			fn: func(f qframe.QFrame) error { return f.Filter(qframe.And()).Err },
-			err: "zero subclauses not allowed"},
+			fn:   func(f qframe.QFrame) error { return f.Filter(qframe.And()).Err },
+			err:  "zero subclauses not allowed"},
+		{
+			name: "Group by missing column",
+			fn:   func(f qframe.QFrame) error { return f.GroupBy(groupby.Columns("FOO")).Err },
+			err:  "unknown column"},
+		{
+			name: "Aggregate on missing column",
+			fn: func(f qframe.QFrame) error {
+				return f.GroupBy(groupby.Columns("COL1")).Aggregate(qframe.Aggregation{Fn: "sum", Column: "FOO"}).Err
+			},
+			err: "no such column"},
+		{
+			name: "Aggregate on column part of the group by expression is not allowed",
+			fn: func(f qframe.QFrame) error {
+				return f.GroupBy(groupby.Columns("COL1")).Aggregate(qframe.Aggregation{Fn: "sum", Column: "COL1"}).Err
+			},
+			err: "cannot aggregate on column that is part of group by"},
 	}
 
 	for _, tc := range table {

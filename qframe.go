@@ -139,7 +139,7 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 	case qfstrings.StringBlob:
 		localS = scolumn.NewBytes(t.Pointers, t.Data)
 	default:
-		return nil, errors.New("New", "unknown columns format of: %v", t)
+		return nil, errors.New("New", "unknown column format of: %v", t)
 	}
 	return localS, nil
 }
@@ -354,7 +354,7 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 	for _, o := range orders {
 		s, ok := qf.columnsByName[o.Column]
 		if !ok {
-			return qf.withErr(errors.New("Sort", "unknown columns: %s", o.Column))
+			return qf.withErr(errors.New("Sort", "unknown column: %s", o.Column))
 		}
 
 		comparables = append(comparables, s.Comparable(o.Reverse, false))
@@ -422,7 +422,7 @@ func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 
 	for _, col := range config.Columns {
 		if _, ok := qf.columnsByName[col]; !ok {
-			return qf.withErr(errors.New("Distinct", `unknown columns "%s"`, col))
+			return qf.withErr(errors.New("Distinct", `unknown column "%s"`, col))
 		}
 	}
 
@@ -436,7 +436,7 @@ func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 func (qf QFrame) checkColumns(operation string, columns []string) error {
 	for _, col := range columns {
 		if _, ok := qf.columnsByName[col]; !ok {
-			return errors.New("operation", `unknown columns "%s"`, col)
+			return errors.New("operation", `unknown column "%s"`, col)
 		}
 	}
 

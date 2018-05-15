@@ -36,12 +36,12 @@ type Aggregation struct {
 }
 
 // Aggregate applies the given aggregations to all row groups in the Grouper.
+//
+// Time complexity O(m*n) where m = number of aggregations, n = number of rows.
 func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 	if g.Err != nil {
 		return QFrame{Err: g.Err}
 	}
-
-	// TODO: Check that columns exist but are not part of groupedColumns
 
 	// Loop over all groups and pick the first row in each of the groups.
 	// This index will be used to populate the grouped by columns below.
@@ -62,7 +62,18 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 
 	var err error
 	for _, agg := range aggs {
-		col := g.columnsByName[agg.Column]
+		col, ok := g.columnsByName[agg.Column]
+		if !ok {
+			return QFrame{Err: errors.New("Aggregate", "no such column: %s", agg.Column)}
+		}
+
+		_, ok = newColumnsByName[agg.Column]
+		if ok {
+			return QFrame{Err: errors.New(
+				"Aggregate",
+				"cannot aggregate on column that is part of group by or is already an aggregate: %s", agg.Column)}
+		}
+
 		col.Column, err = col.Aggregate(g.indices, agg.Fn)
 		if err != nil {
 			return QFrame{Err: errors.Propagate("Aggregate", err)}
