@@ -99,6 +99,11 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 			clause:   qframe.Filter{Column: "COL1", Comparator: "any_bits", Arg: 6},
 			input:    []int{7, 2, 4, 1, 6},
 			expected: []int{7, 2, 4, 6}},
+		{
+			name:     "boolean equals",
+			clause:   qframe.Filter{Column: "COL1", Comparator: "=", Arg: true},
+			input:    []bool{true, false, true},
+			expected: []bool{true, true}},
 	}
 
 	for i, tc := range table {
@@ -334,37 +339,42 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 }
 
 func TestQFrame_Sort(t *testing.T) {
-	a := qframe.New(map[string]interface{}{
-		"COL.1": []int{0, 1, 3, 2},
-		"COL.2": []int{3, 2, 1, 1},
-	})
-
 	table := []struct {
 		orders   []qframe.Order
 		expected qframe.QFrame
+		input    map[string]interface{}
 	}{
 		{
-			[]qframe.Order{{Column: "COL.1"}},
-			qframe.New(map[string]interface{}{
+			orders: []qframe.Order{{Column: "COL.1"}},
+			expected: qframe.New(map[string]interface{}{
 				"COL.1": []int{0, 1, 2, 3},
-				"COL.2": []int{3, 2, 1, 1}}),
-		},
+				"COL.2": []int{3, 2, 1, 1}})},
 		{
-			[]qframe.Order{{Column: "COL.1", Reverse: true}},
-			qframe.New(map[string]interface{}{
+			orders: []qframe.Order{{Column: "COL.1", Reverse: true}},
+			expected: qframe.New(map[string]interface{}{
 				"COL.1": []int{3, 2, 1, 0},
-				"COL.2": []int{1, 1, 2, 3}}),
-		},
+				"COL.2": []int{1, 1, 2, 3}})},
 		{
-			[]qframe.Order{{Column: "COL.2"}, {Column: "COL.1"}},
-			qframe.New(map[string]interface{}{
+			orders: []qframe.Order{{Column: "COL.2"}, {Column: "COL.1"}},
+			expected: qframe.New(map[string]interface{}{
 				"COL.1": []int{2, 3, 1, 0},
-				"COL.2": []int{1, 1, 2, 3}}),
-		},
+				"COL.2": []int{1, 1, 2, 3}})},
+		{
+			orders: []qframe.Order{{Column: "COL.1"}},
+			expected: qframe.New(map[string]interface{}{
+				"COL.1": []bool{false, true, true}}),
+			input: map[string]interface{}{
+				"COL.1": []bool{true, false, true}}},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
+			if tc.input == nil {
+				tc.input = map[string]interface{}{
+					"COL.1": []int{0, 1, 3, 2},
+					"COL.2": []int{3, 2, 1, 1}}
+			}
+			a := qframe.New(tc.input)
 			b := a.Sort(tc.orders...)
 			assertEquals(t, tc.expected, b)
 		})
@@ -557,6 +567,20 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL.2": incSlice(1000, 2)},
 			groupColumns: []string{"COL.1"},
 			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL.2"}},
+		},
+		{
+			name:         "aggregate booleans over all rows",
+			input:        map[string]interface{}{"COL1": []bool{true, false, true}},
+			expected:     map[string]interface{}{"COL1": []bool{true}},
+			groupColumns: []string{},
+			aggregations: []qframe.Aggregation{{Fn: "majority", Column: "COL1"}},
+		},
+		{
+			name:         "group by booleans",
+			input:        map[string]interface{}{"COL1": []bool{true, false, true}, "COL2": []int{1, 2, 3}},
+			expected:     map[string]interface{}{"COL1": []bool{false, true}, "COL2": []int{2, 4}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL2"}},
 		},
 	}
 
@@ -1756,16 +1780,11 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Aggregation errors, what could this be?
-- Bool aggregation using built in "majority"
-- Filter boolean, built in
-- Sort by boolean
-- Group by boolean
 - Sort enum with null values
 - Enum column with too many unique values
 - Enum Equals other column, not equal
 - Enums, filter by invalid operator, on unknown value and using custom function
-- FLoat, filter by invalid operator, on wrong arg type, using custom function
+- Float, filter by invalid operator, on wrong arg type, using custom function
 - Int, filter against float arg,
 - Int, ToJson  with int column
 - String, filter with invalid arguments
