@@ -144,37 +144,13 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 	return localS, nil
 }
 
-func isQuoted(s string) bool {
-	return len(s) > 2 &&
-		((strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'")) ||
-			(strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`)))
-}
-
-func checkColName(name string) error {
-	if len(name) == 0 {
-		return errors.New("checkColName", "column name must not be empty")
-	}
-
-	if isQuoted(name) {
-		// Reserved for future use
-		return errors.New("checkColName", "column name must not be quoted: %s", name)
-	}
-
-	// Reserved for future use of variables in Eval
-	if strings.HasPrefix(name, "$") {
-		return errors.New("checkColName", "column name must not start with $: %s", name)
-	}
-
-	return nil
-}
-
 // New creates a new QFrame with column content from data.
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	config := newqf.NewConfig(fns)
 
 	for colName := range data {
-		if err := checkColName(colName); err != nil {
+		if err := qfstrings.CheckName(colName); err != nil {
 			return QFrame{Err: errors.Propagate("New", err)}
 		}
 	}
@@ -241,7 +217,7 @@ func (qf QFrame) Contains(colName string) bool {
 // Filter filters the frame according to the filters in clause.
 //
 // Filters are applied via depth first traversal of the provided filter clause from left
-// to right. Use the following rules of thumb for best performance when consructing filters:
+// to right. Use the following rules of thumb for best performance when constructing filters:
 //
 // 1. Cheap filters (eg. integer comparisons, ...) should go to the left of more
 //    expensive ones (eg. string regex, ...).
@@ -631,7 +607,7 @@ func (qf QFrame) Slice(start, end int) QFrame {
 }
 
 func (qf QFrame) setColumn(name string, c column.Column) QFrame {
-	if err := checkColName(name); err != nil {
+	if err := qfstrings.CheckName(name); err != nil {
 		return qf.withErr(errors.Propagate("setColumn", err))
 	}
 

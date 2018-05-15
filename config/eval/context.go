@@ -3,6 +3,7 @@ package eval
 import (
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/function"
+	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 	"math"
 	"reflect"
@@ -127,6 +128,10 @@ func (ctx *Context) setFunc(typ types.FunctionType, ac ArgCount, name string, fn
 
 // SetFunc inserts a function into the context under the given name.
 func (ctx *Context) SetFunc(name string, fn interface{}) error {
+	if err := strings.CheckName(name); err != nil {
+		return errors.Propagate("SetFunc", err)
+	}
+
 	// TODO: Check function name validity (eg must not start with $, more?)
 	// Since there's such a flexibility in the function types that can be
 	// used and there is no static typing to support it this function

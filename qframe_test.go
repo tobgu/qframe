@@ -1525,25 +1525,32 @@ func TestQFrame_OperationErrors(t *testing.T) {
 	// to various functions on the QFrame.
 	table := []struct {
 		name string
-		fn   func(f qframe.QFrame) qframe.QFrame
+		fn   func(f qframe.QFrame) error
 		err  string
 	}{
 		{
 			name: "Copy with invalid destination column name",
-			fn:   func(f qframe.QFrame) qframe.QFrame { return f.Copy("$A", "COL1") },
+			fn:   func(f qframe.QFrame) error { return f.Copy("$A", "COL1").Err },
 			err:  "must not start with $"},
 		{
 			name: "Apply with invalid destination column name",
-			fn:   func(f qframe.QFrame) qframe.QFrame { return f.Apply(qframe.Instruction{Fn: 1, DstCol: "$A"}) },
+			fn:   func(f qframe.QFrame) error { return f.Apply(qframe.Instruction{Fn: 1, DstCol: "$A"}).Err },
 			err:  "must not start with $"},
+		{
+			name: "Set eval func with invalid name",
+			fn: func(f qframe.QFrame) error {
+				ctx := eval.NewDefaultCtx()
+				return ctx.SetFunc("$foo", func(i int) int { return i })
+			},
+			err: "must not start with $"},
 	}
 
 	for _, tc := range table {
 		t.Run(tc.err, func(t *testing.T) {
 			input := map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{11, 12, 13}}
 			f := qframe.New(input)
-			newF := tc.fn(f)
-			assertErr(t, newF.Err, tc.err)
+			err := tc.fn(f)
+			assertErr(t, err, tc.err)
 		})
 	}
 }
@@ -1700,8 +1707,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Invalid column names
-- Invalid function names in evaluation context
 - Eval with missing function
 - Expression building error cases
 - Zero length and/or filter clauses
