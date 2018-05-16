@@ -1038,7 +1038,9 @@ func (qf QFrame) ByteSize() int {
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
 // - Add function to produce documentation for all built in functions? Default evaluation context, etc?
-
+// - Fix hashing for grouping. Right now it is very broken (produces low number of different hashes) for some cases. See
+//   	benchmark_test.go:696: Stats: qframe.GroupStats{RelocationCount:1, RelocationCollisions:800085, InsertCollisions:6417895, GroupCount:19852, HashCount:362, LoadFactor:0.30291748046875}
+//
 // TODO performance?
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.

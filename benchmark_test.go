@@ -9,6 +9,7 @@ import (
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/filter"
+	"github.com/tobgu/qframe/types"
 	"io/ioutil"
 	"math/rand"
 	"testing"
@@ -252,7 +253,7 @@ func csvBytes(rowCount int) []byte {
 func csvEnumBytes(rowCount, cardinality int) []byte {
 	buf := new(bytes.Buffer)
 	writer := stdcsv.NewWriter(buf)
-	writer.Write([]string{"COL.1", "COL.2"})
+	writer.Write([]string{"COL1", "COL2"})
 	for i := 0; i < rowCount; i++ {
 		writer.Write([]string{
 			fmt.Sprintf("Foo bar baz %d", i%cardinality),
@@ -295,7 +296,7 @@ func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				r := bytes.NewReader(input)
-				df := qf.ReadCsv(r, csv.Types(map[string]string{"COL.1": t, "COL.2": t}))
+				df := qf.ReadCsv(r, csv.Types(map[string]string{"COL1": t, "COL2": t}))
 				if df.Err != nil {
 					b.Errorf("Unexpected CSV error: %s", df.Err)
 				}
@@ -452,40 +453,40 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 		comparator    string
 	}{
 		{
-			types:         map[string]string{"COL.1": "enum", "COL.2": "enum"},
-			column:        "COL.1",
+			types:         map[string]string{"COL1": "enum", "COL2": "enum"},
+			column:        "COL1",
 			filter:        "Foo bar baz 5",
 			expectedCount: 55556,
 		},
 		{
 			types:         map[string]string{},
-			column:        "COL.1",
+			column:        "COL1",
 			filter:        "Foo bar baz 5",
 			expectedCount: 55556,
 		},
 		{
 			types:         map[string]string{},
-			column:        "COL.2",
+			column:        "COL2",
 			filter:        "AB5",
 			expectedCount: 55556,
 		},
 		{
 			types:         map[string]string{},
-			column:        "COL.1",
+			column:        "COL1",
 			filter:        "%bar baz 5%",
 			expectedCount: 11111,
 			comparator:    "like",
 		},
 		{
 			types:         map[string]string{},
-			column:        "COL.1",
+			column:        "COL1",
 			filter:        "%bar baz 5%",
 			expectedCount: 11111,
 			comparator:    "ilike",
 		},
 		{
-			types:         map[string]string{"COL.1": "enum", "COL.2": "enum"},
-			column:        "COL.1",
+			types:         map[string]string{"COL1": "enum", "COL2": "enum"},
+			column:        "COL1",
 			filter:        "%bar baz 5%",
 			expectedCount: 11111,
 			comparator:    "ilike",
@@ -517,7 +518,7 @@ func benchApply(b *testing.B, name string, input qf.QFrame, fn interface{}) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			result := input.Apply(qf.Instruction{Fn: fn, DstCol: "COL.1", SrcCol1: "COL.1"})
+			result := input.Apply(qf.Instruction{Fn: fn, DstCol: "COL1", SrcCol1: "COL1"})
 			if result.Err != nil {
 				b.Errorf("Err: %d, %s", result.Len(), result.Err)
 			}
@@ -542,7 +543,7 @@ func BenchmarkQFrame_ApplyEnum(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	df := qf.ReadCsv(r, csv.Types(map[string]string{"COL.1": "enum"}))
+	df := qf.ReadCsv(r, csv.Types(map[string]string{"COL1": "enum"}))
 
 	benchApply(b, "Instruction with custom function", df, toUpper)
 	benchApply(b, "Instruction with built in function", df, "ToUpper")
@@ -595,8 +596,8 @@ func BenchmarkQFrame_StringView(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	f := qf.ReadCsv(r).Sort(qf.Order{Column: "COL.1"})
-	v, err := f.StringView("COL.1")
+	f := qf.ReadCsv(r).Sort(qf.Order{Column: "COL1"})
+	v, err := f.StringView("COL1")
 	if err != nil {
 		b.Error(err)
 	}
@@ -639,7 +640,7 @@ func BenchmarkQFrame_EvalInt(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		result := df.Eval("RESULT", qf.Expr2("+", qf.Expr2("+", "S1", "S2"), qf.Val(3)), nil)
+		result := df.Eval("RESULT", qf.Expr2("+", qf.Expr2("+", types.ColumnName("S1"), types.ColumnName("S2")), qf.Val(2)))
 		if result.Err != nil {
 			b.Errorf("Err: %d, %s", result.Len(), result.Err)
 		}
@@ -663,7 +664,7 @@ func BenchmarkGroupBy(b *testing.B) {
 	}
 
 	for _, tc := range table {
-		for _, dataType := range []string{"string", "integer"} {
+		for _, dataType := range []string{"string"} { //, "integer"} {
 			b.Run(fmt.Sprintf("%s dataType=%s", tc.name, dataType), func(b *testing.B) {
 				var input map[string]interface{}
 				if dataType == "integer" {
@@ -691,8 +692,8 @@ func BenchmarkGroupBy(b *testing.B) {
 					stats = grouper.Stats
 				}
 
-				_ = stats
-				// b.Logf("Stats: %#v", stats)
+				stats = stats
+				b.Logf("Stats: %#v", stats)
 
 				/*
 					// Remember to put -alloc_space there otherwise it will be empty since no space is used anymore
@@ -750,7 +751,7 @@ Initial results:
 BenchmarkDataFrame_Filter-2     	      30	  40542568 ns/op	 7750730 B/op	  300134 allocs/op
 BenchmarkQCacheFrame_Filter-2   	     300	   3997702 ns/op	  991720 B/op	      14 allocs/op
 
-After converting bool index to int index before subseting:
+After converting bool index to int index before subsetting:
 BenchmarkDataFrame_Filter-2     	      30	  40330898 ns/op	 7750731 B/op	  300134 allocs/op
 BenchmarkQCacheFrame_Filter-2   	     500	   2631666 ns/op	 2098409 B/op	      38 allocs/op
 
@@ -949,7 +950,7 @@ BenchmarkQFrame_IntView/Slice-2            	    2000	    806672 ns/op	  802816 B
 BenchmarkQFrame_StringView/For_loop-2         	     200	   6242471 ns/op	 1600000 B/op	  100000 allocs/op
 BenchmarkQFrame_StringView/Slice-2            	     100	  14006634 ns/op	 4002816 B/op	  200001 allocs/op
 
-// Same as above but modified to work with enums in COL.1
+// Same as above but modified to work with enums in COL1
 BenchmarkQFrame_StringView/For_loop-2         	    1000	   1651190 ns/op	       0 B/op	       0 allocs/op
 BenchmarkQFrame_StringView/Slice-2            	     500	   2697675 ns/op	  802816 B/op	       1 allocs/op
 
