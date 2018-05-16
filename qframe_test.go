@@ -339,10 +339,12 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 }
 
 func TestQFrame_Sort(t *testing.T) {
+	a, b := "a", "b"
 	table := []struct {
 		orders   []qframe.Order
 		expected qframe.QFrame
 		input    map[string]interface{}
+		configs  []newqf.ConfigFunc
 	}{
 		{
 			orders: []qframe.Order{{Column: "COL1"}},
@@ -365,6 +367,14 @@ func TestQFrame_Sort(t *testing.T) {
 				"COL1": []bool{false, true, true}}),
 			input: map[string]interface{}{
 				"COL1": []bool{true, false, true}}},
+		{
+			orders: []qframe.Order{{Column: "COL1"}},
+			expected: qframe.New(map[string]interface{}{
+				"COL1": []*string{nil, &b, &a}},
+				newqf.Enums(map[string][]string{"COL1": {"b", "a"}})),
+			input: map[string]interface{}{
+				"COL1": []*string{&b, nil, &a}},
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"b", "a"}})}},
 	}
 
 	for i, tc := range table {
@@ -374,7 +384,7 @@ func TestQFrame_Sort(t *testing.T) {
 					"COL1": []int{0, 1, 3, 2},
 					"COL2": []int{3, 2, 1, 1}}
 			}
-			a := qframe.New(tc.input)
+			a := qframe.New(tc.input, tc.configs...)
 			b := a.Sort(tc.orders...)
 			assertEquals(t, tc.expected, b)
 		})
@@ -1518,9 +1528,15 @@ func TestQFrame_NewWithConstantVal(t *testing.T) {
 }
 
 func TestQFrame_NewErrors(t *testing.T) {
+	longCol := make([]string, 256)
+	for i := range longCol {
+		longCol[i] = fmt.Sprintf("%d", i)
+	}
+
 	table := []struct {
-		input map[string]interface{}
-		err   string
+		input   map[string]interface{}
+		configs []newqf.ConfigFunc
+		err     string
 	}{
 		{
 			input: map[string]interface{}{"": []int{1}},
@@ -1534,11 +1550,15 @@ func TestQFrame_NewErrors(t *testing.T) {
 		{
 			input: map[string]interface{}{"$foo": []int{1}},
 			err:   "must not start with $"},
+		{
+			input:   map[string]interface{}{"COL1": longCol},
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": nil})},
+			err:     "enum max cardinality"},
 	}
 
 	for _, tc := range table {
 		t.Run(tc.err, func(t *testing.T) {
-			f := qframe.New(tc.input)
+			f := qframe.New(tc.input, tc.configs...)
 			assertErr(t, f.Err, tc.err)
 		})
 	}
@@ -1624,6 +1644,74 @@ func TestQFrame_OperationErrors(t *testing.T) {
 			f := qframe.New(input)
 			err := tc.fn(f)
 			assertErr(t, err, tc.err)
+		})
+	}
+}
+
+func TestQFrame_Equals(t *testing.T) {
+	table := []struct {
+		name              string
+		input             map[string]interface{}
+		comparatee        map[string]interface{}
+		inputConfigs      []newqf.ConfigFunc
+		comparateeConfigs []newqf.ConfigFunc
+		expected          bool
+	}{
+		{
+			name:       "Equality basic",
+			input:      map[string]interface{}{"COL1": []int{1}, "COL2": []int{1}},
+			comparatee: map[string]interface{}{"COL1": []int{1}, "COL2": []int{1}},
+			expected:   true},
+		{
+			name:       "Equality of zero column",
+			input:      map[string]interface{}{},
+			comparatee: map[string]interface{}{},
+			expected:   true},
+		{
+			name:       "Equality of empty column",
+			input:      map[string]interface{}{"COL1": []int{}},
+			comparatee: map[string]interface{}{"COL1": []int{}},
+			expected:   true},
+		{
+			name:       "Inequality empty vs non-empty column",
+			input:      map[string]interface{}{"COL1": []int{}},
+			comparatee: map[string]interface{}{"COL1": []int{1}},
+			expected:   false},
+		{
+			name:       "Inequality different columns",
+			input:      map[string]interface{}{"COL1": []int{}},
+			comparatee: map[string]interface{}{"COL2": []int{}},
+			expected:   false},
+		{
+			name:       "Inequality different column content",
+			input:      map[string]interface{}{"COL1": []int{1, 2}},
+			comparatee: map[string]interface{}{"COL2": []int{2, 1}},
+			expected:   false},
+		{
+			name:              "Equality between different enum types as long as elements are the same",
+			input:             map[string]interface{}{"COL1": []string{"a", "b"}},
+			inputConfigs:      []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"a", "b"}})},
+			comparatee:        map[string]interface{}{"COL1": []string{"a", "b"}},
+			comparateeConfigs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"c", "b", "a"}})},
+			expected:          true},
+		{
+			// Not sure if this is the way it should work, just documenting the current behaviour
+			name:              "Inequality with same content but different column order",
+			input:             map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"aa", "bb"}},
+			inputConfigs:      []newqf.ConfigFunc{newqf.ColumnOrder("COL1", "COL2")},
+			comparatee:        map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"aa", "bb"}},
+			comparateeConfigs: []newqf.ConfigFunc{newqf.ColumnOrder("COL2", "COL1")},
+			expected:          false},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			in := qframe.New(tc.input, tc.inputConfigs...)
+			comp := qframe.New(tc.comparatee, tc.comparateeConfigs...)
+			eq, reason := in.Equals(comp)
+			if eq != tc.expected {
+				t.Errorf("Actual: %v, expected: %v, reason: %s", eq, tc.expected, reason)
+			}
 		})
 	}
 }
@@ -1780,9 +1868,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Sort enum with null values
-- Enum column with too many unique values
-- Enum Equals other column, not equal
 - Enums, filter by invalid operator, on unknown value and using custom function
 - Float, filter by invalid operator, on wrong arg type, using custom function
 - Int, filter against float arg,
@@ -1794,8 +1879,6 @@ Test cases
 - Equal frames that are not equal for different reasons
 - Distinct by missing column
 - Select on missing column
-- Group by missing column
-- Group by no columns
 - Slice with invalid indices
 - Copy with missing source column
 - Use Apply to copy column
