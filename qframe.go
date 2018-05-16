@@ -145,6 +145,7 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 }
 
 // New creates a new QFrame with column content from data.
+//
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	config := newqf.NewConfig(fns)

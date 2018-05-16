@@ -57,6 +57,7 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 		name     string
 		clause   qframe.FilterClause
 		input    interface{}
+		configs  []newqf.ConfigFunc
 		expected interface{}
 	}{
 		{
@@ -104,6 +105,26 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 			clause:   qframe.Filter{Column: "COL1", Comparator: "=", Arg: true},
 			input:    []bool{true, false, true},
 			expected: []bool{true, true}},
+		{
+			name: "enum custom function",
+			clause: qframe.Filter{
+				Column:     "COL1",
+				Comparator: func(s *string) bool { return *s == "a" }},
+			input:    []string{"a", "b", "c"},
+			expected: []string{"a"},
+			configs:  []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"a", "b", "c"}})}},
+		{
+			name: "float custom function",
+			clause: qframe.Filter{
+				Column:     "COL1",
+				Comparator: func(f float64) bool { return f > 1.0 }},
+			input:    []float64{1.0, 1.25},
+			expected: []float64{1.25}},
+		{
+			name:     "int column against float arg (float will be truncated)",
+			clause:   qframe.Filter{Column: "COL1", Comparator: ">=", Arg: 1.5},
+			input:    []int{0, 1, 2},
+			expected: []int{1, 2}},
 	}
 
 	for i, tc := range table {
@@ -1568,9 +1589,11 @@ func TestQFrame_OperationErrors(t *testing.T) {
 	// Catch all test case for various errors caused by invalid input parameters
 	// to various functions on the QFrame.
 	table := []struct {
-		name string
-		fn   func(f qframe.QFrame) error
-		err  string
+		name    string
+		fn      func(f qframe.QFrame) error
+		err     string
+		configs []newqf.ConfigFunc
+		input   map[string]interface{}
 	}{
 		{
 			name: "Copy with invalid destination column name",
@@ -1636,12 +1659,58 @@ func TestQFrame_OperationErrors(t *testing.T) {
 				return f.GroupBy(groupby.Columns("COL1")).Aggregate(qframe.Aggregation{Fn: "sum", Column: "COL1"}).Err
 			},
 			err: "cannot aggregate on column that is part of group by"},
+		{
+			name:    "Filter using unknown operation, enum",
+			input:   map[string]interface{}{"COL1": []string{"a", "b"}},
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"a", "b"}})},
+			fn: func(f qframe.QFrame) error {
+				return f.Filter(qframe.Filter{Comparator: ">>>", Column: "COL1", Arg: "c"}).Err
+			},
+			err: "unknown comparison operator"},
+		{
+			name:    "Filter against unknown value, enum",
+			input:   map[string]interface{}{"COL1": []string{"a", "b"}},
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"a", "b"}})},
+			fn: func(f qframe.QFrame) error {
+				return f.Filter(qframe.Filter{Comparator: ">", Column: "COL1", Arg: "c"}).Err
+			},
+			err: "unknown enum value"},
+		{
+			name:  "Filter using unknown operator, float",
+			input: map[string]interface{}{"COL1": []float64{1.0}},
+			fn: func(f qframe.QFrame) error {
+				return f.Filter(qframe.Filter{Comparator: ">>>", Column: "COL1", Arg: 1.0}).Err
+			},
+			err: "invalid comparison operator"},
+		{
+			name:  "Filter against wrong type, float",
+			input: map[string]interface{}{"COL1": []float64{1.0}},
+			fn: func(f qframe.QFrame) error {
+				return f.Filter(qframe.Filter{Comparator: ">", Column: "COL1", Arg: "foo"}).Err
+			},
+			err: "invalid comparison value type"},
+		{
+			name:  "Filter against wrong type, string",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn: func(f qframe.QFrame) error {
+				return f.Filter(qframe.Filter{Comparator: ">", Column: "COL1", Arg: 1.0}).Err
+			},
+			err: "invalid comparison value type"},
+		{
+			name:  "Filter on missing column",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn: func(f qframe.QFrame) error {
+				return f.Filter(qframe.Filter{Comparator: "=", Column: "FOO", Arg: "a"}).Err
+			},
+			err: "column does not exist"},
 	}
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
-			input := map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{11, 12, 13}}
-			f := qframe.New(input)
+			if tc.input == nil {
+				tc.input = map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{11, 12, 13}}
+			}
+			f := qframe.New(tc.input, tc.configs...)
 			err := tc.fn(f)
 			assertErr(t, err, tc.err)
 		})
@@ -1868,15 +1937,9 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Enums, filter by invalid operator, on unknown value and using custom function
-- Float, filter by invalid operator, on wrong arg type, using custom function
-- Int, filter against float arg,
 - Int, ToJson  with int column
-- String, filter with invalid arguments
 - Column order, missing columns, invalid length
 - Enum column config, columns mentioned that are not of type enum
-- Filter on missing column name
-- Equal frames that are not equal for different reasons
 - Distinct by missing column
 - Select on missing column
 - Slice with invalid indices
