@@ -345,34 +345,34 @@ func TestQFrame_Sort(t *testing.T) {
 		input    map[string]interface{}
 	}{
 		{
-			orders: []qframe.Order{{Column: "COL.1"}},
+			orders: []qframe.Order{{Column: "COL1"}},
 			expected: qframe.New(map[string]interface{}{
-				"COL.1": []int{0, 1, 2, 3},
-				"COL.2": []int{3, 2, 1, 1}})},
+				"COL1": []int{0, 1, 2, 3},
+				"COL2": []int{3, 2, 1, 1}})},
 		{
-			orders: []qframe.Order{{Column: "COL.1", Reverse: true}},
+			orders: []qframe.Order{{Column: "COL1", Reverse: true}},
 			expected: qframe.New(map[string]interface{}{
-				"COL.1": []int{3, 2, 1, 0},
-				"COL.2": []int{1, 1, 2, 3}})},
+				"COL1": []int{3, 2, 1, 0},
+				"COL2": []int{1, 1, 2, 3}})},
 		{
-			orders: []qframe.Order{{Column: "COL.2"}, {Column: "COL.1"}},
+			orders: []qframe.Order{{Column: "COL2"}, {Column: "COL1"}},
 			expected: qframe.New(map[string]interface{}{
-				"COL.1": []int{2, 3, 1, 0},
-				"COL.2": []int{1, 1, 2, 3}})},
+				"COL1": []int{2, 3, 1, 0},
+				"COL2": []int{1, 1, 2, 3}})},
 		{
-			orders: []qframe.Order{{Column: "COL.1"}},
+			orders: []qframe.Order{{Column: "COL1"}},
 			expected: qframe.New(map[string]interface{}{
-				"COL.1": []bool{false, true, true}}),
+				"COL1": []bool{false, true, true}}),
 			input: map[string]interface{}{
-				"COL.1": []bool{true, false, true}}},
+				"COL1": []bool{true, false, true}}},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Sort %d", i), func(t *testing.T) {
 			if tc.input == nil {
 				tc.input = map[string]interface{}{
-					"COL.1": []int{0, 1, 3, 2},
-					"COL.2": []int{3, 2, 1, 1}}
+					"COL1": []int{0, 1, 3, 2},
+					"COL2": []int{3, 2, 1, 1}}
 			}
 			a := qframe.New(tc.input)
 			b := a.Sort(tc.orders...)
@@ -384,11 +384,11 @@ func TestQFrame_Sort(t *testing.T) {
 func TestQFrame_SortNull(t *testing.T) {
 	a, b, c := "a", "b", "c"
 	stringIn := map[string]interface{}{
-		"COL.1": []*string{&b, nil, &a, nil, &c, &a, nil},
+		"COL1": []*string{&b, nil, &a, nil, &c, &a, nil},
 	}
 
 	floatIn := map[string]interface{}{
-		"COL.1": []float64{1.0, math.NaN(), -1.0, math.NaN()},
+		"COL1": []float64{1.0, math.NaN(), -1.0, math.NaN()},
 	}
 
 	table := []struct {
@@ -398,30 +398,30 @@ func TestQFrame_SortNull(t *testing.T) {
 	}{
 		{
 			stringIn,
-			[]qframe.Order{{Column: "COL.1"}},
+			[]qframe.Order{{Column: "COL1"}},
 			map[string]interface{}{
-				"COL.1": []*string{nil, nil, nil, &a, &a, &b, &c},
+				"COL1": []*string{nil, nil, nil, &a, &a, &b, &c},
 			},
 		},
 		{
 			stringIn,
-			[]qframe.Order{{Column: "COL.1", Reverse: true}},
+			[]qframe.Order{{Column: "COL1", Reverse: true}},
 			map[string]interface{}{
-				"COL.1": []*string{&c, &b, &a, &a, nil, nil, nil},
+				"COL1": []*string{&c, &b, &a, &a, nil, nil, nil},
 			},
 		},
 		{
 			floatIn,
-			[]qframe.Order{{Column: "COL.1"}},
+			[]qframe.Order{{Column: "COL1"}},
 			map[string]interface{}{
-				"COL.1": []float64{math.NaN(), math.NaN(), -1.0, 1.0},
+				"COL1": []float64{math.NaN(), math.NaN(), -1.0, 1.0},
 			},
 		},
 		{
 			floatIn,
-			[]qframe.Order{{Column: "COL.1", Reverse: true}},
+			[]qframe.Order{{Column: "COL1", Reverse: true}},
 			map[string]interface{}{
-				"COL.1": []float64{1.0, -1.0, math.NaN(), math.NaN()},
+				"COL1": []float64{1.0, -1.0, math.NaN(), math.NaN()},
 			},
 		},
 	}
@@ -438,8 +438,8 @@ func TestQFrame_SortNull(t *testing.T) {
 
 func TestQFrame_SortStability(t *testing.T) {
 	a := qframe.New(map[string]interface{}{
-		"COL.1": []int{0, 1, 3, 2},
-		"COL.2": []int{1, 1, 1, 1},
+		"COL1": []int{0, 1, 3, 2},
+		"COL2": []int{1, 1, 1, 1},
 	})
 
 	table := []struct {
@@ -447,10 +447,10 @@ func TestQFrame_SortStability(t *testing.T) {
 		expected qframe.QFrame
 	}{
 		{
-			[]qframe.Order{{Column: "COL.2", Reverse: true}, {Column: "COL.1"}},
+			[]qframe.Order{{Column: "COL2", Reverse: true}, {Column: "COL1"}},
 			qframe.New(map[string]interface{}{
-				"COL.1": []int{0, 1, 2, 3},
-				"COL.2": []int{1, 1, 1, 1}}),
+				"COL1": []int{0, 1, 2, 3},
+				"COL2": []int{1, 1, 1, 1}}),
 		},
 	}
 
@@ -470,21 +470,21 @@ func TestQFrame_Distinct(t *testing.T) {
 	}{
 		{
 			input: map[string]interface{}{
-				"COL.1": []int{0, 1, 0, 1},
-				"COL.2": []int{0, 1, 0, 1}},
+				"COL1": []int{0, 1, 0, 1},
+				"COL2": []int{0, 1, 0, 1}},
 			expected: map[string]interface{}{
-				"COL.1": []int{0, 1},
-				"COL.2": []int{0, 1}},
-			columns: []string{"COL.1", "COL.2"},
+				"COL1": []int{0, 1},
+				"COL2": []int{0, 1}},
+			columns: []string{"COL1", "COL2"},
 		},
 		{
 			input: map[string]interface{}{
-				"COL.1": []int{},
-				"COL.2": []int{}},
+				"COL1": []int{},
+				"COL2": []int{}},
 			expected: map[string]interface{}{
-				"COL.1": []int{},
-				"COL.2": []int{}},
-			columns: []string{"COL.1", "COL.2"},
+				"COL1": []int{},
+				"COL2": []int{}},
+			columns: []string{"COL1", "COL2"},
 		},
 	}
 
@@ -492,7 +492,7 @@ func TestQFrame_Distinct(t *testing.T) {
 		t.Run(fmt.Sprintf("Distinct %d", i), func(t *testing.T) {
 			in := qframe.New(tc.input)
 			out := in.Distinct()
-			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders("COL.1", "COL.2")...))
+			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders("COL1", "COL2")...))
 		})
 	}
 }
@@ -524,49 +524,49 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 		{
 			name: "built in aggregation function",
 			input: map[string]interface{}{
-				"COL.1": []int{0, 0, 1, 2},
-				"COL.2": []int{0, 0, 1, 1},
-				"COL.3": []int{1, 2, 5, 7}},
+				"COL1": []int{0, 0, 1, 2},
+				"COL2": []int{0, 0, 1, 1},
+				"COL3": []int{1, 2, 5, 7}},
 			expected: map[string]interface{}{
-				"COL.1": []int{0, 1, 2},
-				"COL.2": []int{0, 1, 1},
-				"COL.3": []int{3, 5, 7}},
-			groupColumns: []string{"COL.1", "COL.2"},
-			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL.3"}},
+				"COL1": []int{0, 1, 2},
+				"COL2": []int{0, 1, 1},
+				"COL3": []int{3, 5, 7}},
+			groupColumns: []string{"COL1", "COL2"},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL3"}},
 		},
 		{
 			name: "user defined aggregation function",
 			input: map[string]interface{}{
-				"COL.1": []int{0, 0, 1, 1},
-				"COL.2": []int{1, 2, 5, 7}},
+				"COL1": []int{0, 0, 1, 1},
+				"COL2": []int{1, 2, 5, 7}},
 			expected: map[string]interface{}{
-				"COL.1": []int{0, 1},
-				"COL.2": []int{3, 12}},
-			groupColumns: []string{"COL.1"},
-			aggregations: []qframe.Aggregation{{Fn: ownSum, Column: "COL.2"}},
+				"COL1": []int{0, 1},
+				"COL2": []int{3, 12}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: ownSum, Column: "COL2"}},
 		},
 		{
 			name: "empty qframe",
 			input: map[string]interface{}{
-				"COL.1": []int{},
-				"COL.2": []int{}},
+				"COL1": []int{},
+				"COL2": []int{}},
 			expected: map[string]interface{}{
-				"COL.1": []int{},
-				"COL.2": []int{}},
-			groupColumns: []string{"COL.1"},
-			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL.2"}},
+				"COL1": []int{},
+				"COL2": []int{}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL2"}},
 		},
 		{
 			// This will trigger hash table relocations
 			name: "high cardinality grouping column",
 			input: map[string]interface{}{
-				"COL.1": incSlice(1000, 1),
-				"COL.2": incSlice(1000, 2)},
+				"COL1": incSlice(1000, 1),
+				"COL2": incSlice(1000, 2)},
 			expected: map[string]interface{}{
-				"COL.1": incSlice(1000, 1),
-				"COL.2": incSlice(1000, 2)},
-			groupColumns: []string{"COL.1"},
-			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL.2"}},
+				"COL1": incSlice(1000, 1),
+				"COL2": incSlice(1000, 2)},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL2"}},
 		},
 		{
 			name:         "aggregate booleans over all rows",
@@ -610,16 +610,16 @@ func TestQFrame_Select(t *testing.T) {
 	}{
 		{
 			input: map[string]interface{}{
-				"COL.1": []int{0, 1},
-				"COL.2": []int{1, 2}},
+				"COL1": []int{0, 1},
+				"COL2": []int{1, 2}},
 			expected: map[string]interface{}{
-				"COL.1": []int{0, 1}},
-			selectCols: []string{"COL.1"},
+				"COL1": []int{0, 1}},
+			selectCols: []string{"COL1"},
 		},
 		{
 			input: map[string]interface{}{
-				"COL.1": []int{0, 1},
-				"COL.2": []int{1, 2}},
+				"COL1": []int{0, 1},
+				"COL2": []int{1, 2}},
 			expected:   map[string]interface{}{},
 			selectCols: []string{},
 		},
@@ -643,21 +643,21 @@ func TestQFrame_Slice(t *testing.T) {
 	}{
 		{
 			input: map[string]interface{}{
-				"COL.1": []float64{0.0, 1.5, 2.5, 3.5},
-				"COL.2": []int{1, 2, 3, 4}},
+				"COL1": []float64{0.0, 1.5, 2.5, 3.5},
+				"COL2": []int{1, 2, 3, 4}},
 			expected: map[string]interface{}{
-				"COL.1": []float64{1.5, 2.5},
-				"COL.2": []int{2, 3}},
+				"COL1": []float64{1.5, 2.5},
+				"COL2": []int{2, 3}},
 			start: 1,
 			end:   3,
 		},
 		{
 			input: map[string]interface{}{
-				"COL.1": []int{},
-				"COL.2": []int{}},
+				"COL1": []int{},
+				"COL2": []int{}},
 			expected: map[string]interface{}{
-				"COL.1": []int{},
-				"COL.2": []int{}},
+				"COL1": []int{},
+				"COL2": []int{}},
 			start: 0,
 			end:   0,
 		},
