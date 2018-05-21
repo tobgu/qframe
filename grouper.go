@@ -64,7 +64,7 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 	for _, agg := range aggs {
 		col, ok := g.columnsByName[agg.Column]
 		if !ok {
-			return QFrame{Err: errors.New("Aggregate", "no such column: %s", agg.Column)}
+			return QFrame{Err: errors.New("Aggregate", unknownCol(agg.Column))}
 		}
 
 		_, ok = newColumnsByName[agg.Column]

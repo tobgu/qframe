@@ -26,7 +26,7 @@ type IntView struct {
 func (qf QFrame) IntView(colName string) (IntView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return IntView{}, errors.New("IntView", "no such column: %s", colName)
+		return IntView{}, errors.New("IntView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(icolumn.Column)
@@ -54,7 +54,7 @@ type FloatView struct {
 func (qf QFrame) FloatView(colName string) (FloatView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return FloatView{}, errors.New("FloatView", "no such column: %s", colName)
+		return FloatView{}, errors.New("FloatView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(fcolumn.Column)
@@ -82,7 +82,7 @@ type BoolView struct {
 func (qf QFrame) BoolView(colName string) (BoolView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return BoolView{}, errors.New("BoolView", "no such column: %s", colName)
+		return BoolView{}, errors.New("BoolView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(bcolumn.Column)
@@ -110,7 +110,7 @@ type StringView struct {
 func (qf QFrame) StringView(colName string) (StringView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return StringView{}, errors.New("StringView", "no such column: %s", colName)
+		return StringView{}, errors.New("StringView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(scolumn.Column)
@@ -138,7 +138,7 @@ type EnumView struct {
 func (qf QFrame) EnumView(colName string) (EnumView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return EnumView{}, errors.New("EnumView", "no such column: %s", colName)
+		return EnumView{}, errors.New("EnumView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(ecolumn.Column)

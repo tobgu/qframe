@@ -1693,7 +1693,7 @@ func TestQFrame_OperationErrors(t *testing.T) {
 			fn: func(f qframe.QFrame) error {
 				return f.GroupBy(groupby.Columns("COL1")).Aggregate(qframe.Aggregation{Fn: "sum", Column: "FOO"}).Err
 			},
-			err: "no such column"},
+			err: "unknown column"},
 		{
 			name: "Aggregate on column part of the group by expression is not allowed",
 			fn: func(f qframe.QFrame) error {
@@ -1743,7 +1743,22 @@ func TestQFrame_OperationErrors(t *testing.T) {
 			fn: func(f qframe.QFrame) error {
 				return f.Filter(qframe.Filter{Comparator: "=", Column: "FOO", Arg: "a"}).Err
 			},
-			err: "column does not exist"},
+			err: "unknown column"},
+		{
+			name:  "Distinct on missing column",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn:    func(f qframe.QFrame) error { return f.Distinct(groupby.Columns("COL2")).Err },
+			err:   "unknown column"},
+		{
+			name:  "Select on missing column",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn:    func(f qframe.QFrame) error { return f.Select("COL2").Err },
+			err:   "unknown column"},
+		{
+			name:  "Copy with missing column",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn:    func(f qframe.QFrame) error { return f.Copy("COL3", "COL2").Err },
+			err:   "unknown column"},
 	}
 
 	for _, tc := range table {
@@ -1978,9 +1993,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Distinct by missing column
-- Select on missing column
 - Slice with invalid indices
-- Copy with missing source column
 - Use Apply to copy column
 */

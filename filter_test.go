@@ -137,7 +137,7 @@ func TestFilter_ErrorColumnDoesNotExist(t *testing.T) {
 	for i, c := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
 			out := input.Filter(c)
-			assertErr(t, out.Err, "column does not exist")
+			assertErr(t, out.Err, "unknown column")
 		})
 	}
 }

@@ -234,6 +234,10 @@ func (qf QFrame) Filter(clause FilterClause) QFrame {
 	return clause.filter(qf)
 }
 
+func unknownCol(c string) string {
+	return fmt.Sprintf(`unknown column: "%s"`, c)
+}
+
 func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 	if qf.Err != nil {
 		return qf
@@ -243,13 +247,13 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 	for _, f := range filters {
 		s, ok := qf.columnsByName[f.Column]
 		if !ok {
-			return qf.withErr(errors.New("Filter", `column does not exist, "%s"`, f.Column))
+			return qf.withErr(errors.New("Filter", unknownCol(f.Column)))
 		}
 
 		if name, ok := f.Arg.(types.ColumnName); ok {
 			argC, ok := qf.columnsByName[string(name)]
 			if !ok {
-				return qf.withErr(errors.New("Filter", `argument column does not exist, "%s"`, name))
+				return qf.withErr(errors.New("Filter", `unknown argument column: "%s"`, name))
 			}
 			f.Arg = argC.Column
 		}
@@ -355,7 +359,7 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 	for _, o := range orders {
 		s, ok := qf.columnsByName[o.Column]
 		if !ok {
-			return qf.withErr(errors.New("Sort", "unknown column: %s", o.Column))
+			return qf.withErr(errors.New("Sort", unknownCol(o.Column)))
 		}
 
 		comparables = append(comparables, s.Comparable(o.Reverse, false))
@@ -423,7 +427,7 @@ func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 
 	for _, col := range config.Columns {
 		if _, ok := qf.columnsByName[col]; !ok {
-			return qf.withErr(errors.New("Distinct", `unknown column "%s"`, col))
+			return qf.withErr(errors.New("Distinct", unknownCol(col)))
 		}
 	}
 
@@ -437,7 +441,7 @@ func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 func (qf QFrame) checkColumns(operation string, columns []string) error {
 	for _, col := range columns {
 		if _, ok := qf.columnsByName[col]; !ok {
-			return errors.New("operation", `unknown column "%s"`, col)
+			return errors.New("operation", unknownCol(col))
 		}
 	}
 
@@ -649,7 +653,7 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 
 	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("Copy", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("Copy", unknownCol(srcCol)))
 	}
 
 	if dstCol == srcCol {
@@ -729,7 +733,7 @@ func (qf QFrame) apply1(fn types.DataFuncOrBuiltInId, dstCol, srcCol string) QFr
 
 	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("apply1", "no such column: %s", srcCol))
+		return qf.withErr(errors.New("apply1", unknownCol(srcCol)))
 	}
 
 	srcColumn := namedColumn.Column
@@ -766,13 +770,13 @@ func (qf QFrame) apply2(fn types.DataFuncOrBuiltInId, dstCol, srcCol1, srcCol2 s
 
 	namedSrcColumn1, ok := qf.columnsByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol1))
+		return qf.withErr(errors.New("apply2", unknownCol(srcCol1)))
 	}
 	srcColumn1 := namedSrcColumn1.Column
 
 	namedSrcColumn2, ok := qf.columnsByName[srcCol2]
 	if !ok {
-		return qf.withErr(errors.New("apply2", "no such column: %s", srcCol2))
+		return qf.withErr(errors.New("apply2", unknownCol(srcCol2)))
 	}
 	srcColumn2 := namedSrcColumn2.Column
 
@@ -873,7 +877,7 @@ func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFr
 func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 	namedColumn, ok := qf.columnsByName[name]
 	if !ok {
-		return types.FunctionTypeUndefined, errors.New("functionType", "no such column: %s", name)
+		return types.FunctionTypeUndefined, errors.New("functionType", unknownCol(name))
 	}
 
 	return namedColumn.FunctionType(), nil

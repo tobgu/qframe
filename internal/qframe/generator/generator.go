@@ -23,7 +23,7 @@ type {{.type}}View struct {
 func (qf QFrame) {{.type}}View(colName string) ({{.type}}View, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return {{.type}}View{}, errors.New("{{.type}}View", "no such column: %s", colName)
+		return {{.type}}View{}, errors.New("{{.type}}View", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.({{.package}}.Column)
