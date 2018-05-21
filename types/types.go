@@ -11,6 +11,8 @@ const (
 	Int = "int"
 
 	// String translates into the Go *string type. nil represents a missing value.
+	// Internally a string currently has an overhead of eight bytes (64 bits) in
+	// addition to the bytes actually used to hold the string.
 	String = "string"
 
 	// Float translates into the Go float64 type. NaN represents a missing value.
