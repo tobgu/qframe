@@ -139,7 +139,7 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 	case qfstrings.StringBlob:
 		localS = scolumn.NewBytes(t.Pointers, t.Data)
 	default:
-		return nil, errors.New("New", "unknown column format of: %v", t)
+		return nil, errors.New("createColumn", `unknown column data type "%s" for column "%s"`, reflect.TypeOf(t), name)
 	}
 	return localS, nil
 }

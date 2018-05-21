@@ -1646,6 +1646,12 @@ func TestQFrame_NewErrors(t *testing.T) {
 			input:   map[string]interface{}{"COL1": []int{1}, "COL2": []int{2}},
 			configs: []newqf.ConfigFunc{newqf.ColumnOrder("COL1", "COL3")},
 			err:     `column "COL3" in column order does not exist`},
+		{
+			input: map[string]interface{}{"COL1": []int8{1}},
+			err:   `unknown column data type`},
+		{
+			input: map[string]interface{}{"COL1": []int{1}, "COL2": []int{2, 3}},
+			err:   `different lengths not allowed`},
 	}
 
 	for _, tc := range table {
@@ -2021,11 +2027,9 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 }
 
 /*
-- New: Unknown data types in column data
-- New: Different column lengths
 - Filter: Unknown argument column
 - Equals: Different number of columns
 - Equals: Different column content
 - Sort: Unknown column
 - View: Try to get wrong view type
- */
+*/
