@@ -1411,6 +1411,18 @@ func TestQFrame_ApplySingleArgEnum(t *testing.T) {
 	assertEquals(t, expectedNewBuiltIn, input.Apply(qframe.Instruction{Fn: "ToUpper", DstCol: "COL1", SrcCol1: "COL1"}))
 }
 
+func TestQFrame_ApplyToCopyColumn(t *testing.T) {
+	a, b := "a", "b"
+	input := qframe.New(map[string]interface{}{
+		"COL1": []string{a, b}})
+
+	expectedNew := qframe.New(map[string]interface{}{
+		"COL1": []string{a, b},
+		"COL2": []string{a, b}})
+
+	assertEquals(t, expectedNew, input.Apply(qframe.Instruction{Fn: types.ColumnName("COL1"), DstCol: "COL2"}))
+}
+
 func TestQFrame_ApplyDoubleArg(t *testing.T) {
 	table := []struct {
 		name     string
@@ -2007,9 +2019,3 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 		})
 	}
 }
-
-/*
-Test cases
-----------
-- Use Apply to copy column
-*/
