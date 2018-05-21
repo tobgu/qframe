@@ -913,6 +913,17 @@ thu
 		assertEquals(t, expected, out)
 	})
 
+	t.Run("Orders give for non-enum columns results in error", func(t *testing.T) {
+		input := `day
+tue
+`
+		out := qframe.ReadCsv(
+			strings.NewReader(input),
+			csv.Types(map[string]string{"day": "enum"}),
+			csv.EnumValues(map[string][]string{"week": {"foo", "bar"}}))
+		assertErr(t, out.Err, "Enum values specified for non enum column")
+	})
+
 	t.Run("Wont accept unknown values in strict mode", func(t *testing.T) {
 		input := `day
 tue
@@ -1590,6 +1601,14 @@ func TestQFrame_NewErrors(t *testing.T) {
 			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": nil})},
 			err:     "enum max cardinality"},
 		{
+			input:   map[string]interface{}{"COL1": longCol},
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": nil})},
+			err:     "enum max cardinality"},
+		{
+			input:   map[string]interface{}{"COL1": longCol},
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL2": nil})},
+			err:     "unknown enum columns"},
+		{
 			input:   map[string]interface{}{"COL1": []int{1}, "COL2": []int{2}},
 			configs: []newqf.ConfigFunc{newqf.ColumnOrder("COL1")},
 			err:     "number of columns and columns order length do not match"},
@@ -1959,7 +1978,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Enum column config, columns mentioned that are not of type enum
 - Distinct by missing column
 - Select on missing column
 - Slice with invalid indices
