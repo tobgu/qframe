@@ -30,8 +30,7 @@ func (qf QFrame) {{.type}}View(colName string) ({{.type}}View, error) {
 	if !ok {
 		return {{.type}}View{}, errors.New(
 			"{{.type}}View",
-			"invalid column type, expected %s, was: %s", "{{.lowerType}}", namedColumn.DataType(),
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected: %s, was: %s", "{{.lowerType}}", namedColumn.DataType())
 	}
 
 	return  {{.type}}View{View: col.View(qf.index)}, nil
@@ -58,7 +57,6 @@ func GenerateQFrame() (*bytes.Buffer, error) {
 		view("String", "scolumn"),
 		view("Enum", "ecolumn"),
 	}, []string{
-		"reflect",
 		"github.com/tobgu/qframe/errors",
 		"github.com/tobgu/qframe/internal/icolumn",
 		"github.com/tobgu/qframe/internal/fcolumn",

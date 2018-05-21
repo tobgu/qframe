@@ -7,7 +7,6 @@ import (
 	"github.com/tobgu/qframe/internal/fcolumn"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/scolumn"
-	"reflect"
 )
 
 // Code generated from template/... DO NOT EDIT
@@ -33,8 +32,7 @@ func (qf QFrame) IntView(colName string) (IntView, error) {
 	if !ok {
 		return IntView{}, errors.New(
 			"IntView",
-			"invalid column type, expected %s, was: %s", "int", namedColumn.DataType(),
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected: %s, was: %s", "int", namedColumn.DataType())
 	}
 
 	return IntView{View: col.View(qf.index)}, nil
@@ -61,8 +59,7 @@ func (qf QFrame) FloatView(colName string) (FloatView, error) {
 	if !ok {
 		return FloatView{}, errors.New(
 			"FloatView",
-			"invalid column type, expected %s, was: %s", "float", namedColumn.DataType(),
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected: %s, was: %s", "float", namedColumn.DataType())
 	}
 
 	return FloatView{View: col.View(qf.index)}, nil
@@ -89,8 +86,7 @@ func (qf QFrame) BoolView(colName string) (BoolView, error) {
 	if !ok {
 		return BoolView{}, errors.New(
 			"BoolView",
-			"invalid column type, expected %s, was: %s", "bool", namedColumn.DataType(),
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected: %s, was: %s", "bool", namedColumn.DataType())
 	}
 
 	return BoolView{View: col.View(qf.index)}, nil
@@ -117,8 +113,7 @@ func (qf QFrame) StringView(colName string) (StringView, error) {
 	if !ok {
 		return StringView{}, errors.New(
 			"StringView",
-			"invalid column type, expected %s, was: %s", "string", namedColumn.DataType(),
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected: %s, was: %s", "string", namedColumn.DataType())
 	}
 
 	return StringView{View: col.View(qf.index)}, nil
@@ -145,8 +140,7 @@ func (qf QFrame) EnumView(colName string) (EnumView, error) {
 	if !ok {
 		return EnumView{}, errors.New(
 			"EnumView",
-			"invalid column type, expected %s, was: %s", "enum", namedColumn.DataType(),
-			reflect.TypeOf(namedColumn.Column))
+			"invalid column type, expected: %s, was: %s", "enum", namedColumn.DataType())
 	}
 
 	return EnumView{View: col.View(qf.index)}, nil

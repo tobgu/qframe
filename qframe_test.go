@@ -1802,6 +1802,19 @@ func TestQFrame_OperationErrors(t *testing.T) {
 			input: map[string]interface{}{"COL1": []string{"a"}},
 			fn:    func(f qframe.QFrame) error { return f.Copy("COL3", "COL2").Err },
 			err:   "unknown column"},
+		{
+			name:  "Unknown sort column",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn:    func(f qframe.QFrame) error { return f.Sort(qframe.Order{Column: "COL2"}).Err },
+			err:   "unknown column"},
+		{
+			name:  "Get view for wrong type",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn: func(f qframe.QFrame) error {
+				_, err := f.FloatView("COL1")
+				return err
+			},
+			err: "invalid column type"},
 	}
 
 	for _, tc := range table {
@@ -2037,8 +2050,3 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 		})
 	}
 }
-
-/*
-- Sort: Unknown column
-- View: Try to get wrong view type
-*/
