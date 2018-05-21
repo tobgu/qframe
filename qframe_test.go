@@ -1043,12 +1043,12 @@ false,2.5,2,"b,c"
 
 func TestQFrame_ToFromJSON(t *testing.T) {
 	config := []newqf.ConfigFunc{newqf.Enums(map[string][]string{"ENUM": {"aa", "bb"}})}
-	buf := new(bytes.Buffer)
 	data := map[string]interface{}{
 		"STRING1": []string{"añ", "bö☺	"}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}, "ENUM": []string{"aa", "bb"}}
 	originalDf := qframe.New(data, config...)
 	assertNotErr(t, originalDf.Err)
 
+	buf := new(bytes.Buffer)
 	err := originalDf.ToJson(buf)
 	assertNotErr(t, err)
 
@@ -1071,6 +1071,20 @@ func TestQFrame_ToJSONNaN(t *testing.T) {
 	expected := `[{"FLOAT1":1.5},{"FLOAT1":null}]`
 	if buf.String() != expected {
 		t.Errorf("Not equal: %s ||| %s", buf.String(), expected)
+	}
+}
+
+func TestQFrame_ToJSONInt(t *testing.T) {
+	// The ints should not have decimals when turned into JSON
+	data := map[string]interface{}{"INT": []int{1, 2}}
+	originalDf := qframe.New(data)
+	assertNotErr(t, originalDf.Err)
+
+	buf := new(bytes.Buffer)
+	err := originalDf.ToJson(buf)
+	assertNotErr(t, err)
+	if buf.String() != `[{"INT":1},{"INT":2}]` {
+		t.Errorf("Unexpected JSON string: %s", buf.String())
 	}
 }
 
