@@ -671,6 +671,7 @@ func TestQFrame_Slice(t *testing.T) {
 		expected map[string]interface{}
 		start    int
 		end      int
+		err      string
 	}{
 		{
 			input: map[string]interface{}{
@@ -680,8 +681,7 @@ func TestQFrame_Slice(t *testing.T) {
 				"COL1": []float64{1.5, 2.5},
 				"COL2": []int{2, 3}},
 			start: 1,
-			end:   3,
-		},
+			end:   3},
 		{
 			input: map[string]interface{}{
 				"COL1": []int{},
@@ -690,15 +690,33 @@ func TestQFrame_Slice(t *testing.T) {
 				"COL1": []int{},
 				"COL2": []int{}},
 			start: 0,
+			end:   0},
+		{
+			input: map[string]interface{}{"COL1": []int{1, 2}},
+			start: -1,
 			end:   0,
-		},
+			err:   "start must be non negative"},
+		{
+			input: map[string]interface{}{"COL1": []int{1, 2}},
+			start: 0,
+			end:   3,
+			err:   "end must not be greater than"},
+		{
+			input: map[string]interface{}{"COL1": []int{1, 2}},
+			start: 2,
+			end:   1,
+			err:   "start must not be greater than end"},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Slice %d", i), func(t *testing.T) {
 			in := qframe.New(tc.input)
 			out := in.Slice(tc.start, tc.end)
-			assertEquals(t, qframe.New(tc.expected), out)
+			if tc.err != "" {
+				assertErr(t, out.Err, tc.err)
+			} else {
+				assertEquals(t, qframe.New(tc.expected), out)
+			}
 		})
 	}
 }
@@ -1993,6 +2011,5 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Slice with invalid indices
 - Use Apply to copy column
 */
