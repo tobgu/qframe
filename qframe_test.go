@@ -2019,3 +2019,13 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 		})
 	}
 }
+
+/*
+- New: Unknown data types in column data
+- New: Different column lengths
+- Filter: Unknown argument column
+- Equals: Different number of columns
+- Equals: Different column content
+- Sort: Unknown column
+- View: Try to get wrong view type
+ */
