@@ -1589,6 +1589,14 @@ func TestQFrame_NewErrors(t *testing.T) {
 			input:   map[string]interface{}{"COL1": longCol},
 			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": nil})},
 			err:     "enum max cardinality"},
+		{
+			input:   map[string]interface{}{"COL1": []int{1}, "COL2": []int{2}},
+			configs: []newqf.ConfigFunc{newqf.ColumnOrder("COL1")},
+			err:     "number of columns and columns order length do not match"},
+		{
+			input:   map[string]interface{}{"COL1": []int{1}, "COL2": []int{2}},
+			configs: []newqf.ConfigFunc{newqf.ColumnOrder("COL1", "COL3")},
+			err:     `column "COL3" in column order does not exist`},
 	}
 
 	for _, tc := range table {
@@ -1951,8 +1959,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 /*
 Test cases
 ----------
-- Int, ToJson  with int column
-- Column order, missing columns, invalid length
 - Enum column config, columns mentioned that are not of type enum
 - Distinct by missing column
 - Select on missing column

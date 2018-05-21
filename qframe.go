@@ -165,12 +165,12 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	}
 
 	if len(config.ColumnOrder) != len(data) {
-		return QFrame{Err: errors.New("New", "columns and columns order length do not match")}
+		return QFrame{Err: errors.New("New", "number of columns and columns order length do not match")}
 	}
 
 	for _, name := range config.ColumnOrder {
 		if _, ok := data[name]; !ok {
-			return QFrame{Err: errors.New("New", `key "%s" does not exist in supplied data`, name)}
+			return QFrame{Err: errors.New("New", `column "%s" in column order does not exist`, name)}
 		}
 	}
 
