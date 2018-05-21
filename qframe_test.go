@@ -1651,7 +1651,7 @@ func TestQFrame_NewErrors(t *testing.T) {
 			err:   `unknown column data type`},
 		{
 			input: map[string]interface{}{"COL1": []int{1}, "COL2": []int{2, 3}},
-			err:   `different lengths not allowed`},
+			err:   `different lengths on columns not allowed`},
 	}
 
 	for _, tc := range table {
@@ -1781,6 +1781,13 @@ func TestQFrame_OperationErrors(t *testing.T) {
 			},
 			err: "unknown column"},
 		{
+			name:  "Filter against missing argument column",
+			input: map[string]interface{}{"COL1": []string{"a"}},
+			fn: func(f qframe.QFrame) error {
+				return f.Filter(qframe.Filter{Comparator: "=", Column: "COL1", Arg: types.ColumnName("COL2")}).Err
+			},
+			err: "unknown argument column"},
+		{
 			name:  "Distinct on missing column",
 			input: map[string]interface{}{"COL1": []string{"a"}},
 			fn:    func(f qframe.QFrame) error { return f.Distinct(groupby.Columns("COL2")).Err },
@@ -1844,9 +1851,14 @@ func TestQFrame_Equals(t *testing.T) {
 			comparatee: map[string]interface{}{"COL2": []int{}},
 			expected:   false},
 		{
+			name:       "Inequality different number of columns",
+			input:      map[string]interface{}{"COL1": []int{1}},
+			comparatee: map[string]interface{}{"COL1": []int{1}, "COL2": []int{1}},
+			expected:   false},
+		{
 			name:       "Inequality different column content",
 			input:      map[string]interface{}{"COL1": []int{1, 2}},
-			comparatee: map[string]interface{}{"COL2": []int{2, 1}},
+			comparatee: map[string]interface{}{"COL1": []int{2, 1}},
 			expected:   false},
 		{
 			name:              "Equality between different enum types as long as elements are the same",
@@ -2027,9 +2039,6 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 }
 
 /*
-- Filter: Unknown argument column
-- Equals: Different number of columns
-- Equals: Different column content
 - Sort: Unknown column
 - View: Try to get wrong view type
 */
