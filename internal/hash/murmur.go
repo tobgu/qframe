@@ -43,14 +43,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 const (
-	c1_32 uint32 = 0xcc9e2d51
-	c2_32 uint32 = 0x1b873593
+	c1_32   uint32 = 0xcc9e2d51
+	c2_32   uint32 = 0x1b873593
+	tailLen        = 4
 )
 
 type Murm32 struct {
 	totLen   int
 	hash     uint32
-	tail     [4]byte
+	tail     [tailLen]byte
 	tailSize int8
 }
 
@@ -62,14 +63,36 @@ func (m *Murm32) WriteByte(b byte) {
 }
 
 func (m *Murm32) flushBufIfNeeded() {
-	if m.tailSize == int8(len(m.tail)) {
-		m.Write(m.tail[:])
+	if m.tailSize == tailLen {
 		m.tailSize = 0
+		m.Write(m.tail[:])
 	}
+}
+
+func intMin(x, y int) int {
+	if y < x {
+		return y
+	}
+	return x
 }
 
 // Write adds data as input to the hash.
 func (m *Murm32) Write(data []byte) {
+	if m.tailSize > 0 {
+		// If a previous tail exists we first want to fill that up
+		// and hash it if full before hashing any remaining bytes.
+		fillLen := tailLen - m.tailSize
+		copySize := intMin(int(fillLen), len(data))
+		copy(m.tail[m.tailSize:], data[:copySize])
+		m.tailSize += int8(copySize)
+		m.flushBufIfNeeded()
+		remainingBytes := data[copySize:]
+		if len(remainingBytes) > 0 {
+			m.Write(remainingBytes)
+		}
+		return
+	}
+
 	h1 := m.hash
 	nblocks := len(data) / 4
 	m.totLen += len(data)
@@ -92,13 +115,10 @@ func (m *Murm32) Write(data []byte) {
 		h1 = h1*4 + h1 + 0xe6546b64
 	}
 
-	// Store any remaining bytes in buffer, hash and flush the buffer if needed
+	// Store any remaining bytes in tail
 	tail := data[nblocks*4:]
-	for _, d := range tail {
-		m.tail[m.tailSize] = d
-		m.tailSize++
-		m.flushBufIfNeeded()
-	}
+	copy(m.tail[:], tail)
+	m.tailSize += int8(len(tail))
 
 	m.hash = h1
 }
