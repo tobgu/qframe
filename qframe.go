@@ -544,6 +544,8 @@ func fixLengthString(s string, pad string, desiredLen int) string {
 }
 
 // String returns a simple string representation of the table.
+// Column type is indicated in parenthesis following the column name. The initial
+// letter in the type name is used for this.
 // Output is currently capped to 50 rows. Use Slice followed by String if you want
 // to print rows that are not among the first 50.
 func (qf QFrame) String() string {
