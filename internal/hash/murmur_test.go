@@ -73,3 +73,29 @@ func TestMurm32_Hash(t *testing.T) {
 		t.Errorf("Unexpected hash count: %d, %d", len(hashCounter), len(stringCounter))
 	}
 }
+
+func TestMurm32_Fuzz(t *testing.T) {
+	// Verify that there are no crashes for different
+	// combinations of input length.
+	hasher := hash.Murm32{}
+	for i := 0; i < 10; i++ {
+		hasher.Reset()
+		hasher.Write(make([]byte, i))
+		hasher.Hash()
+
+		for j := 0; j < 10; j++ {
+			hasher.Reset()
+			hasher.Write(make([]byte, i))
+			hasher.Write(make([]byte, j))
+			hasher.Hash()
+
+			for k := 0; k < 10; k++ {
+				hasher.Reset()
+				hasher.Write(make([]byte, i))
+				hasher.Write(make([]byte, j))
+				hasher.Write(make([]byte, k))
+				hasher.Hash()
+			}
+		}
+	}
+}

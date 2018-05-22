@@ -78,28 +78,24 @@ func intMin(x, y int) int {
 
 // Write adds data as input to the hash.
 func (m *Murm32) Write(data []byte) {
+	if len(data) == 0 {
+		return
+	}
+
 	if m.tailSize > 0 {
 		// If a previous tail exists we first want to fill that up
 		// and hash it if full before hashing any remaining bytes.
-		fillLen := tailLen - m.tailSize
-		copySize := intMin(int(fillLen), len(data))
-		copy(m.tail[m.tailSize:], data[:copySize])
-		m.tailSize += int8(copySize)
+		copyCount := copy(m.tail[m.tailSize:], data)
+		m.tailSize += int8(copyCount)
 		m.flushBufIfNeeded()
-		remainingBytes := data[copySize:]
-		if len(remainingBytes) > 0 {
-			m.Write(remainingBytes)
-		}
+		m.Write(data[copyCount:])
 		return
 	}
 
 	h1 := m.hash
 	nblocks := len(data) / 4
 	m.totLen += len(data)
-	var p uintptr
-	if len(data) > 0 {
-		p = uintptr(unsafe.Pointer(&data[0]))
-	}
+	p := uintptr(unsafe.Pointer(&data[0]))
 
 	// Hash full 4-byte blocks
 	p1 := p + uintptr(4*nblocks)
@@ -117,8 +113,7 @@ func (m *Murm32) Write(data []byte) {
 
 	// Store any remaining bytes in tail
 	tail := data[nblocks*4:]
-	copy(m.tail[:], tail)
-	m.tailSize += int8(len(tail))
+	m.tailSize = int8(copy(m.tail[:], tail))
 
 	m.hash = h1
 }

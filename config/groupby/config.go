@@ -26,6 +26,14 @@ func NewConfig(configFns []ConfigFunc) Config {
 
 // Columns sets the columns by which the data should be grouped.
 // Leaving this configuration option out will group on all columns in the QFrame.
+//
+// The order of columns does not matter from a functional point of view but
+// it may impact execution time a bit. For optimal performance order columns
+// according to type with the following priority:
+// 1. int
+// 2. float
+// 3. enum/bool
+// 4. string
 func Columns(columns ...string) ConfigFunc {
 	return func(c *Config) {
 		c.Columns = columns
