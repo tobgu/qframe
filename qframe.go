@@ -26,6 +26,9 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+
+	// This dependency has been been added just to make sure that "go get" installs it.
+	_ "github.com/cheekybits/genny/generic"
 )
 
 type namedColumn struct {
