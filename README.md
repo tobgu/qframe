@@ -16,6 +16,9 @@ functionality to support a wider scope is always of interest as long
 as they don't conflict with the requirements from qocache!
 See [Contribute](#contribute).
 
+## Installation
+`go get github.com/tobgu/qframe`
+
 ## Usage
 Below are some examples of common use cases. The list is not exhaustive
 in any way. For a complete description of all operations including more
