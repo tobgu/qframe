@@ -209,6 +209,7 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 }
 
 // Contains reports if a columns with colName is present in the frame.
+//
 // Time complexity is O(1).
 func (qf QFrame) Contains(colName string) bool {
 	_, ok := qf.columnsByName[colName]
@@ -301,6 +302,7 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 
 // Equals compares this QFrame to another QFrame.
 // If the QFrames are equal (true, "") will be returned else (false, <string describing why>) will be returned.
+//
 // Time complexity O(m * n) where m = number of columns to group by, n = number of rows.
 func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 	if len(qf.index) != len(other.index) {
@@ -326,6 +328,7 @@ func (qf QFrame) Equals(other QFrame) (equal bool, reason string) {
 }
 
 // Len returns the number of rows in the QFrame.
+//
 // Time complexity O(1).
 func (qf QFrame) Len() int {
 	if qf.Err != nil {
@@ -345,6 +348,7 @@ type Order struct {
 }
 
 // Sort returns a new QFrame sorted according to the orders specified.
+//
 // Time complexity O(m * n * log(n)) where m = number of columns to sort by, n = number of rows in QFrame.
 func (qf QFrame) Sort(orders ...Order) QFrame {
 	if qf.Err != nil {
@@ -372,6 +376,7 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 }
 
 // ColumnNames returns the names of all columns in the QFrame.
+//
 // Time complexity O(n) where n = number of columns.
 func (qf QFrame) ColumnNames() []string {
 	result := make([]string, len(qf.columns))
@@ -449,6 +454,7 @@ func (qf QFrame) checkColumns(operation string, columns []string) error {
 }
 
 // Drop creates a new projection of te QFrame without the specified columns.
+//
 // Time complexity O(1).
 func (qf QFrame) Drop(columns ...string) QFrame {
 	if qf.Err != nil || len(columns) == 0 {
@@ -467,6 +473,7 @@ func (qf QFrame) Drop(columns ...string) QFrame {
 }
 
 // Select creates a new projection of the QFrame containing only the specified columns.
+//
 // Time complexity O(1).
 func (qf QFrame) Select(columns ...string) QFrame {
 	if qf.Err != nil {
@@ -592,6 +599,7 @@ func (qf QFrame) String() string {
 
 // Slice returns a new QFrame consisting of rows [start, end[.
 // Note that the underlying storage is kept. Slicing a frame will not release memory used to store the columns.
+//
 // Time complexity O(1).
 func (qf QFrame) Slice(start, end int) QFrame {
 	if qf.Err != nil {
@@ -904,6 +912,7 @@ func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 }
 
 // ReadJson returns a QFrame with data, in JSON format, taken from reader.
+//
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	data, err := qfio.UnmarshalJson(reader)
@@ -915,6 +924,7 @@ func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 }
 
 // ToCsv writes the data in the QFrame, in CSV format, to writer.
+//
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
 //
 // This is function is currently unoptimized. It could probably be a lot speedier with
