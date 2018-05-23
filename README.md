@@ -4,7 +4,7 @@
 [![GoDoc](https://godoc.org/github.com/tobgu/qframe?status.svg)](https://godoc.org/github.com/tobgu/qframe)
 
 QFrame is an immutable data frame that support filtering, aggregation
-and data manipulation. Any operations on a QFrame results in
+and data manipulation. Any operation on a QFrame results in
 a new QFrame, the original QFrame remains unchanged. This can be done
 fairly efficiently since much of the underlying data will be shared
 between the two frames.
@@ -73,11 +73,11 @@ Dims = 2 x 2
 ```
 
 ### Grouping and aggregation
-Grouping and aggregation are two different steps. The function
+Grouping and aggregation is done in two distinct steps. The function
 used in the aggregation step takes a slice of elements and
 returns an element. For floats this function signature matches
-many of the statistical functions in [Gonum](https://github.com/gonum/gonum)
-which can hence be applied directly.
+many of the statistical functions in [Gonum](https://github.com/gonum/gonum),
+these can hence be applied directly.
 
 ```go
 intSum := func(xx []int) int {
