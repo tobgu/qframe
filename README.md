@@ -16,44 +16,6 @@ functionality to support a wider scope is always of interest as long
 as they don't conflict with the requirements from qocache!
 See [Contribute](#contribute).
 
-## Design goals
-* Performance
-  - Speed should be on par with, or better than, Python Pandas for corresponding operations.
-  - No or very little memory overhead per data element.
-  - Performance impact of operations should be straight forward to reason about.
-* API
-  - Should be reasonably small.
-  - Should allow custom, user provided, functions to be used for data processing
-  - Should provide built in functions for most common operations
-
-## High level design
-A QFrame is a collection of columns which can be of type int, float,
-string, bool or enum. For more information about the data types see the
-[types docs](https://godoc.org/github.com/tobgu/qframe/types).
-
-In addition to the columns there is also an index which controls
-which rows in the columns that are part of the QFrame and the
-sort order of these columns.
-Many operations on QFrames only affect the index, the underlying
-data remains the same.
-
-Many functions and methods in qframe take the empty interface as parameter,
-for functions to be applied or string references to internal functions
-for example.
-These always correspond to a union/sum type with a fixed set of valid types
-that are checked in runtime through type switches (there's hardly any
-reflection applied in QFrame for performance reasons).
-Which types are valid depends on the function called and the column type
-that is affected. Modelling this statically is hard/impossible in Go,
-hence the dynamic approach. If you plan to use QFrame with datasets
-with fixed layout and types it should be a small task to write tiny
-wrappers for the types you are using to regain static type safety.
-
-API functions that require configuration parameters make use of
-[functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
-to allow more options to be easily added in the future in a backwards
-compatible way.
-
 ## Usage
 Below are some examples of common use cases. The list is not exhaustive
 in any way. For a complete description of all operations including more
@@ -175,6 +137,44 @@ fmt.Println(f.Select("COL3"))
 ## More usage examples
 Examples of the most common operations are available in the
 [docs](https://godoc.org/github.com/tobgu/qframe).
+
+## Design goals
+* Performance
+  - Speed should be on par with, or better than, Python Pandas for corresponding operations.
+  - No or very little memory overhead per data element.
+  - Performance impact of operations should be straight forward to reason about.
+* API
+  - Should be reasonably small.
+  - Should allow custom, user provided, functions to be used for data processing
+  - Should provide built in functions for most common operations
+
+## High level design
+A QFrame is a collection of columns which can be of type int, float,
+string, bool or enum. For more information about the data types see the
+[types docs](https://godoc.org/github.com/tobgu/qframe/types).
+
+In addition to the columns there is also an index which controls
+which rows in the columns that are part of the QFrame and the
+sort order of these columns.
+Many operations on QFrames only affect the index, the underlying
+data remains the same.
+
+Many functions and methods in qframe take the empty interface as parameter,
+for functions to be applied or string references to internal functions
+for example.
+These always correspond to a union/sum type with a fixed set of valid types
+that are checked in runtime through type switches (there's hardly any
+reflection applied in QFrame for performance reasons).
+Which types are valid depends on the function called and the column type
+that is affected. Modelling this statically is hard/impossible in Go,
+hence the dynamic approach. If you plan to use QFrame with datasets
+with fixed layout and types it should be a small task to write tiny
+wrappers for the types you are using to regain static type safety.
+
+API functions that require configuration parameters make use of
+[functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
+to allow more options to be easily added in the future in a backwards
+compatible way.
 
 ## Limitations
 * The API can still not be considered stable.
