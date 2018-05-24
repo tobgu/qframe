@@ -125,9 +125,9 @@ func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
 	return result, nil
 }
 
-// UnmarshalJson transforms JSON containing data records or columns into a map of columns
+// UnmarshalJSON transforms JSON containing data records or columns into a map of columns
 // that can be used to create a QFrame.
-func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
+func UnmarshalJSON(r io.Reader) (map[string]interface{}, error) {
 	var records JsonRecords
 	decoder := json.NewDecoder(r)
 	err := decoder.Decode(&records)

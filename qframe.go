@@ -919,7 +919,7 @@ func ReadCSV(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
-	data, err := qfio.UnmarshalJson(reader)
+	data, err := qfio.UnmarshalJSON(reader)
 	if err != nil {
 		return QFrame{Err: err}
 	}
