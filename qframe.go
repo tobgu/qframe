@@ -966,12 +966,12 @@ func (qf QFrame) ToCSV(writer io.Writer) error {
 	return nil
 }
 
-// ToJson writes the data in the QFrame, in JSON format one record per row, to writer.
+// ToJSON writes the data in the QFrame, in JSON format one record per row, to writer.
 //
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
-func (qf QFrame) ToJson(writer io.Writer) error {
+func (qf QFrame) ToJSON(writer io.Writer) error {
 	if qf.Err != nil {
-		return errors.Propagate("ToJson", qf.Err)
+		return errors.Propagate("ToJSON", qf.Err)
 	}
 
 	colByteNames := make([][]byte, 0, len(qf.columns))

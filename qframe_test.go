@@ -1079,7 +1079,7 @@ func TestQFrame_ToFromJSON(t *testing.T) {
 	assertNotErr(t, originalDf.Err)
 
 	buf := new(bytes.Buffer)
-	err := originalDf.ToJson(buf)
+	err := originalDf.ToJSON(buf)
 	assertNotErr(t, err)
 
 	jsonDf := qframe.ReadJSON(buf, config...)
@@ -1096,7 +1096,7 @@ func TestQFrame_ToJSONNaN(t *testing.T) {
 	originalDf := qframe.New(data)
 	assertNotErr(t, originalDf.Err)
 
-	err := originalDf.ToJson(buf)
+	err := originalDf.ToJSON(buf)
 	assertNotErr(t, err)
 	expected := `[{"FLOAT1":1.5},{"FLOAT1":null}]`
 	if buf.String() != expected {
@@ -1111,7 +1111,7 @@ func TestQFrame_ToJSONInt(t *testing.T) {
 	assertNotErr(t, originalDf.Err)
 
 	buf := new(bytes.Buffer)
-	err := originalDf.ToJson(buf)
+	err := originalDf.ToJSON(buf)
 	assertNotErr(t, err)
 	if buf.String() != `[{"INT":1},{"INT":2}]` {
 		t.Errorf("Unexpected JSON string: %s", buf.String())

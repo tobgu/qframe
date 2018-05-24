@@ -417,7 +417,7 @@ func BenchmarkQFrame_ToCSV(b *testing.B) {
 	}
 }
 
-func toJson(b *testing.B) {
+func toJSON(b *testing.B) {
 	rowCount := 100000
 	input := exampleData(rowCount)
 	df := qf.New(input)
@@ -430,15 +430,15 @@ func toJson(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		buf := new(bytes.Buffer)
-		err := df.ToJson(buf)
+		err := df.ToJSON(buf)
 		if err != nil {
 			b.Errorf("Unexpected ToCSV error: %s", err)
 		}
 	}
 }
 
-func BenchmarkQFrame_ToJsonRecords(b *testing.B) {
-	toJson(b)
+func BenchmarkQFrame_ToJSONRecords(b *testing.B) {
+	toJSON(b)
 }
 
 func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
@@ -841,13 +841,13 @@ BenchmarkQFrame_FromJSONColumns-2   	      50	  24764232 ns/op	 6730738 B/op	   
 // ToCSV, vanilla implementation based on stdlib csv, 100000 records
 BenchmarkQFrame_ToCSV-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allocs/op
 
-// ToJson, performance is not super impressive... 100000 records
-BenchmarkQFrame_ToJsonRecords-2   	       2	 849280921 ns/op	181573400 B/op	 3400028 allocs/op
-BenchmarkQFrame_ToJsonColumns-2   	       5	 224702680 ns/op	33782697 B/op	     513 allocs/op
+// ToJSON, performance is not super impressive... 100000 records
+BenchmarkQFrame_ToJSONRecords-2   	       2	 849280921 ns/op	181573400 B/op	 3400028 allocs/op
+BenchmarkQFrame_ToJSONColumns-2   	       5	 224702680 ns/op	33782697 B/op	     513 allocs/op
 
 // Testing jsoniter with some success
-BenchmarkQFrame_ToJsonRecords-2   	       2	 646738504 ns/op	137916264 B/op	 3600006 allocs/op
-BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     490 allocs/op
+BenchmarkQFrame_ToJSONRecords-2   	       2	 646738504 ns/op	137916264 B/op	 3600006 allocs/op
+BenchmarkQFrame_ToJSONColumns-2   	      20	  99932317 ns/op	34144682 B/op	     490 allocs/op
 
 // Python, as a comparison, with corresponding list of dictionaries:
 >>> import json
@@ -859,8 +859,8 @@ BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     
 0.17484211921691895
 
 // Custom encoder for JSON records, now we're talking
-BenchmarkQFrame_ToJsonRecords-2   	      20	  87437635 ns/op	53638858 B/op	      35 allocs/op
-BenchmarkQFrame_ToJsonColumns-2   	      10	 102566155 ns/op	37746546 B/op	     547 allocs/op
+BenchmarkQFrame_ToJSONRecords-2   	      20	  87437635 ns/op	53638858 B/op	      35 allocs/op
+BenchmarkQFrame_ToJSONColumns-2   	      10	 102566155 ns/op	37746546 B/op	     547 allocs/op
 
 // Reuse string pointers when reading CSV
 Before:
