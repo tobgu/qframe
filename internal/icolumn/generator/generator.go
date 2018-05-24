@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/template"
 )

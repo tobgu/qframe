@@ -2,11 +2,12 @@ package qframe
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/math/integer"
-	"strings"
 )
 
 // FilterClause is an internal interface representing a filter of some kind that can be applied on a QFrame.

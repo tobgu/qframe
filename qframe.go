@@ -3,6 +3,11 @@ package qframe
 import (
 	stdcsv "encoding/csv"
 	"fmt"
+	"io"
+	"reflect"
+	"sort"
+	"strings"
+
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/config/groupby"
@@ -22,10 +27,6 @@ import (
 	qfsort "github.com/tobgu/qframe/internal/sort"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
-	"io"
-	"reflect"
-	"sort"
-	"strings"
 
 	// This dependency has been been added just to make sure that "go get" installs it.
 	_ "github.com/cheekybits/genny/generic"

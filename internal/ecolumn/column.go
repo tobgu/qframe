@@ -2,6 +2,9 @@ package ecolumn
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
@@ -9,8 +12,6 @@ import (
 	"github.com/tobgu/qframe/internal/scolumn"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
-	"reflect"
-	"strings"
 )
 
 type enumVal uint8

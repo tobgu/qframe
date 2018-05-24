@@ -5,14 +5,15 @@ import (
 	stdcsv "encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"testing"
+
 	qf "github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/types"
-	"io/ioutil"
-	"math/rand"
-	"testing"
 )
 
 func genInts(seed int64, size int) []int {

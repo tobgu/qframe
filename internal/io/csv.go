@@ -1,13 +1,14 @@
 package io
 
 import (
+	"io"
+	"math"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fastcsv"
 	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
-	"io"
-	"math"
 )
 
 // Helper type to slice column bytes into individual elements

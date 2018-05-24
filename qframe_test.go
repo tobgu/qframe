@@ -3,6 +3,13 @@ package qframe_test
 import (
 	"bytes"
 	"fmt"
+	"math"
+	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
+	"testing"
+
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/config/csv"
@@ -10,12 +17,6 @@ import (
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/types"
-	"math"
-	"reflect"
-	"regexp"
-	"strconv"
-	"strings"
-	"testing"
 )
 
 func assertEquals(t *testing.T, expected, actual qframe.QFrame) {

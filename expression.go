@@ -2,10 +2,11 @@ package qframe
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/types"
-	"strconv"
 )
 
 func getFunc(ctx *eval.Context, ac eval.ArgCount, qf QFrame, colName types.ColumnName, funcName string) (QFrame, interface{}) {

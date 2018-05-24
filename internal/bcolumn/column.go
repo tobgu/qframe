@@ -1,13 +1,14 @@
 package bcolumn
 
 import (
+	"reflect"
+	"strconv"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
-	"reflect"
-	"strconv"
 )
 
 func (c Comparable) Compare(i, j uint32) column.CompareResult {

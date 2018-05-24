@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/format"
+	"os"
+
 	"github.com/tobgu/qframe/errors"
 	bgenerator "github.com/tobgu/qframe/internal/bcolumn/generator"
 	egenerator "github.com/tobgu/qframe/internal/ecolumn/generator"
@@ -11,8 +14,6 @@ import (
 	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
 	qfgenerator "github.com/tobgu/qframe/internal/qframe/generator"
 	sgenerator "github.com/tobgu/qframe/internal/scolumn/generator"
-	"go/format"
-	"os"
 )
 
 /*

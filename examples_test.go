@@ -2,12 +2,13 @@ package qframe_test
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/function"
 	"github.com/tobgu/qframe/types"
-	"strings"
 )
 
 func ExampleQFrame_filterBuiltin() {
