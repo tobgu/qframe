@@ -927,15 +927,15 @@ func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	return New(data, fns...)
 }
 
-// ToCsv writes the data in the QFrame, in CSV format, to writer.
+// ToCSV writes the data in the QFrame, in CSV format, to writer.
 //
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
 //
 // This is function is currently unoptimized. It could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
-func (qf QFrame) ToCsv(writer io.Writer) error {
+func (qf QFrame) ToCSV(writer io.Writer) error {
 	if qf.Err != nil {
-		return errors.Propagate("ToCsv", qf.Err)
+		return errors.Propagate("ToCSV", qf.Err)
 	}
 
 	row := make([]string, 0, len(qf.columns))

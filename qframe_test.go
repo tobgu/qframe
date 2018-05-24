@@ -1039,7 +1039,7 @@ func TestQFrame_ReadJson(t *testing.T) {
 	}
 }
 
-func TestQFrame_ToCsv(t *testing.T) {
+func TestQFrame_ToCSV(t *testing.T) {
 	table := []struct {
 		input    map[string]interface{}
 		expected string
@@ -1055,12 +1055,12 @@ false,2.5,2,"b,c"
 	}
 
 	for i, tc := range table {
-		t.Run(fmt.Sprintf("ToCsv %d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ToCSV %d", i), func(t *testing.T) {
 			in := qframe.New(tc.input)
 			assertNotErr(t, in.Err)
 
 			buf := new(bytes.Buffer)
-			err := in.ToCsv(buf)
+			err := in.ToCSV(buf)
 			assertNotErr(t, err)
 
 			result := buf.String()

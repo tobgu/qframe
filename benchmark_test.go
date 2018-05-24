@@ -397,7 +397,7 @@ func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_ToCsv(b *testing.B) {
+func BenchmarkQFrame_ToCSV(b *testing.B) {
 	rowCount := 100000
 	input := exampleData(rowCount)
 	df := qf.New(input)
@@ -410,9 +410,9 @@ func BenchmarkQFrame_ToCsv(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		buf := new(bytes.Buffer)
-		err := df.ToCsv(buf)
+		err := df.ToCSV(buf)
 		if err != nil {
-			b.Errorf("Unexpected ToCsv error: %s", err)
+			b.Errorf("Unexpected ToCSV error: %s", err)
 		}
 	}
 }
@@ -432,7 +432,7 @@ func toJson(b *testing.B) {
 		buf := new(bytes.Buffer)
 		err := df.ToJson(buf)
 		if err != nil {
-			b.Errorf("Unexpected ToCsv error: %s", err)
+			b.Errorf("Unexpected ToCSV error: %s", err)
 		}
 	}
 }
@@ -824,11 +824,11 @@ BenchmarkQFrame_Sort1Col-2     	      30	  43807643 ns/op	  401472 B/op	       3
 BenchmarkQFrame_SortSorted-2   	      50	  24775838 ns/op	  401536 B/op	       4 allocs/op
 
 // Initial CSV implementation for int, 4 x 100000.
-BenchmarkQFrame_IntFromCsv-2      	      20	  55921060 ns/op	30167012 B/op	     261 allocs/op
-BenchmarkDataFrame_IntFromCsv-2   	       5	 243541282 ns/op	41848809 B/op	  900067 allocs/op
+BenchmarkQFrame_IntFromCSV-2      	      20	  55921060 ns/op	30167012 B/op	     261 allocs/op
+BenchmarkDataFrame_IntFromCSV-2   	       5	 243541282 ns/op	41848809 B/op	  900067 allocs/op
 
 // Type detecting CSV implementation, 100000 x "123", "1234567", "5.2534", "9834543.25", "true", "Foo bar baz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-BenchmarkQFrame_IntFromCsv-2   	      10	 101362864 ns/op	87707785 B/op	  200491 allocs/op
+BenchmarkQFrame_IntFromCSV-2   	      10	 101362864 ns/op	87707785 B/op	  200491 allocs/op
 
 // JSON, 10000 rows
 BenchmarkDataFrame_ReadJSON-2          	      10	 176107262 ns/op	24503045 B/op	  670112 allocs/op
@@ -838,8 +838,8 @@ BenchmarkQFrame_FromJSONColumns-2   	      10	 104641079 ns/op	15342302 B/op	  2
 // JSON with easyjson generated unmarshal
 BenchmarkQFrame_FromJSONColumns-2   	      50	  24764232 ns/op	 6730738 B/op	   20282 allocs/op
 
-// ToCsv, vanilla implementation based on stdlib csv, 100000 records
-BenchmarkQFrame_ToCsv-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allocs/op
+// ToCSV, vanilla implementation based on stdlib csv, 100000 records
+BenchmarkQFrame_ToCSV-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allocs/op
 
 // ToJson, performance is not super impressive... 100000 records
 BenchmarkQFrame_ToJsonRecords-2   	       2	 849280921 ns/op	181573400 B/op	 3400028 allocs/op
