@@ -983,7 +983,7 @@ tue
 	})
 }
 
-func TestQFrame_ReadJson(t *testing.T) {
+func TestQFrame_ReadJSON(t *testing.T) {
 	/*
 		>>> pd.DataFrame.from_records([dict(a=1.5), dict(a=None)])
 			 a
@@ -1032,7 +1032,7 @@ func TestQFrame_ReadJson(t *testing.T) {
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("FromJSON %d", i), func(t *testing.T) {
-			out := qframe.ReadJson(strings.NewReader(tc.input))
+			out := qframe.ReadJSON(strings.NewReader(tc.input))
 			assertNotErr(t, out.Err)
 			assertEquals(t, qframe.New(tc.expected), out)
 		})
@@ -1082,7 +1082,7 @@ func TestQFrame_ToFromJSON(t *testing.T) {
 	err := originalDf.ToJson(buf)
 	assertNotErr(t, err)
 
-	jsonDf := qframe.ReadJson(buf, config...)
+	jsonDf := qframe.ReadJSON(buf, config...)
 	assertNotErr(t, jsonDf.Err)
 	assertEquals(t, originalDf, jsonDf)
 }

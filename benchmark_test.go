@@ -386,7 +386,7 @@ func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.ReadJson(r)
+		df := qf.ReadJSON(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected JSON error: %s", df.Err)
 		}

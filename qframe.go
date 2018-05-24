@@ -915,10 +915,10 @@ func ReadCSV(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	return New(data, newqf.ColumnOrder(columns...))
 }
 
-// ReadJson returns a QFrame with data, in JSON format, taken from reader.
+// ReadJSON returns a QFrame with data, in JSON format, taken from reader.
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
-func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
+func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	data, err := qfio.UnmarshalJson(reader)
 	if err != nil {
 		return QFrame{Err: err}
