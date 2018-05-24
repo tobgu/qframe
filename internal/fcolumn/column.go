@@ -1,15 +1,16 @@
 package fcolumn
 
 import (
+	"math"
+	"reflect"
+	"strconv"
+	"unsafe"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
-	"math"
-	"reflect"
-	"strconv"
-	"unsafe"
 )
 
 func (c Column) StringAt(i uint32, naRep string) string {

@@ -1,9 +1,10 @@
 package fcolumn
 
 import (
+	"math"
+
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
-	"math"
 )
 
 var filterFuncs0 = map[string]func(index.Int, []float64, index.Bool){

@@ -5,14 +5,15 @@ import (
 	stdcsv "encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"testing"
+
 	qf "github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/types"
-	"io/ioutil"
-	"math/rand"
-	"testing"
 )
 
 func genInts(seed int64, size int) []int {
@@ -265,7 +266,7 @@ func csvEnumBytes(rowCount, cardinality int) []byte {
 	return csvBytes
 }
 
-func BenchmarkQFrame_ReadCsv(b *testing.B) {
+func BenchmarkQFrame_ReadCSV(b *testing.B) {
 	rowCount := 100000
 	input := csvBytes(rowCount)
 
@@ -274,7 +275,7 @@ func BenchmarkQFrame_ReadCsv(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.ReadCsv(r)
+		df := qf.ReadCSV(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected CSV error: %s", df.Err)
 		}
@@ -285,7 +286,7 @@ func BenchmarkQFrame_ReadCsv(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
+func BenchmarkQFrame_ReadCSVEnum(b *testing.B) {
 	rowCount := 100000
 	cardinality := 20
 	input := csvEnumBytes(rowCount, cardinality)
@@ -296,7 +297,7 @@ func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				r := bytes.NewReader(input)
-				df := qf.ReadCsv(r, csv.Types(map[string]string{"COL1": t, "COL2": t}))
+				df := qf.ReadCSV(r, csv.Types(map[string]string{"COL1": t, "COL2": t}))
 				if df.Err != nil {
 					b.Errorf("Unexpected CSV error: %s", df.Err)
 				}
@@ -385,7 +386,7 @@ func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.ReadJson(r)
+		df := qf.ReadJSON(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected JSON error: %s", df.Err)
 		}
@@ -396,7 +397,7 @@ func BenchmarkQFrame_FromJSONRecords(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_ToCsv(b *testing.B) {
+func BenchmarkQFrame_ToCSV(b *testing.B) {
 	rowCount := 100000
 	input := exampleData(rowCount)
 	df := qf.New(input)
@@ -409,14 +410,14 @@ func BenchmarkQFrame_ToCsv(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		buf := new(bytes.Buffer)
-		err := df.ToCsv(buf)
+		err := df.ToCSV(buf)
 		if err != nil {
-			b.Errorf("Unexpected ToCsv error: %s", err)
+			b.Errorf("Unexpected ToCSV error: %s", err)
 		}
 	}
 }
 
-func toJson(b *testing.B) {
+func toJSON(b *testing.B) {
 	rowCount := 100000
 	input := exampleData(rowCount)
 	df := qf.New(input)
@@ -429,15 +430,15 @@ func toJson(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		buf := new(bytes.Buffer)
-		err := df.ToJson(buf)
+		err := df.ToJSON(buf)
 		if err != nil {
-			b.Errorf("Unexpected ToCsv error: %s", err)
+			b.Errorf("Unexpected ToCSV error: %s", err)
 		}
 	}
 }
 
-func BenchmarkQFrame_ToJsonRecords(b *testing.B) {
-	toJson(b)
+func BenchmarkQFrame_ToJSONRecords(b *testing.B) {
+	toJSON(b)
 }
 
 func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
@@ -494,7 +495,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 	for _, tc := range table {
 		r := bytes.NewReader(input)
-		df := qf.ReadCsv(r, csv.Types(tc.types))
+		df := qf.ReadCSV(r, csv.Types(tc.types))
 		if tc.comparator == "" {
 			tc.comparator = "<"
 		}
@@ -532,7 +533,7 @@ func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	df := qf.ReadCsv(r)
+	df := qf.ReadCSV(r)
 
 	benchApply(b, "Instruction with custom function", df, toUpper)
 	benchApply(b, "Instruction with builtin function", df, "ToUpper")
@@ -543,7 +544,7 @@ func BenchmarkQFrame_ApplyEnum(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	df := qf.ReadCsv(r, csv.Types(map[string]string{"COL1": "enum"}))
+	df := qf.ReadCSV(r, csv.Types(map[string]string{"COL1": "enum"}))
 
 	benchApply(b, "Instruction with custom function", df, toUpper)
 	benchApply(b, "Instruction with built in function", df, "ToUpper")
@@ -596,7 +597,7 @@ func BenchmarkQFrame_StringView(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	f := qf.ReadCsv(r).Sort(qf.Order{Column: "COL1"})
+	f := qf.ReadCSV(r).Sort(qf.Order{Column: "COL1"})
 	v, err := f.StringView("COL1")
 	if err != nil {
 		b.Error(err)
@@ -823,11 +824,11 @@ BenchmarkQFrame_Sort1Col-2     	      30	  43807643 ns/op	  401472 B/op	       3
 BenchmarkQFrame_SortSorted-2   	      50	  24775838 ns/op	  401536 B/op	       4 allocs/op
 
 // Initial CSV implementation for int, 4 x 100000.
-BenchmarkQFrame_IntFromCsv-2      	      20	  55921060 ns/op	30167012 B/op	     261 allocs/op
-BenchmarkDataFrame_IntFromCsv-2   	       5	 243541282 ns/op	41848809 B/op	  900067 allocs/op
+BenchmarkQFrame_IntFromCSV-2      	      20	  55921060 ns/op	30167012 B/op	     261 allocs/op
+BenchmarkDataFrame_IntFromCSV-2   	       5	 243541282 ns/op	41848809 B/op	  900067 allocs/op
 
 // Type detecting CSV implementation, 100000 x "123", "1234567", "5.2534", "9834543.25", "true", "Foo bar baz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-BenchmarkQFrame_IntFromCsv-2   	      10	 101362864 ns/op	87707785 B/op	  200491 allocs/op
+BenchmarkQFrame_IntFromCSV-2   	      10	 101362864 ns/op	87707785 B/op	  200491 allocs/op
 
 // JSON, 10000 rows
 BenchmarkDataFrame_ReadJSON-2          	      10	 176107262 ns/op	24503045 B/op	  670112 allocs/op
@@ -837,16 +838,16 @@ BenchmarkQFrame_FromJSONColumns-2   	      10	 104641079 ns/op	15342302 B/op	  2
 // JSON with easyjson generated unmarshal
 BenchmarkQFrame_FromJSONColumns-2   	      50	  24764232 ns/op	 6730738 B/op	   20282 allocs/op
 
-// ToCsv, vanilla implementation based on stdlib csv, 100000 records
-BenchmarkQFrame_ToCsv-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allocs/op
+// ToCSV, vanilla implementation based on stdlib csv, 100000 records
+BenchmarkQFrame_ToCSV-2   	       5	 312478023 ns/op	26365360 B/op	  600017 allocs/op
 
-// ToJson, performance is not super impressive... 100000 records
-BenchmarkQFrame_ToJsonRecords-2   	       2	 849280921 ns/op	181573400 B/op	 3400028 allocs/op
-BenchmarkQFrame_ToJsonColumns-2   	       5	 224702680 ns/op	33782697 B/op	     513 allocs/op
+// ToJSON, performance is not super impressive... 100000 records
+BenchmarkQFrame_ToJSONRecords-2   	       2	 849280921 ns/op	181573400 B/op	 3400028 allocs/op
+BenchmarkQFrame_ToJSONColumns-2   	       5	 224702680 ns/op	33782697 B/op	     513 allocs/op
 
 // Testing jsoniter with some success
-BenchmarkQFrame_ToJsonRecords-2   	       2	 646738504 ns/op	137916264 B/op	 3600006 allocs/op
-BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     490 allocs/op
+BenchmarkQFrame_ToJSONRecords-2   	       2	 646738504 ns/op	137916264 B/op	 3600006 allocs/op
+BenchmarkQFrame_ToJSONColumns-2   	      20	  99932317 ns/op	34144682 B/op	     490 allocs/op
 
 // Python, as a comparison, with corresponding list of dictionaries:
 >>> import json
@@ -858,19 +859,19 @@ BenchmarkQFrame_ToJsonColumns-2   	      20	  99932317 ns/op	34144682 B/op	     
 0.17484211921691895
 
 // Custom encoder for JSON records, now we're talking
-BenchmarkQFrame_ToJsonRecords-2   	      20	  87437635 ns/op	53638858 B/op	      35 allocs/op
-BenchmarkQFrame_ToJsonColumns-2   	      10	 102566155 ns/op	37746546 B/op	     547 allocs/op
+BenchmarkQFrame_ToJSONRecords-2   	      20	  87437635 ns/op	53638858 B/op	      35 allocs/op
+BenchmarkQFrame_ToJSONColumns-2   	      10	 102566155 ns/op	37746546 B/op	     547 allocs/op
 
 // Reuse string pointers when reading CSV
 Before:
-BenchmarkQFrame_ReadCsv-2   	      10	 119385221 ns/op	92728576 B/op	  400500 allocs/op
+BenchmarkQFrame_ReadCSV-2   	      10	 119385221 ns/op	92728576 B/op	  400500 allocs/op
 
 After:
-BenchmarkQFrame_ReadCsv-2   	      10	 108917111 ns/op	86024686 B/op	   20790 allocs/op
+BenchmarkQFrame_ReadCSV-2   	      10	 108917111 ns/op	86024686 B/op	   20790 allocs/op
 
 // Initial CSV read Enum, 2 x 100000 cells with cardinality 20
-BenchmarkQFrame_ReadCsvEnum/Type_enum-2         	      50	  28081769 ns/op	19135232 B/op	     213 allocs/op
-BenchmarkQFrame_ReadCsvEnum/Type_string-2       	      50	  28563580 ns/op	20526743 B/op	     238 allocs/op
+BenchmarkQFrame_ReadCSVEnum/Type_enum-2         	      50	  28081769 ns/op	19135232 B/op	     213 allocs/op
+BenchmarkQFrame_ReadCSVEnum/Type_string-2       	      50	  28563580 ns/op	20526743 B/op	     238 allocs/op
 
 Total saving 1,4 Mb in line with what was expected given that one byte is used per entry instead of eight
 
@@ -913,7 +914,7 @@ BenchmarkQFrame_FilterNot/qframe-2         	    2000	    713147 ns/op	  147465 B
 BenchmarkQFrame_FilterNot/filter-2         	    2000	    726766 ns/op	  147521 B/op	       3 allocs/op
 
 // Restructure string column to use a byte blob with offsets and lengths
-BenchmarkQFrame_ReadCsv-2       	      20	  85906027 ns/op	84728656 B/op	     500 allocs/op
+BenchmarkQFrame_ReadCSV-2       	      20	  85906027 ns/op	84728656 B/op	     500 allocs/op
 
 // Fix string clause to make better use of the new string blob structure:
 BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<,_enum:_true-2         	    2000	    691081 ns/op	  335888 B/op	       3 allocs/op

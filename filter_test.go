@@ -2,8 +2,9 @@ package qframe_test
 
 import (
 	"fmt"
-	"github.com/tobgu/qframe"
 	"testing"
+
+	"github.com/tobgu/qframe"
 )
 
 func f(column string, comparator string, arg interface{}) qframe.Filter {

@@ -6,11 +6,11 @@ import (
 	"io"
 )
 
-type JsonRecords []map[string]interface{}
+type JSONRecords []map[string]interface{}
 
-type JsonColumns map[string]json.RawMessage
+type JSONColumns map[string]json.RawMessage
 
-func fillInts(col []int, records JsonRecords, colName string) error {
+func fillInts(col []int, records JSONRecords, colName string) error {
 	for i := range col {
 		record := records[i]
 		value, ok := record[colName]
@@ -28,7 +28,7 @@ func fillInts(col []int, records JsonRecords, colName string) error {
 	return nil
 }
 
-func fillFloats(col []float64, records JsonRecords, colName string) error {
+func fillFloats(col []float64, records JSONRecords, colName string) error {
 	for i := range col {
 		record := records[i]
 		value, ok := record[colName]
@@ -46,7 +46,7 @@ func fillFloats(col []float64, records JsonRecords, colName string) error {
 	return nil
 }
 
-func fillBools(col []bool, records JsonRecords, colName string) error {
+func fillBools(col []bool, records JSONRecords, colName string) error {
 	for i := range col {
 		record := records[i]
 		value, ok := record[colName]
@@ -64,7 +64,7 @@ func fillBools(col []bool, records JsonRecords, colName string) error {
 	return nil
 }
 
-func fillStrings(col []*string, records JsonRecords, colName string) error {
+func fillStrings(col []*string, records JSONRecords, colName string) error {
 	for i := range col {
 		record := records[i]
 		value, ok := record[colName]
@@ -85,7 +85,7 @@ func fillStrings(col []*string, records JsonRecords, colName string) error {
 	return nil
 }
 
-func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
+func jsonRecordsToData(records JSONRecords) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 	if len(records) == 0 {
 		return result, nil
@@ -125,10 +125,10 @@ func jsonRecordsToData(records JsonRecords) (map[string]interface{}, error) {
 	return result, nil
 }
 
-// UnmarshalJson transforms JSON containing data records or columns into a map of columns
+// UnmarshalJSON transforms JSON containing data records or columns into a map of columns
 // that can be used to create a QFrame.
-func UnmarshalJson(r io.Reader) (map[string]interface{}, error) {
-	var records JsonRecords
+func UnmarshalJSON(r io.Reader) (map[string]interface{}, error) {
+	var records JSONRecords
 	decoder := json.NewDecoder(r)
 	err := decoder.Decode(&records)
 	if err != nil {

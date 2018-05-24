@@ -156,7 +156,7 @@ func BenchmarkRead(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.Run("StdCsv", func(b *testing.B) {
+	b.Run("StdCSV", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			r := csv.NewReader(bytes.NewReader(data))
 			for {
@@ -169,7 +169,7 @@ func BenchmarkRead(b *testing.B) {
 			}
 		}
 	})
-	b.Run("FastCsv", func(b *testing.B) {
+	b.Run("FastCSV", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			r := NewReader(bytes.NewReader(data), ',')
 			for {
@@ -182,7 +182,7 @@ func BenchmarkRead(b *testing.B) {
 			}
 		}
 	})
-	b.Run("StdCsvQuoted", func(b *testing.B) {
+	b.Run("StdCSVQuoted", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			r := csv.NewReader(bytes.NewReader(quotedData))
 			for {
@@ -195,7 +195,7 @@ func BenchmarkRead(b *testing.B) {
 			}
 		}
 	})
-	b.Run("FastCsvQuoted", func(b *testing.B) {
+	b.Run("FastCSVQuoted", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			r := NewReader(bytes.NewReader(quotedData), ',')
 			for {

@@ -2,8 +2,9 @@ package generator
 
 import (
 	"bytes"
-	"github.com/tobgu/qframe/internal/template"
 	"strings"
+
+	"github.com/tobgu/qframe/internal/template"
 )
 
 //go:generate qfgenerate -source=qframe -dst-file=../../../qframe_gen.go

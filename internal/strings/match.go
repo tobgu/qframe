@@ -1,9 +1,10 @@
 package strings
 
 import (
-	"github.com/tobgu/qframe/errors"
 	"regexp"
 	"strings"
+
+	"github.com/tobgu/qframe/errors"
 )
 
 type Matcher interface {

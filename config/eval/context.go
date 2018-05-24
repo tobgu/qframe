@@ -1,12 +1,13 @@
 package eval
 
 import (
+	"math"
+	"reflect"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/function"
 	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
-	"math"
-	"reflect"
 )
 
 type functionsByArgCount struct {

@@ -1,13 +1,14 @@
 package io
 
 import (
+	"io"
+	"math"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fastcsv"
 	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
-	"io"
-	"math"
 )
 
 // Helper type to slice column bytes into individual elements
@@ -16,7 +17,7 @@ type bytePointer struct {
 	end   uint32
 }
 
-type CsvConfig struct {
+type CSVConfig struct {
 	EmptyNull        bool
 	IgnoreEmptyLines bool
 	Delimiter        byte
@@ -28,7 +29,7 @@ func isEmptyLine(fields [][]byte) bool {
 	return len(fields) == 1 && len(fields[0]) == 0
 }
 
-func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string, error) {
+func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string, error) {
 	r := fastcsv.NewReader(reader, conf.Delimiter)
 	byteHeader, err := r.Read()
 	if err != nil {
@@ -58,7 +59,7 @@ func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string
 				continue
 			}
 
-			return nil, nil, errors.New("ReadCsv", "Wrong number of columns on line %d, expected %d, was %d",
+			return nil, nil, errors.New("ReadCSV", "Wrong number of columns on line %d, expected %d, was %d",
 				row, len(headers), len(fields))
 		}
 
@@ -91,7 +92,7 @@ func ReadCsv(reader io.Reader, conf CsvConfig) (map[string]interface{}, []string
 }
 
 // Convert bytes to data columns, try, in turn int, float, bool and last string.
-func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CsvConfig) (interface{}, error) {
+func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSVConfig) (interface{}, error) {
 	var err error
 	dataType := conf.Types[colName]
 

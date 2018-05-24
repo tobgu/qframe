@@ -9,7 +9,7 @@ import (
 // It should be considered a private implementation detail and should never be
 // referenced or used directly outside of the QFrame code. To manipulate it
 // use the functions returning ConfigFunc below.
-type Config qfio.CsvConfig
+type Config qfio.CSVConfig
 
 // ConfigFunc is a function that operates on a Config object.
 type ConfigFunc func(*Config)

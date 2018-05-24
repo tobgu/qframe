@@ -3,6 +3,13 @@ package qframe_test
 import (
 	"bytes"
 	"fmt"
+	"math"
+	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
+	"testing"
+
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/aggregation"
 	"github.com/tobgu/qframe/config/csv"
@@ -10,12 +17,6 @@ import (
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/types"
-	"math"
-	"reflect"
-	"regexp"
-	"strconv"
-	"strings"
-	"testing"
 )
 
 func assertEquals(t *testing.T, expected, actual qframe.QFrame) {
@@ -721,7 +722,7 @@ func TestQFrame_Slice(t *testing.T) {
 	}
 }
 
-func TestQFrame_ReadCsv(t *testing.T) {
+func TestQFrame_ReadCSV(t *testing.T) {
 	/*
 		Pandas reference
 		>>> data = """
@@ -874,13 +875,13 @@ func TestQFrame_ReadCsv(t *testing.T) {
 	}
 
 	for _, tc := range table {
-		t.Run(fmt.Sprintf("ReadCsv %s", tc.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ReadCSV %s", tc.name), func(t *testing.T) {
 			if tc.delimiter == 0 {
 				tc.delimiter = ','
 			}
 
 			input := strings.Join(tc.inputHeaders, string([]byte{tc.delimiter})) + "\n" + tc.inputData
-			out := qframe.ReadCsv(strings.NewReader(input),
+			out := qframe.ReadCSV(strings.NewReader(input),
 				csv.EmptyNull(tc.emptyNull),
 				csv.Types(tc.types),
 				csv.IgnoreEmptyLines(tc.ignoreEmptyLines),
@@ -917,7 +918,7 @@ mon
 thu
 
 `
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.EmptyNull(true),
 			csv.Types(map[string]string{"day": "enum"}),
@@ -935,7 +936,7 @@ thu
 		input := `day
 tue
 `
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.Types(map[string]string{"day": "enum"}),
 			csv.EnumValues(map[string][]string{"week": {"foo", "bar"}}))
@@ -948,7 +949,7 @@ tue
 mon
 foo
 `
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.Types(map[string]string{"day": "enum"}),
 			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
@@ -974,7 +975,7 @@ foo
 tue
 `
 
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
 
@@ -982,7 +983,7 @@ tue
 	})
 }
 
-func TestQFrame_ReadJson(t *testing.T) {
+func TestQFrame_ReadJSON(t *testing.T) {
 	/*
 		>>> pd.DataFrame.from_records([dict(a=1.5), dict(a=None)])
 			 a
@@ -1031,14 +1032,14 @@ func TestQFrame_ReadJson(t *testing.T) {
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("FromJSON %d", i), func(t *testing.T) {
-			out := qframe.ReadJson(strings.NewReader(tc.input))
+			out := qframe.ReadJSON(strings.NewReader(tc.input))
 			assertNotErr(t, out.Err)
 			assertEquals(t, qframe.New(tc.expected), out)
 		})
 	}
 }
 
-func TestQFrame_ToCsv(t *testing.T) {
+func TestQFrame_ToCSV(t *testing.T) {
 	table := []struct {
 		input    map[string]interface{}
 		expected string
@@ -1054,12 +1055,12 @@ false,2.5,2,"b,c"
 	}
 
 	for i, tc := range table {
-		t.Run(fmt.Sprintf("ToCsv %d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ToCSV %d", i), func(t *testing.T) {
 			in := qframe.New(tc.input)
 			assertNotErr(t, in.Err)
 
 			buf := new(bytes.Buffer)
-			err := in.ToCsv(buf)
+			err := in.ToCSV(buf)
 			assertNotErr(t, err)
 
 			result := buf.String()
@@ -1078,10 +1079,10 @@ func TestQFrame_ToFromJSON(t *testing.T) {
 	assertNotErr(t, originalDf.Err)
 
 	buf := new(bytes.Buffer)
-	err := originalDf.ToJson(buf)
+	err := originalDf.ToJSON(buf)
 	assertNotErr(t, err)
 
-	jsonDf := qframe.ReadJson(buf, config...)
+	jsonDf := qframe.ReadJSON(buf, config...)
 	assertNotErr(t, jsonDf.Err)
 	assertEquals(t, originalDf, jsonDf)
 }
@@ -1095,7 +1096,7 @@ func TestQFrame_ToJSONNaN(t *testing.T) {
 	originalDf := qframe.New(data)
 	assertNotErr(t, originalDf.Err)
 
-	err := originalDf.ToJson(buf)
+	err := originalDf.ToJSON(buf)
 	assertNotErr(t, err)
 	expected := `[{"FLOAT1":1.5},{"FLOAT1":null}]`
 	if buf.String() != expected {
@@ -1110,7 +1111,7 @@ func TestQFrame_ToJSONInt(t *testing.T) {
 	assertNotErr(t, originalDf.Err)
 
 	buf := new(bytes.Buffer)
-	err := originalDf.ToJson(buf)
+	err := originalDf.ToJSON(buf)
 	assertNotErr(t, err)
 	if buf.String() != `[{"INT":1},{"INT":2}]` {
 		t.Errorf("Unexpected JSON string: %s", buf.String())

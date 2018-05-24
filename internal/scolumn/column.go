@@ -2,13 +2,14 @@ package scolumn
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
-	"reflect"
 )
 
 var stringApplyFuncs = map[string]func(index.Int, Column) interface{}{

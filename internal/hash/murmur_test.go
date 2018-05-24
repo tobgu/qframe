@@ -2,9 +2,10 @@ package hash_test
 
 import (
 	"fmt"
-	"github.com/tobgu/qframe/internal/hash"
 	"math/rand"
 	"testing"
+
+	"github.com/tobgu/qframe/internal/hash"
 )
 
 const noSeed int64 = 0

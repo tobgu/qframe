@@ -1,8 +1,9 @@
 package strings
 
 import (
-	"github.com/tobgu/qframe/errors"
 	"strings"
+
+	"github.com/tobgu/qframe/errors"
 )
 
 func isQuoted(s string) bool {

@@ -4,10 +4,11 @@ package template
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/cheekybits/genny/generic"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
-	"reflect"
 )
 
 type dataType generic.Number

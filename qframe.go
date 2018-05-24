@@ -3,6 +3,11 @@ package qframe
 import (
 	stdcsv "encoding/csv"
 	"fmt"
+	"io"
+	"reflect"
+	"sort"
+	"strings"
+
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/config/groupby"
@@ -22,10 +27,6 @@ import (
 	qfsort "github.com/tobgu/qframe/internal/sort"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
-	"io"
-	"reflect"
-	"sort"
-	"strings"
 
 	// This dependency has been been added just to make sure that "go get" installs it.
 	_ "github.com/cheekybits/genny/generic"
@@ -900,13 +901,13 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 //// IO ////
 ////////////
 
-// ReadCsv returns a QFrame with data, in CSV format, taken from reader.
+// ReadCSV returns a QFrame with data, in CSV format, taken from reader.
 // Column data types are auto detected if not explicitly specified.
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
-func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
+func ReadCSV(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	conf := csv.NewConfig(confFuncs)
-	data, columns, err := qfio.ReadCsv(reader, qfio.CsvConfig(conf))
+	data, columns, err := qfio.ReadCSV(reader, qfio.CSVConfig(conf))
 	if err != nil {
 		return QFrame{Err: err}
 	}
@@ -914,11 +915,11 @@ func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	return New(data, newqf.ColumnOrder(columns...))
 }
 
-// ReadJson returns a QFrame with data, in JSON format, taken from reader.
+// ReadJSON returns a QFrame with data, in JSON format, taken from reader.
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
-func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
-	data, err := qfio.UnmarshalJson(reader)
+func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
+	data, err := qfio.UnmarshalJSON(reader)
 	if err != nil {
 		return QFrame{Err: err}
 	}
@@ -926,15 +927,15 @@ func ReadJson(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	return New(data, fns...)
 }
 
-// ToCsv writes the data in the QFrame, in CSV format, to writer.
+// ToCSV writes the data in the QFrame, in CSV format, to writer.
 //
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
 //
 // This is function is currently unoptimized. It could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
-func (qf QFrame) ToCsv(writer io.Writer) error {
+func (qf QFrame) ToCSV(writer io.Writer) error {
 	if qf.Err != nil {
-		return errors.Propagate("ToCsv", qf.Err)
+		return errors.Propagate("ToCSV", qf.Err)
 	}
 
 	row := make([]string, 0, len(qf.columns))
@@ -965,12 +966,12 @@ func (qf QFrame) ToCsv(writer io.Writer) error {
 	return nil
 }
 
-// ToJson writes the data in the QFrame, in JSON format one record per row, to writer.
+// ToJSON writes the data in the QFrame, in JSON format one record per row, to writer.
 //
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
-func (qf QFrame) ToJson(writer io.Writer) error {
+func (qf QFrame) ToJSON(writer io.Writer) error {
 	if qf.Err != nil {
-		return errors.Propagate("ToJson", qf.Err)
+		return errors.Propagate("ToJSON", qf.Err)
 	}
 
 	colByteNames := make([][]byte, 0, len(qf.columns))
