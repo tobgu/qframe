@@ -722,7 +722,7 @@ func TestQFrame_Slice(t *testing.T) {
 	}
 }
 
-func TestQFrame_ReadCsv(t *testing.T) {
+func TestQFrame_ReadCSV(t *testing.T) {
 	/*
 		Pandas reference
 		>>> data = """
@@ -875,13 +875,13 @@ func TestQFrame_ReadCsv(t *testing.T) {
 	}
 
 	for _, tc := range table {
-		t.Run(fmt.Sprintf("ReadCsv %s", tc.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ReadCSV %s", tc.name), func(t *testing.T) {
 			if tc.delimiter == 0 {
 				tc.delimiter = ','
 			}
 
 			input := strings.Join(tc.inputHeaders, string([]byte{tc.delimiter})) + "\n" + tc.inputData
-			out := qframe.ReadCsv(strings.NewReader(input),
+			out := qframe.ReadCSV(strings.NewReader(input),
 				csv.EmptyNull(tc.emptyNull),
 				csv.Types(tc.types),
 				csv.IgnoreEmptyLines(tc.ignoreEmptyLines),
@@ -918,7 +918,7 @@ mon
 thu
 
 `
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.EmptyNull(true),
 			csv.Types(map[string]string{"day": "enum"}),
@@ -936,7 +936,7 @@ thu
 		input := `day
 tue
 `
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.Types(map[string]string{"day": "enum"}),
 			csv.EnumValues(map[string][]string{"week": {"foo", "bar"}}))
@@ -949,7 +949,7 @@ tue
 mon
 foo
 `
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.Types(map[string]string{"day": "enum"}),
 			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
@@ -975,7 +975,7 @@ foo
 tue
 `
 
-		out := qframe.ReadCsv(
+		out := qframe.ReadCSV(
 			strings.NewReader(input),
 			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
 

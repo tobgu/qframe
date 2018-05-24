@@ -266,7 +266,7 @@ func csvEnumBytes(rowCount, cardinality int) []byte {
 	return csvBytes
 }
 
-func BenchmarkQFrame_ReadCsv(b *testing.B) {
+func BenchmarkQFrame_ReadCSV(b *testing.B) {
 	rowCount := 100000
 	input := csvBytes(rowCount)
 
@@ -275,7 +275,7 @@ func BenchmarkQFrame_ReadCsv(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.ReadCsv(r)
+		df := qf.ReadCSV(r)
 		if df.Err != nil {
 			b.Errorf("Unexpected CSV error: %s", df.Err)
 		}
@@ -286,7 +286,7 @@ func BenchmarkQFrame_ReadCsv(b *testing.B) {
 	}
 }
 
-func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
+func BenchmarkQFrame_ReadCSVEnum(b *testing.B) {
 	rowCount := 100000
 	cardinality := 20
 	input := csvEnumBytes(rowCount, cardinality)
@@ -297,7 +297,7 @@ func BenchmarkQFrame_ReadCsvEnum(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				r := bytes.NewReader(input)
-				df := qf.ReadCsv(r, csv.Types(map[string]string{"COL1": t, "COL2": t}))
+				df := qf.ReadCSV(r, csv.Types(map[string]string{"COL1": t, "COL2": t}))
 				if df.Err != nil {
 					b.Errorf("Unexpected CSV error: %s", df.Err)
 				}
@@ -495,7 +495,7 @@ func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {
 	}
 	for _, tc := range table {
 		r := bytes.NewReader(input)
-		df := qf.ReadCsv(r, csv.Types(tc.types))
+		df := qf.ReadCSV(r, csv.Types(tc.types))
 		if tc.comparator == "" {
 			tc.comparator = "<"
 		}
@@ -533,7 +533,7 @@ func BenchmarkQFrame_ApplyStringToString(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	df := qf.ReadCsv(r)
+	df := qf.ReadCSV(r)
 
 	benchApply(b, "Instruction with custom function", df, toUpper)
 	benchApply(b, "Instruction with builtin function", df, "ToUpper")
@@ -544,7 +544,7 @@ func BenchmarkQFrame_ApplyEnum(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	df := qf.ReadCsv(r, csv.Types(map[string]string{"COL1": "enum"}))
+	df := qf.ReadCSV(r, csv.Types(map[string]string{"COL1": "enum"}))
 
 	benchApply(b, "Instruction with custom function", df, toUpper)
 	benchApply(b, "Instruction with built in function", df, "ToUpper")
@@ -597,7 +597,7 @@ func BenchmarkQFrame_StringView(b *testing.B) {
 	cardinality := 9
 	input := csvEnumBytes(rowCount, cardinality)
 	r := bytes.NewReader(input)
-	f := qf.ReadCsv(r).Sort(qf.Order{Column: "COL1"})
+	f := qf.ReadCSV(r).Sort(qf.Order{Column: "COL1"})
 	v, err := f.StringView("COL1")
 	if err != nil {
 		b.Error(err)
@@ -864,14 +864,14 @@ BenchmarkQFrame_ToJsonColumns-2   	      10	 102566155 ns/op	37746546 B/op	     
 
 // Reuse string pointers when reading CSV
 Before:
-BenchmarkQFrame_ReadCsv-2   	      10	 119385221 ns/op	92728576 B/op	  400500 allocs/op
+BenchmarkQFrame_ReadCSV-2   	      10	 119385221 ns/op	92728576 B/op	  400500 allocs/op
 
 After:
-BenchmarkQFrame_ReadCsv-2   	      10	 108917111 ns/op	86024686 B/op	   20790 allocs/op
+BenchmarkQFrame_ReadCSV-2   	      10	 108917111 ns/op	86024686 B/op	   20790 allocs/op
 
 // Initial CSV read Enum, 2 x 100000 cells with cardinality 20
-BenchmarkQFrame_ReadCsvEnum/Type_enum-2         	      50	  28081769 ns/op	19135232 B/op	     213 allocs/op
-BenchmarkQFrame_ReadCsvEnum/Type_string-2       	      50	  28563580 ns/op	20526743 B/op	     238 allocs/op
+BenchmarkQFrame_ReadCSVEnum/Type_enum-2         	      50	  28081769 ns/op	19135232 B/op	     213 allocs/op
+BenchmarkQFrame_ReadCSVEnum/Type_string-2       	      50	  28563580 ns/op	20526743 B/op	     238 allocs/op
 
 Total saving 1,4 Mb in line with what was expected given that one byte is used per entry instead of eight
 
@@ -914,7 +914,7 @@ BenchmarkQFrame_FilterNot/qframe-2         	    2000	    713147 ns/op	  147465 B
 BenchmarkQFrame_FilterNot/filter-2         	    2000	    726766 ns/op	  147521 B/op	       3 allocs/op
 
 // Restructure string column to use a byte blob with offsets and lengths
-BenchmarkQFrame_ReadCsv-2       	      20	  85906027 ns/op	84728656 B/op	     500 allocs/op
+BenchmarkQFrame_ReadCSV-2       	      20	  85906027 ns/op	84728656 B/op	     500 allocs/op
 
 // Fix string clause to make better use of the new string blob structure:
 BenchmarkQFrame_FilterEnumVsString/Filter_Foo_bar_baz_5_<,_enum:_true-2         	    2000	    691081 ns/op	  335888 B/op	       3 allocs/op

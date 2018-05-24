@@ -35,7 +35,7 @@ a,1.5
 b,2.25
 c,3.0`
 
-f := qframe.ReadCsv(strings.NewReader(input))
+f := qframe.ReadCSV(strings.NewReader(input))
 fmt.Println(f)
 ```
 Output:

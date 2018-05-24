@@ -901,13 +901,13 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 //// IO ////
 ////////////
 
-// ReadCsv returns a QFrame with data, in CSV format, taken from reader.
+// ReadCSV returns a QFrame with data, in CSV format, taken from reader.
 // Column data types are auto detected if not explicitly specified.
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
-func ReadCsv(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
+func ReadCSV(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 	conf := csv.NewConfig(confFuncs)
-	data, columns, err := qfio.ReadCsv(reader, qfio.CsvConfig(conf))
+	data, columns, err := qfio.ReadCSV(reader, qfio.CSVConfig(conf))
 	if err != nil {
 		return QFrame{Err: err}
 	}

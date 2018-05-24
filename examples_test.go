@@ -82,13 +82,13 @@ func ExampleQFrame_sortWithEnum() {
 	// Dims = 2 x 3
 }
 
-func ExampleReadCsv() {
+func ExampleReadCSV() {
 	input := `COL1,COL2
 a,1.5
 b,2.25
 c,3.0`
 
-	f := qframe.ReadCsv(strings.NewReader(input))
+	f := qframe.ReadCSV(strings.NewReader(input))
 	fmt.Println(f)
 	// Output:
 	// COL1(s) COL2(f)
