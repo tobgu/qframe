@@ -147,7 +147,7 @@ Examples of the most common operations are available in the
   - No or very little memory overhead per data element.
   - Performance impact of operations should be straight forward to reason about.
 * API
-  - Should be reasonably small.
+  - Should be reasonably small and low ceremony.
   - Should allow custom, user provided, functions to be used for data processing
   - Should provide built in functions for most common operations
 

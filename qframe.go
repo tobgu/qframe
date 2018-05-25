@@ -90,7 +90,6 @@ type ConstBool struct {
 func createColumn(name string, data interface{}, config *newqf.Config) (column.Column, error) {
 	var localS column.Column
 
-	// TODO: Change this case to use strings directly for strings and enums
 	if sc, ok := data.([]string); ok {
 		// Convenience conversion to support string slices in addition
 		// to string pointer slices.

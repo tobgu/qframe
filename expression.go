@@ -328,17 +328,18 @@ func (e errorExpr) Err() error {
 	return e.err
 }
 
-// TODO-DOC
+// Val represents a constant or column.
 func Val(value interface{}) Expression {
 	return newExpr(value)
 }
 
-// TODO-DOC
+// Expr1 represents a single argument expression operating on column.
 func Expr1(name string, column types.ColumnName) Expression {
 	return newExpr([]interface{}{name, column})
 }
 
-// TODO-DOC
+// Expr2 represents a double argument expression operation.
+// Arguments may be either constants, columns or other expressions.
 func Expr2(name, val1, val2 interface{}) Expression {
 	e := newExpr([]interface{}{name, val1, val2})
 	return e

@@ -2,7 +2,6 @@ package column
 
 import (
 	"fmt"
-	// TODO: Make index a public package?
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"

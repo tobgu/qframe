@@ -47,7 +47,6 @@ type Context struct {
 // It can be used as is or enhanced with other/more functions. See the source code
 // for the current set of functions.
 func NewDefaultCtx() *Context {
-	// TODO: More functions
 	return &Context{
 		functionsByArgType{
 			types.FunctionTypeFloat: functionsByArgCount{
@@ -133,7 +132,6 @@ func (ctx *Context) SetFunc(name string, fn interface{}) error {
 		return errors.Propagate("SetFunc", err)
 	}
 
-	// TODO: Check function name validity (eg must not start with $, more?)
 	// Since there's such a flexibility in the function types that can be
 	// used and there is no static typing to support it this function
 	// acts as the gate keeper for adding new functions.
