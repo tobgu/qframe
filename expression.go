@@ -255,7 +255,12 @@ func (e colColExpr) Err() error {
 }
 
 // Nested expressions
-type exprExpr struct {
+type exprExpr1 struct {
+	operation string
+	expr      Expression
+}
+
+type exprExpr2 struct {
 	operation string
 	lhs       Expression
 	rhs       Expression
@@ -267,29 +272,54 @@ func newExprExpr(x interface{}) Expression {
 	// subexpression where the error occurred.
 
 	l, ok := x.([]interface{})
-	if ok && len(l) == 3 {
-		operation, oOk := opIdentifier(l[0])
-		if !oOk {
-			return errorExpr{err: errors.New("newExprExpr", "invalid operation: %v", l[0])}
-		}
+	if ok {
+		if len(l) == 2 || len(l) == 3 {
+			operation, oOk := opIdentifier(l[0])
+			if !oOk {
+				return errorExpr{err: errors.New("newExprExpr", "invalid operation: %v", l[0])}
+			}
 
-		lhs := newExpr(l[1])
-		if lhs.Err() != nil {
-			return errorExpr{err: errors.Propagate("newExprExpr", lhs.Err())}
-		}
+			lhs := newExpr(l[1])
+			if lhs.Err() != nil {
+				return errorExpr{err: errors.Propagate("newExprExpr", lhs.Err())}
+			}
 
-		rhs := newExpr(l[2])
-		if rhs.Err() != nil {
-			return errorExpr{err: errors.Propagate("newExprExpr", rhs.Err())}
-		}
+			if len(l) == 2 {
+				// Single argument functions such as "abs"
+				return exprExpr1{operation: operation, expr: lhs}
+			}
 
-		return exprExpr{operation: operation, lhs: lhs, rhs: rhs}
+			rhs := newExpr(l[2])
+			if rhs.Err() != nil {
+				return errorExpr{err: errors.Propagate("newExprExpr", rhs.Err())}
+			}
+
+			return exprExpr2{operation: operation, lhs: lhs, rhs: rhs}
+		}
+		return errorExpr{err: errors.New("newExprExpr", "Expected a list with two or three elements, was: %v", x)}
 	}
 
-	return errorExpr{err: errors.New("newExprExpr", "Expected a list with three elements, was: %v", x)}
+	return errorExpr{err: errors.New("newExprExpr", "Expected a list of elements, was: %v", x)}
 }
 
-func (e exprExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
+func (e exprExpr1) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
+	result, tempColName := e.expr.execute(qf, ctx)
+	ccE, _ := newUnaryExpr([]interface{}{e.operation, types.ColumnName(tempColName)})
+	result, colName := ccE.execute(result, ctx)
+
+	// Drop intermediate result if not present in original frame
+	if !qf.Contains(string(tempColName)) {
+		result = result.Drop(string(tempColName))
+	}
+
+	return result, colName
+}
+
+func (e exprExpr1) Err() error {
+	return nil
+}
+
+func (e exprExpr2) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
 	result, lColName := e.lhs.execute(qf, ctx)
 	result, rColName := e.rhs.execute(result, ctx)
 	ccE, _ := newColColExpr([]interface{}{e.operation, lColName, rColName})
@@ -308,7 +338,7 @@ func (e exprExpr) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnNam
 	return result, colName
 }
 
-func (e exprExpr) Err() error {
+func (e exprExpr2) Err() error {
 	return nil
 }
 
@@ -334,7 +364,7 @@ func Val(value interface{}) Expression {
 }
 
 // Expr1 represents a single argument expression operating on column.
-func Expr1(name string, column types.ColumnName) Expression {
+func Expr1(name string, column interface{}) Expression {
 	return newExpr([]interface{}{name, column})
 }
 

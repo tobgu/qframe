@@ -2026,6 +2026,11 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"A", "B"}},
 			expected: []string{"aA", "bB"},
 			enums:    map[string][]string{"COL1": nil}},
+		{
+			name:     "abs of float sum",
+			expr:     qframe.Expr1("abs", qframe.Expr2("+", col("COL1"), col("COL2"))),
+			input:    map[string]interface{}{"COL1": []float64{1, 2}, "COL2": []float64{-3, -2}},
+			expected: []float64{2, 0}},
 	}
 
 	for _, tc := range table {
