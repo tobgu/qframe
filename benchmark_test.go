@@ -641,7 +641,7 @@ func BenchmarkQFrame_EvalInt(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		result := df.Eval("RESULT", qf.Expr2("+", qf.Expr2("+", types.ColumnName("S1"), types.ColumnName("S2")), qf.Val(2)))
+		result := df.Eval("RESULT", qf.Expr("+", qf.Expr("+", types.ColumnName("S1"), types.ColumnName("S2")), qf.Val(2)))
 		if result.Err != nil {
 			b.Errorf("Err: %d, %s", result.Len(), result.Err)
 		}

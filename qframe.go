@@ -1058,7 +1058,7 @@ func (qf QFrame) ByteSize() int {
 //   aggregation for example.
 // - Add function to produce documentation for all built in functions? Default evaluation context, etc?
 // - Describe and provide example of error handling in README
-// - Merge Expr1 and Expr2 and make it accept arbitrary # of arguments (# > 0)
+// - Equals should support an option to ignore column orders in the QFrame.
 
 // TODO performance?
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better

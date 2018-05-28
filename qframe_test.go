@@ -1691,25 +1691,25 @@ func TestQFrame_OperationErrors(t *testing.T) {
 		{
 			name: "Missing function in eval",
 			fn: func(f qframe.QFrame) error {
-				expr := qframe.Expr1("foo", types.ColumnName("COL1"))
+				expr := qframe.Expr("foo", types.ColumnName("COL1"))
 				return f.Eval("COL3", expr).Err
 			},
 			err: "Could not find Int function"},
 		{
 			name: "Error in lhs of composed expression",
 			fn: func(f qframe.QFrame) error {
-				expr := qframe.Expr2("+",
-					qframe.Expr1("foo", types.ColumnName("COL1")),
-					qframe.Expr1("abs", types.ColumnName("COL2")))
+				expr := qframe.Expr("+",
+					qframe.Expr("foo", types.ColumnName("COL1")),
+					qframe.Expr("abs", types.ColumnName("COL2")))
 				return f.Eval("COL3", expr).Err
 			},
 			err: "Could not find Int function"},
 		{
 			name: "Error in rhs of composed expression",
 			fn: func(f qframe.QFrame) error {
-				expr := qframe.Expr2("+",
-					qframe.Expr1("abs", types.ColumnName("COL2")),
-					qframe.Expr1("foo", types.ColumnName("COL1")))
+				expr := qframe.Expr("+",
+					qframe.Expr("abs", types.ColumnName("COL2")),
+					qframe.Expr("foo", types.ColumnName("COL1")))
 				return f.Eval("COL3", expr).Err
 			},
 			err: "Could not find Int function"},
@@ -1984,53 +1984,65 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			expected: []int{1, 2}},
 		{
 			name:     "int col plus col",
-			expr:     qframe.Expr2("+", col("COL1"), col("COL2")),
+			expr:     qframe.Expr("+", col("COL1"), col("COL2")),
 			input:    map[string]interface{}{"COL1": []int{1, 2}, "COL2": []int{3, 4}},
 			expected: []int{4, 6}},
 		{
 			name:     "int col plus const minus const",
-			expr:     qframe.Expr2("-", qframe.Expr2("+", col("COL1"), 10), qframe.Val(1)),
+			expr:     qframe.Expr("-", qframe.Expr("+", col("COL1"), 10), qframe.Val(1)),
 			input:    map[string]interface{}{"COL1": []int{1, 2}},
 			expected: []int{10, 11}},
 		{
 			name:     "string plus itoa int",
-			expr:     qframe.Expr2("+", col("COL1"), qframe.Expr1("str", col("COL2"))),
+			expr:     qframe.Expr("+", col("COL1"), qframe.Expr("str", col("COL2"))),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []int{1, 2}},
 			expected: []string{"a1", "b2"}},
 		{
 			name:     "string plus string literal",
-			expr:     qframe.Expr2("+", col("COL1"), qframe.Val("A")),
+			expr:     qframe.Expr("+", col("COL1"), qframe.Val("A")),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}},
 			expected: []string{"aA", "bA"}},
 		{
 			name:         "float custom func",
-			expr:         qframe.Expr2("pythagoras", col("COL1"), col("COL2")),
+			expr:         qframe.Expr("pythagoras", col("COL1"), col("COL2")),
 			input:        map[string]interface{}{"COL1": []float64{1, 2}, "COL2": []float64{1, 3}},
 			expected:     []float64{math.Sqrt(2), math.Sqrt(4 + 9)},
 			customFn:     func(x, y float64) float64 { return math.Sqrt(x*x + y*y) },
 			customFnName: "pythagoras"},
 		{
 			name:     "bool col and col",
-			expr:     qframe.Expr2("&", col("COL1"), col("COL2")),
+			expr:     qframe.Expr("&", col("COL1"), col("COL2")),
 			input:    map[string]interface{}{"COL1": []bool{true, false}, "COL2": []bool{true, true}},
 			expected: []bool{true, false}},
 		{
 			name:     "enum col plus col",
-			expr:     qframe.Expr2("+", col("COL1"), col("COL2")),
+			expr:     qframe.Expr("+", col("COL1"), col("COL2")),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"A", "B"}},
 			expected: []string{"aA", "bB"},
 			enums:    map[string][]string{"COL1": nil, "COL2": nil}},
 		{
 			name:     "enum col plus string col, cast string to enum needed",
-			expr:     qframe.Expr2("+", qframe.Expr1("str", col("COL1")), col("COL2")),
+			expr:     qframe.Expr("+", qframe.Expr("str", col("COL1")), col("COL2")),
 			input:    map[string]interface{}{"COL1": []string{"a", "b"}, "COL2": []string{"A", "B"}},
 			expected: []string{"aA", "bB"},
 			enums:    map[string][]string{"COL1": nil}},
 		{
 			name:     "abs of float sum",
-			expr:     qframe.Expr1("abs", qframe.Expr2("+", col("COL1"), col("COL2"))),
+			expr:     qframe.Expr("abs", qframe.Expr("+", col("COL1"), col("COL2"))),
 			input:    map[string]interface{}{"COL1": []float64{1, 2}, "COL2": []float64{-3, -2}},
 			expected: []float64{2, 0}},
+		{
+			name:     "chained multi argument evaluation - three arguments",
+			expr:     qframe.Expr("/", col("COL1"), col("COL2"), col("COL3")),
+			input:    map[string]interface{}{"COL1": []float64{18}, "COL2": []float64{2}, "COL3": []float64{3}},
+			dstCol:   "COL4",
+			expected: []float64{3}},
+		{
+			name:     "chained multi argument evaluation - four arguments including constant",
+			expr:     qframe.Expr("/", col("COL1"), col("COL2"), col("COL3"), 3.0),
+			input:    map[string]interface{}{"COL1": []float64{18}, "COL2": []float64{2}, "COL3": []float64{3}},
+			dstCol:   "COL4",
+			expected: []float64{1}},
 	}
 
 	for _, tc := range table {
@@ -2050,6 +2062,8 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			tc.input[tc.dstCol] = tc.expected
 			expected := qframe.New(tc.input, newqf.Enums(tc.enums))
 
+			assertNotErr(t, tc.expr.Err())
+			fmt.Printf("%v", tc.expr)
 			out := in.Eval(tc.dstCol, tc.expr, conf...)
 
 			assertEquals(t, expected, out)

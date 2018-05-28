@@ -133,7 +133,7 @@ Dims = 1 x 3
 The same example using `Eval` instead:
 ```go
 f := qframe.New(map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []string{"a", "b", "c"}})
-f = f.Eval("COL3", qframe.Expr2("+", qframe.Expr1("str", types.ColumnName("COL1")), types.ColumnName("COL2")))
+f = f.Eval("COL3", qframe.Expr("+", qframe.Expr("str", types.ColumnName("COL1")), types.ColumnName("COL2")))
 fmt.Println(f.Select("COL3"))
 ```
 

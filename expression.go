@@ -363,14 +363,32 @@ func Val(value interface{}) Expression {
 	return newExpr(value)
 }
 
-// Expr1 represents a single argument expression operating on column.
-func Expr1(name string, column interface{}) Expression {
-	return newExpr([]interface{}{name, column})
-}
+// Expr represents an expression with one or more arguments.
+// The arguments may be values, columns or the result of other expressions.
+//
+// If more arguments than two are passed, the expression will be evaluated by
+// repeatedly applying the function to pairwise elements from the left.
+// Temporary columns will be created as necessary to hold intermediate results.
+//
+// Pseudo example:
+//     ["/", 18, 2, 3] is evaluated as ["/", ["/", 18, 2], 3] (= 3)
+func Expr(name string, args ...interface{}) Expression {
+	if len(args) == 0 {
+		// This is currently the case. It may change if introducing variables for example.
+		return errorExpr{err: errors.New("Expr", "Expressions require at least one argument")}
 
-// Expr2 represents a double argument expression operation.
-// Arguments may be either constants, columns or other expressions.
-func Expr2(name, val1, val2 interface{}) Expression {
-	e := newExpr([]interface{}{name, val1, val2})
-	return e
+	}
+
+	if len(args) == 1 {
+		return newExpr([]interface{}{name, args[0]})
+	}
+
+	if len(args) == 2 {
+		return newExpr([]interface{}{name, args[0], args[1]})
+	}
+
+	newArgs := make([]interface{}, len(args)-1)
+	newArgs[0] = newExpr([]interface{}{name, args[0], args[1]})
+	copy(newArgs[1:], args[2:])
+	return Expr(name, newArgs...)
 }
