@@ -48,7 +48,11 @@ type QFrame struct {
 	columns       []namedColumn
 	columnsByName map[string]namedColumn
 	index         index.Int
-	Err           error
+
+	// Err indicates that an error has occurred while running an operation.
+	// If Err is set it will prevent any further operations from being executed
+	// on the QFrame.
+	Err error
 }
 
 func (qf QFrame) withErr(err error) QFrame {
@@ -1057,7 +1061,6 @@ func (qf QFrame) ByteSize() int {
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
 // - Add function to produce documentation for all built in functions? Default evaluation context, etc?
-// - Describe and provide example of error handling in README
 // - Equals should support an option to ignore column orders in the QFrame.
 
 // TODO performance?

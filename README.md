@@ -141,6 +141,20 @@ fmt.Println(f.Select("COL3"))
 Examples of the most common operations are available in the
 [docs](https://godoc.org/github.com/tobgu/qframe).
 
+## Error handling
+All operations that may result in errors will set the `Err` variable
+on the returned QFrame to indicate that an error occurred.
+The presence of an error on the QFrame will prevent any future operations
+from being executed on the frame (eg. it follows a monad-like pattern).
+This allows for smooth chaining of multiple operations without having
+to explicitly check errors between each operation.
+
+## Configuration parameters
+API functions that require configuration parameters make use of
+[functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
+to allow more options to be easily added in the future in a backwards
+compatible way.
+
 ## Design goals
 * Performance
   - Speed should be on par with, or better than, Python Pandas for corresponding operations.
@@ -173,11 +187,6 @@ that is affected. Modelling this statically is hard/impossible in Go,
 hence the dynamic approach. If you plan to use QFrame with datasets
 with fixed layout and types it should be a small task to write tiny
 wrappers for the types you are using to regain static type safety.
-
-API functions that require configuration parameters make use of
-[functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
-to allow more options to be easily added in the future in a backwards
-compatible way.
 
 ## Limitations
 * The API can still not be considered stable.
