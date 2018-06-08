@@ -25,8 +25,11 @@ in any way. For a complete description of all operations including more
 examples see the [docs](https://godoc.org/github.com/tobgu/qframe).
 
 ### IO
-QFrames can currently be read from and written to CSV and record
-oriented JSON.
+QFrames can currently be read from and written to CSV, record
+oriented JSON, and any SQL database supported by the go `database/sql`
+driver.
+
+#### CSV Data
 
 Read CSV data:
 ```go
@@ -47,6 +50,58 @@ COL1(s) COL2(f)
       c       3
 
 Dims = 2 x 3
+```
+
+#### From SQLite
+
+Load data to and from an in-memory SQLite database. Note
+that this example requires you to have [go-sqlite3](https://github.com/mattn/go-sqlite3) installed
+prior to running.
+```
+package main
+
+import (
+	"database/sql"
+	"fmt"
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/tobgu/qframe"
+	qsql "github.com/tobgu/qframe/config/sql"
+)
+
+func main() {
+	db, _ := sql.Open("sqlite3", ":memory:")
+	db.Exec(`
+	CREATE TABLE test (
+		COL1 INT,
+		COL2 REAL,
+		COL3 TEXT
+	);
+	`)
+	qf := qframe.New(map[string]interface{}{
+		"COL1": []int{1, 2, 3},
+		"COL2": []float64{1.1, 2.2, 3.3},
+		"COL3": []string{"one", "two", "three"},
+	})
+	tx, _ := db.Begin()
+	qf.ToSQL(tx, "test")
+	newQf := qframe.ReadSQL(tx, qsql.Query("SELECT * FROM TEST"))
+	fmt.Println(newQf)
+	fmt.Println(newQf.Equals(qf))
+}
+```
+
+Output:
+
+```
+COL1(i) COL2(f) COL3(s)
+------- ------- -------
+      1     1.1     one
+      2     2.2     two
+      3     3.3   three
+
+Dims = 3 x 3
+true
 ```
 
 ### Filtering

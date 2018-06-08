@@ -1,6 +1,7 @@
 package qframe
 
 import (
+	"database/sql"
 	stdcsv "encoding/csv"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
+	qsql "github.com/tobgu/qframe/config/sql"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
@@ -22,6 +24,7 @@ import (
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
+	qfsqlio "github.com/tobgu/qframe/internal/io/sql"
 	"github.com/tobgu/qframe/internal/math/integer"
 	"github.com/tobgu/qframe/internal/scolumn"
 	qfsort "github.com/tobgu/qframe/internal/sort"
@@ -930,6 +933,20 @@ func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	return New(data, fns...)
 }
 
+// ReadSQL returns a QFrame by reading the results of a SQL query.
+func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
+	conf := qsql.NewConfig(confFuncs)
+	rows, err := tx.Query(conf.Query)
+	if err != nil {
+		return QFrame{Err: err}
+	}
+	data, err := qfsqlio.ReadSQL(rows)
+	if err != nil {
+		return QFrame{Err: err}
+	}
+	return New(data)
+}
+
 // ToCSV writes the data in the QFrame, in CSV format, to writer.
 //
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
@@ -1020,6 +1037,37 @@ func (qf QFrame) ToJSON(writer io.Writer) error {
 
 	_, err = writer.Write([]byte{']'})
 	return err
+}
+
+// ToSQL writes a QFrame into a SQL database.
+func (qf QFrame) ToSQL(tx *sql.Tx, table string) error {
+	if qf.Err != nil {
+		return errors.Propagate("ToSQL", qf.Err)
+	}
+	columns := qf.ColumnNames()
+	builders := make([]qfsqlio.ArgBuilder, len(columns))
+	for i, name := range columns {
+		builder, err := qfsqlio.NewArgBuilder(qf.columnsByName[name].Column)
+		if err != nil {
+			return err
+		}
+		builders[i] = builder
+	}
+	stmt, err := tx.Prepare(qfsqlio.Insert(table, columns))
+	if err != nil {
+		return err
+	}
+	for i, _ := range qf.index {
+		args := []interface{}{}
+		for j := 0; j < len(columns); j++ {
+			args = append(args, builders[j](qf.index, i))
+		}
+		_, err = stmt.Exec(args...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ByteSize returns a best effort estimate of the current size occupied by the QFrame.
