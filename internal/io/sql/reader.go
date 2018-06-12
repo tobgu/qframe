@@ -2,7 +2,10 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
+	"reflect"
 
+	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -61,7 +64,7 @@ func (c *Column) Scan(t interface{}) error {
 	case []uint8:
 		c.data.Strings = append(c.data.Strings, string(v))
 	}
-	return nil
+	return errors.New("ReadSQL Scan", fmt.Sprintf("unsupported column type %s", reflect.TypeOf(t).Name()))
 }
 
 // ReadSQL returns a named map of types.DataSlice for consumption
@@ -70,13 +73,13 @@ func ReadSQL(rows *sql.Rows) (map[string]types.DataSlice, error) {
 	var columns []*Column
 	for rows.Next() {
 		if err := rows.Err(); err != nil {
-			return nil, err
+			return nil, errors.New("ReadSQL Rows", err.Error())
 		}
 		// Allocate columns for the returning query
 		if columns == nil {
 			cols, err := rows.Columns()
 			if err != nil {
-				return nil, err
+				return nil, errors.New("ReadSQL Columns", err.Error())
 			}
 			for _, name := range cols {
 				columns = append(columns, &Column{Name: name})
@@ -85,7 +88,7 @@ func ReadSQL(rows *sql.Rows) (map[string]types.DataSlice, error) {
 		// Scan the result into our columns
 		err := rows.Scan(args(columns)...)
 		if err != nil {
-			return nil, err
+			return nil, errors.New("ReadSQL Scan", err.Error())
 		}
 	}
 	result := map[string]types.DataSlice{}

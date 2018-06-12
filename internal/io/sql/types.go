@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/bcolumn"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/ecolumn"
@@ -45,5 +46,5 @@ func NewArgBuilder(col column.Column) (ArgBuilder, error) {
 			return c.View(ix).ItemAt(i)
 		}, nil
 	}
-	return nil, fmt.Errorf("bad column type: %s", reflect.TypeOf(col).Name())
+	return nil, errors.New("NewArgBuilder", fmt.Sprintf("bad column type: %s", reflect.TypeOf(col).Name()))
 }

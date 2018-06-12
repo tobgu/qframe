@@ -1049,13 +1049,13 @@ func (qf QFrame) ToSQL(tx *sql.Tx, table string) error {
 	for i, name := range columns {
 		builder, err := qfsqlio.NewArgBuilder(qf.columnsByName[name].Column)
 		if err != nil {
-			return err
+			return errors.New("ToSQL", err.Error())
 		}
 		builders[i] = builder
 	}
 	stmt, err := tx.Prepare(qfsqlio.Insert(table, columns))
 	if err != nil {
-		return err
+		return errors.New("ToSQL", err.Error())
 	}
 	for i, _ := range qf.index {
 		args := []interface{}{}
@@ -1064,7 +1064,7 @@ func (qf QFrame) ToSQL(tx *sql.Tx, table string) error {
 		}
 		_, err = stmt.Exec(args...)
 		if err != nil {
-			return err
+			return errors.New("ToSQL", err.Error())
 		}
 	}
 	return nil
