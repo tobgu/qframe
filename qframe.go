@@ -940,11 +940,11 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 	if err != nil {
 		return QFrame{Err: err}
 	}
-	data, err := qfsqlio.ReadSQL(rows)
+	data, columns, err := qfsqlio.ReadSQL(rows)
 	if err != nil {
 		return QFrame{Err: err}
 	}
-	return New(data)
+	return New(data, newqf.ColumnOrder(columns...))
 }
 
 // ToCSV writes the data in the QFrame, in CSV format, to writer.
@@ -1044,23 +1044,22 @@ func (qf QFrame) ToSQL(tx *sql.Tx, table string) error {
 	if qf.Err != nil {
 		return errors.Propagate("ToSQL", qf.Err)
 	}
-	columns := qf.ColumnNames()
-	builders := make([]qfsqlio.ArgBuilder, len(columns))
-	for i, name := range columns {
-		builder, err := qfsqlio.NewArgBuilder(qf.columnsByName[name].Column)
+	builders := make([]qfsqlio.ArgBuilder, len(qf.columns))
+	var err error
+	for i, column := range qf.columns {
+		builders[i], err = qfsqlio.NewArgBuilder(column.Column)
 		if err != nil {
 			return errors.New("ToSQL", err.Error())
 		}
-		builders[i] = builder
 	}
-	stmt, err := tx.Prepare(qfsqlio.Insert(table, columns))
+	stmt, err := tx.Prepare(qfsqlio.Insert(table, qf.ColumnNames()))
 	if err != nil {
 		return errors.New("ToSQL", err.Error())
 	}
-	for i, _ := range qf.index {
-		args := []interface{}{}
-		for j := 0; j < len(columns); j++ {
-			args = append(args, builders[j](qf.index, i))
+	for i := range qf.index {
+		args := make([]interface{}, len(qf.columns))
+		for j, b := range builders {
+			args[j] = b(qf.index, i)
 		}
 		_, err = stmt.Exec(args...)
 		if err != nil {

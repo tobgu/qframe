@@ -8,9 +8,9 @@ import (
 // for each colName.
 func Insert(table string, colNames []string) string {
 	buf := bytes.NewBuffer(nil)
-	buf.WriteString("INSERT INTO ")
+	buf.WriteString("INSERT INTO \"")
 	buf.WriteString(table)
-	buf.WriteString("(")
+	buf.WriteString("\" (")
 	for i, name := range colNames {
 		buf.WriteString(name)
 		if i+1 < len(colNames) {
@@ -18,7 +18,7 @@ func Insert(table string, colNames []string) string {
 		}
 	}
 	buf.WriteString(") VALUES (")
-	for i := 0; i < len(colNames); i++ {
+	for i := range colNames {
 		buf.WriteString("?")
 		if i+1 < len(colNames) {
 			buf.WriteString(",")
