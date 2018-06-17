@@ -1040,7 +1040,7 @@ func (qf QFrame) ToJSON(writer io.Writer) error {
 }
 
 // ToSQL writes a QFrame into a SQL database.
-func (qf QFrame) ToSQL(tx *sql.Tx, table string) error {
+func (qf QFrame) ToSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) error {
 	if qf.Err != nil {
 		return errors.Propagate("ToSQL", qf.Err)
 	}
@@ -1052,16 +1052,12 @@ func (qf QFrame) ToSQL(tx *sql.Tx, table string) error {
 			return errors.New("ToSQL", err.Error())
 		}
 	}
-	stmt, err := tx.Prepare(qfsqlio.Insert(table, qf.ColumnNames()))
-	if err != nil {
-		return errors.New("ToSQL", err.Error())
-	}
 	for i := range qf.index {
 		args := make([]interface{}, len(qf.columns))
 		for j, b := range builders {
 			args[j] = b(qf.index, i)
 		}
-		_, err = stmt.Exec(args...)
+		_, err = tx.Exec(qfsqlio.Insert(qf.ColumnNames(), qfsqlio.SQLConfig(qsql.NewConfig(confFuncs))), args...)
 		if err != nil {
 			return errors.New("ToSQL", err.Error())
 		}

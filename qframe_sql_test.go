@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/tobgu/qframe"
+	qsql "github.com/tobgu/qframe/config/sql"
 )
 
 // MockDriver implements a fake SQL driver for testing.
@@ -84,7 +85,12 @@ type MockStmt struct {
 
 func (s MockStmt) Close() error { return nil }
 
-func (s MockStmt) NumInput() int { return len(s.values) }
+func (s MockStmt) NumInput() int {
+	if len(s.values) > 0 {
+		return len(s.values[0])
+	}
+	return 0
+}
 
 func (s *MockStmt) Exec(args []driver.Value) (driver.Result, error) {
 	for i, arg := range args {
@@ -118,13 +124,21 @@ func (c MockConn) Begin() (driver.Tx, error) {
 	return &MockTx{}, nil
 }
 
+var (
+	_ driver.Conn = (*MockConn)(nil)
+	_ driver.Rows = (*MockRows)(nil)
+	_ driver.Tx   = (*MockTx)(nil)
+	_ driver.Stmt = (*MockStmt)(nil)
+	_ driver.Conn = (*MockConn)(nil)
+)
+
 func TestQFrame_ToSQL(t *testing.T) {
 	dvr := MockDriver{t: t}
-	dvr.query = "INSERT INTO \"test\" (COL1,COL2,COL3) VALUES (?,?,?);"
+	dvr.query = "INSERT INTO \"test\" (COL1,COL2,COL3,COL4) VALUES (?,?,?,?);"
 	dvr.args.values = [][]driver.Value{
-		[]driver.Value{int64(1), 1.1, "one"},
-		[]driver.Value{int64(2), 2.2, "two"},
-		[]driver.Value{int64(3), 3.3, "three"},
+		[]driver.Value{int64(1), 1.1, "one", true},
+		[]driver.Value{int64(2), 2.2, "two", true},
+		[]driver.Value{int64(3), 3.3, "three", false},
 	}
 	sql.Register("TestToSQL", dvr)
 	db, _ := sql.Open("TestToSQL", "")
@@ -133,8 +147,9 @@ func TestQFrame_ToSQL(t *testing.T) {
 		"COL1": []int{1, 2, 3},
 		"COL2": []float64{1.1, 2.2, 3.3},
 		"COL3": []string{"one", "two", "three"},
+		"COL4": []bool{true, true, false},
 	})
-	assertNotErr(t, qf.ToSQL(tx, "test"))
+	assertNotErr(t, qf.ToSQL(tx, qsql.Table("test")))
 }
 
 func TestQFrame_ReadSQL(t *testing.T) {
