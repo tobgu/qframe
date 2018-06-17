@@ -2,6 +2,7 @@ package qframe_test
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/tobgu/qframe"
@@ -98,6 +99,26 @@ c,3.0`
 	//       c       3
 	//
 	// Dims = 2 x 3
+}
+
+func ExampleNew() {
+	a, c := "a", "c"
+	f := qframe.New(map[string]interface{}{
+		"COL1": []int{1, 2, 3},
+		"COL2": []float64{1.5, 2.5, math.NaN()},
+		"COL3": []string{"a", "b", "c"},
+		"COL4": []*string{&a, nil, &c},
+		"COL5": []bool{false, false, true}},
+		newqf.ColumnOrder("COL5", "COL4", "COL3", "COL2", "COL1"))
+	fmt.Println(f)
+	// Output:
+	// COL5(b) COL4(s) COL3(s) COL2(f) COL1(i)
+	// ------- ------- ------- ------- -------
+	//   false       a       a     1.5       1
+	//   false    null       b     2.5       2
+	//    true       c       c    null       3
+	//
+	// Dims = 5 x 3
 }
 
 func ExampleQFrame_applyStrConcat() {
