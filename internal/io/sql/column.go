@@ -21,7 +21,7 @@ type Column struct {
 		Ints    []int
 		Floats  []float64
 		Bools   []bool
-		Strings []string
+		Strings []*string
 	}
 }
 
@@ -41,7 +41,7 @@ func (c *Column) Null() error {
 	case reflect.Float64:
 		c.data.Floats = append(c.data.Floats, math.NaN())
 	case reflect.String:
-		c.data.Strings = append(c.data.Strings, "")
+		c.data.Strings = append(c.data.Strings, nil)
 	default:
 		return errors.New("Column Null", fmt.Sprintf("non-nullable type: %s", c.kind))
 	}
@@ -81,12 +81,12 @@ func (c *Column) String(s string) {
 		// add any NULL strings previously scanned
 		if c.nulls > 0 {
 			for i := 0; i < c.nulls; i++ {
-				c.data.Strings = append(c.data.Strings, "")
+				c.data.Strings = append(c.data.Strings, nil)
 			}
 			c.nulls = 0
 		}
 	}
-	c.data.Strings = append(c.data.Strings, s)
+	c.data.Strings = append(c.data.Strings, &s)
 }
 
 // Bool adds a new bool to the underlying data slice
