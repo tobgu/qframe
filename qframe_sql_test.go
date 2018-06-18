@@ -134,7 +134,7 @@ var (
 
 func TestQFrame_ToSQL(t *testing.T) {
 	dvr := MockDriver{t: t}
-	dvr.query = "INSERT INTO \"test\" (COL1,COL2,COL3,COL4) VALUES (?,?,?,?);"
+	dvr.query = "INSERT INTO test (COL1,COL2,COL3,COL4) VALUES (?,?,?,?);"
 	dvr.args.values = [][]driver.Value{
 		[]driver.Value{int64(1), 1.1, "one", true},
 		[]driver.Value{int64(2), 2.2, "two", true},
