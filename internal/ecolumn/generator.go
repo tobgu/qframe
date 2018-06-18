@@ -1,13 +1,15 @@
-package generator
+package ecolumn
 
 import (
 	"bytes"
 
 	"github.com/tobgu/qframe/filter"
+	"github.com/tobgu/qframe/internal/maps"
 	"github.com/tobgu/qframe/internal/template"
 )
 
-//go:generate qfgenerate -source=efilter -dst-file=../filters_gen.go
+//go:generate qfgenerate -source=efilter -dst-file=filters_gen.go
+//go:generate qfgenerate -source=edoc -dst-file=doc_gen.go
 
 const basicColConstComparison = `
 func {{.name}}(index index.Int, column []enumVal, comparatee enumVal, bIndex index.Bool) {
@@ -61,4 +63,12 @@ func GenerateFilters() (*bytes.Buffer, error) {
 		colColComparison("gte2", filter.Gte),
 		colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")
 	})
+}
+
+func GenerateDoc() (*bytes.Buffer, error) {
+	return template.GenerateDocs(
+		"ecolumn",
+		"Enum",
+		maps.StringKeys(filterFuncs0, filterFuncs1, filterFuncs2, multiFilterFuncs, multiInputFilterFuncs),
+		maps.StringKeys())
 }

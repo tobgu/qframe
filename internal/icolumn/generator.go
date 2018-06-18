@@ -1,68 +1,54 @@
-package generator
+package icolumn
 
 import (
 	"bytes"
 
 	"github.com/tobgu/qframe/filter"
+	"github.com/tobgu/qframe/internal/maps"
 	"github.com/tobgu/qframe/internal/template"
 )
 
-//go:generate qfgenerate -source=sfilter -dst-file=../filters_gen.go
-
-const basicColConstComparison = `
-func {{.name}}(index index.Int, c Column, comparatee string, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := c.stringAt(index[i])
-			bIndex[i] = !isNull && s {{.operator}} comparatee
-		}
-	}
-
-	return nil
-}
-`
-
-const basicColColComparison = `
-func {{.name}}(index index.Int, col, col2 Column, bIndex index.Bool) error {
-	for i, x := range bIndex {
-		if !x {
-			s, isNull := col.stringAt(index[i])
-			s2, isNull2 := col2.stringAt(index[i])
-			bIndex[i] = !isNull && !isNull2 && s {{.operator}} s2
-		}
-	}
-	return nil
-}
-`
+//go:generate qfgenerate -source=ifilter -dst-file=filters_gen.go
+//go:generate qfgenerate -source=idoc -dst-file=doc_gen.go
 
 func spec(name, operator, templateStr string) template.Spec {
 	return template.Spec{
 		Name:     name,
 		Template: templateStr,
-		Values:   map[string]interface{}{"name": name, "operator": operator}}
+		Values:   map[string]interface{}{"name": name, "dataType": "int", "operator": operator}}
 }
 
 func colConstComparison(name, operator string) template.Spec {
-	return spec(name, operator, basicColConstComparison)
+	return spec(name, operator, template.BasicColConstComparison)
 }
 
 func colColComparison(name, operator string) template.Spec {
-	return spec(name, operator, basicColColComparison)
+	return spec(name, operator, template.BasicColColComparison)
 }
 
 func GenerateFilters() (*bytes.Buffer, error) {
 	// If adding more filters here make sure to also add a reference to them
 	// in the corresponding filter map so that they can be looked up.
-	return template.GenerateFilters("scolumn", []template.Spec{
+	return template.GenerateFilters("icolumn", []template.Spec{
 		colConstComparison("lt", filter.Lt),
 		colConstComparison("lte", filter.Lte),
 		colConstComparison("gt", filter.Gt),
 		colConstComparison("gte", filter.Gte),
 		colConstComparison("eq", "=="), // Go eq ("==") differs from qframe eq ("=")
+		colConstComparison("neq", filter.Neq),
 		colColComparison("lt2", filter.Lt),
 		colColComparison("lte2", filter.Lte),
 		colColComparison("gt2", filter.Gt),
 		colColComparison("gte2", filter.Gte),
 		colColComparison("eq2", "=="), // Go eq ("==") differs from qframe eq ("=")
+		colColComparison("neq2", filter.Neq),
 	})
+}
+
+func GenerateDoc() (*bytes.Buffer, error) {
+	return template.GenerateDocs(
+		"icolumn",
+		"Integer",
+		maps.StringKeys(filterFuncs, filterFuncs2, multiInputFilterFuncs),
+		maps.StringKeys(aggregations))
 }

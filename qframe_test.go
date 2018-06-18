@@ -2063,10 +2063,27 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			expected := qframe.New(tc.input, newqf.Enums(tc.enums))
 
 			assertNotErr(t, tc.expr.Err())
-			fmt.Printf("%v", tc.expr)
 			out := in.Eval(tc.dstCol, tc.expr, conf...)
 
 			assertEquals(t, expected, out)
 		})
 	}
+}
+
+func assertContains(t *testing.T, actual, expected string) {
+	t.Helper()
+	if !strings.Contains(actual, expected) {
+		t.Errorf("Could not find: %s, in: %s", expected, actual)
+	}
+}
+
+func TestDoc(t *testing.T) {
+	doc := qframe.Doc()
+	assertContains(t, doc, "Boolean")
+	assertContains(t, doc, "Enum")
+	assertContains(t, doc, "Float")
+	assertContains(t, doc, "Integer")
+	assertContains(t, doc, "String")
+	assertContains(t, doc, "filters")
+	assertContains(t, doc, "aggregations")
 }

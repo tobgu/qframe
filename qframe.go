@@ -1045,6 +1045,12 @@ func (qf QFrame) ByteSize() int {
 	return totalSize
 }
 
+// Doc returns a generated documentation string that states which built in filters,
+// aggregations and transformations that exist for each column type.
+func Doc() string {
+	return bcolumn.Doc() + ecolumn.Doc() + fcolumn.Doc() + icolumn.Doc() + scolumn.Doc()
+}
+
 // TODO?
 // - It would also be nice if null could be interpreted as NaN for floats when reading JSON. Should not be impossible
 //   using the generated easyjson code as starting point for columns based format and by refining type
@@ -1060,7 +1066,7 @@ func (qf QFrame) ByteSize() int {
 //   performance allowed by avoiding use of the index?
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
-// - Add function to produce documentation for all built in functions? Default evaluation context, etc?
+// - Add default evaluation context to Doc()
 // - Equals should support an option to ignore column orders in the QFrame.
 
 // TODO performance?

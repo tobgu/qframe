@@ -8,12 +8,12 @@ import (
 	"os"
 
 	"github.com/tobgu/qframe/errors"
-	bgenerator "github.com/tobgu/qframe/internal/bcolumn/generator"
-	egenerator "github.com/tobgu/qframe/internal/ecolumn/generator"
-	fgenerator "github.com/tobgu/qframe/internal/fcolumn/generator"
-	igenerator "github.com/tobgu/qframe/internal/icolumn/generator"
+	bgenerator "github.com/tobgu/qframe/internal/bcolumn"
+	egenerator "github.com/tobgu/qframe/internal/ecolumn"
+	fgenerator "github.com/tobgu/qframe/internal/fcolumn"
+	igenerator "github.com/tobgu/qframe/internal/icolumn"
 	qfgenerator "github.com/tobgu/qframe/internal/qframe/generator"
-	sgenerator "github.com/tobgu/qframe/internal/scolumn/generator"
+	sgenerator "github.com/tobgu/qframe/internal/scolumn"
 )
 
 /*
@@ -30,10 +30,15 @@ func main() {
 	}
 
 	generators := map[string]func() (*bytes.Buffer, error){
+		"idoc":    igenerator.GenerateDoc,
 		"ifilter": igenerator.GenerateFilters,
+		"fdoc":    fgenerator.GenerateDoc,
 		"ffilter": fgenerator.GenerateFilters,
+		"bdoc":    bgenerator.GenerateDoc,
 		"bfilter": bgenerator.GenerateFilters,
+		"edoc":    egenerator.GenerateDoc,
 		"efilter": egenerator.GenerateFilters,
+		"sdoc":    sgenerator.GenerateDoc,
 		"sfilter": sgenerator.GenerateFilters,
 		"qframe":  qfgenerator.GenerateQFrame,
 	}
