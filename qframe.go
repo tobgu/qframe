@@ -936,7 +936,16 @@ func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 // ReadSQL returns a QFrame by reading the results of a SQL query.
 func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 	conf := qsql.NewConfig(confFuncs)
-	rows, err := tx.Query(conf.Query)
+	// The MySQL can only use prepared
+	// statements to return "native" types, otherwise
+	// everything is returned as text.
+	// see https://github.com/go-sql-driver/mysql/issues/407
+	stmt, err := tx.Prepare(conf.Query)
+	if err != nil {
+		return QFrame{Err: err}
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
 	if err != nil {
 		return QFrame{Err: err}
 	}
