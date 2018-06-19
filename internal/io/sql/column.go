@@ -23,6 +23,7 @@ type Column struct {
 		Bools   []bool
 		Strings []*string
 	}
+	coerce func(t interface{}) error
 }
 
 // Null appends a new Null value to
@@ -100,6 +101,9 @@ func (c *Column) Bool(b bool) {
 
 // Scan implements the sql.Scanner interface
 func (c *Column) Scan(t interface{}) error {
+	if c.coerce != nil {
+		return c.coerce(t)
+	}
 	switch v := t.(type) {
 	case bool:
 		c.Bool(v)
@@ -117,8 +121,8 @@ func (c *Column) Scan(t interface{}) error {
 			return err
 		}
 	default:
-		return errors.New("Column Scan",
-			fmt.Sprintf("unsupported scan type: %s", reflect.ValueOf(t).Kind()))
+		return errors.New(
+			"Column Scan", "unsupported scan type: %s", reflect.ValueOf(t).Kind())
 	}
 	return nil
 }

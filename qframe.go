@@ -940,7 +940,7 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 	if err != nil {
 		return QFrame{Err: err}
 	}
-	data, columns, err := qfsqlio.ReadSQL(rows)
+	data, columns, err := qfsqlio.ReadSQL(rows, qfsqlio.SQLConfig(conf))
 	if err != nil {
 		return QFrame{Err: err}
 	}

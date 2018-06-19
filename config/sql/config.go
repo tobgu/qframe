@@ -4,6 +4,30 @@ import (
 	qsqlio "github.com/tobgu/qframe/internal/io/sql"
 )
 
+type coerceType int
+
+const (
+	_ coerceType = iota
+	// Int64ToBool casts an int64 type into a bool,
+	// useful for handling SQLite INT -> BOOL.
+	Int64ToBool
+)
+
+// CoercePair casts the scanned value in Column
+// to another type.
+type CoercePair struct {
+	Column string
+	Type   coerceType
+}
+
+func coerceFunc(cType coerceType) qsqlio.CoerceFunc {
+	switch cType {
+	case Int64ToBool:
+		return qsqlio.Int64ToBool
+	}
+	return nil
+}
+
 type Config qsqlio.SQLConfig
 
 type ConfigFunc func(*Config)
@@ -77,5 +101,16 @@ func Incrementing() ConfigFunc {
 func EscapeChar(r rune) ConfigFunc {
 	return func(c *Config) {
 		c.EscapeChar = r
+	}
+}
+
+// Coerce accepts a map of column names that
+// will be cast explicitly into the desired type.
+func Coerce(pairs ...CoercePair) ConfigFunc {
+	return func(c *Config) {
+		c.CoerceMap = map[string]qsqlio.CoerceFunc{}
+		for _, pair := range pairs {
+			c.CoerceMap[pair.Column] = coerceFunc(pair.Type)
+		}
 	}
 }

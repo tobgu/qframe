@@ -9,7 +9,7 @@ import (
 
 // ReadSQL returns a named map of types.DataSlice for consumption
 // by the qframe.New constructor.
-func ReadSQL(rows *sql.Rows) (map[string]types.DataSlice, []string, error) {
+func ReadSQL(rows *sql.Rows, conf SQLConfig) (map[string]types.DataSlice, []string, error) {
 	var (
 		columns  []interface{}
 		colNames []string
@@ -21,8 +21,29 @@ func ReadSQL(rows *sql.Rows) (map[string]types.DataSlice, []string, error) {
 			if err != nil {
 				return nil, colNames, errors.New("ReadSQL Columns", err.Error())
 			}
-			for i := 0; i < len(names); i++ {
-				columns = append(columns, &Column{})
+			for _, name := range names {
+				col := &Column{}
+				if conf.CoerceMap != nil {
+					fn, ok := conf.CoerceMap[name]
+					if ok {
+						col.coerce = fn(col)
+					}
+				}
+				columns = append(columns, col)
+			}
+			// ensure any column in the coercion map
+			// exists in the resulting columns or return
+			// an error explicitly.
+			if conf.CoerceMap != nil {
+			checkMap:
+				for name, _ := range conf.CoerceMap {
+					for _, colName := range colNames {
+						if name == colName {
+							continue checkMap
+						}
+						return nil, colNames, errors.New("ReadSQL Columns", "column %s does not exist to coerce", name)
+					}
+				}
 			}
 			colNames = names
 		}

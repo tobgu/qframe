@@ -154,11 +154,11 @@ func TestQFrame_ToSQL(t *testing.T) {
 
 func TestQFrame_ReadSQL(t *testing.T) {
 	dvr := MockDriver{t: t}
-	dvr.results.columns = []string{"COL1", "COL2", "COL3"}
+	dvr.results.columns = []string{"COL1", "COL2", "COL3", "COL4"}
 	dvr.results.values = [][]driver.Value{
-		[]driver.Value{int64(1), 1.1, "one"},
-		[]driver.Value{int64(2), 2.2, "two"},
-		[]driver.Value{int64(3), 3.3, "three"},
+		[]driver.Value{int64(1), 1.1, "one", true},
+		[]driver.Value{int64(2), 2.2, "two", true},
+		[]driver.Value{int64(3), 3.3, "three", false},
 	}
 	sql.Register("TestReadSQL", dvr)
 	db, _ := sql.Open("TestReadSQL", "")
@@ -169,6 +169,30 @@ func TestQFrame_ReadSQL(t *testing.T) {
 		"COL1": []int{1, 2, 3},
 		"COL2": []float64{1.1, 2.2, 3.3},
 		"COL3": []string{"one", "two", "three"},
+		"COL4": []bool{true, true, false},
+	})
+	assertEquals(t, expected, qf)
+}
+
+func TestQFrame_ReadSQLCoercion(t *testing.T) {
+	dvr := MockDriver{t: t}
+	dvr.results.columns = []string{"COL1", "COL2"}
+	dvr.results.values = [][]driver.Value{
+		[]driver.Value{int64(1), int64(0)},
+		[]driver.Value{int64(1), int64(0)},
+		[]driver.Value{int64(0), int64(1)},
+	}
+	sql.Register("TestReadSQLCoercion", dvr)
+	db, _ := sql.Open("TestReadSQLCoercion", "")
+	tx, _ := db.Begin()
+	qf := qframe.ReadSQL(tx, qsql.Coerce(
+		qsql.CoercePair{Column: "COL1", Type: qsql.Int64ToBool},
+		qsql.CoercePair{Column: "COL2", Type: qsql.Int64ToBool},
+	))
+	assertNotErr(t, qf.Err)
+	expected := qframe.New(map[string]interface{}{
+		"COL1": []bool{true, true, false},
+		"COL2": []bool{false, false, true},
 	})
 	assertEquals(t, expected, qf)
 }

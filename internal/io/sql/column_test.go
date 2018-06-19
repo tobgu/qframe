@@ -46,6 +46,21 @@ func TestColumn(t *testing.T) {
 
 }
 
+func TestColumnCoercion(t *testing.T) {
+	col := &Column{}
+	col.coerce = Int64ToBool(col)
+	col.Scan(int64(1))
+	col.Scan(int64(0))
+	col.Scan(int64(1))
+	col.Scan(int64(0))
+	data := col.Data().([]bool)
+	assertEqual(t, 4, len(data))
+	assertEqual(t, true, data[0])
+	assertEqual(t, false, data[1])
+	assertEqual(t, true, data[2])
+	assertEqual(t, false, data[3])
+}
+
 func BenchmarkColumn(b *testing.B) {
 	col := &Column{}
 	for n := 0; n < b.N; n++ {

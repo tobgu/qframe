@@ -31,6 +31,9 @@ type SQLConfig struct {
 	// both accept double quotes "" while MariaDB/MySQL
 	// only accept backticks.
 	EscapeChar rune
+	// CoerceMap is a map of columns to perform explicit
+	// type coercion on.
+	CoerceMap map[string]CoerceFunc
 }
 
 type ArgBuilder func(ix index.Int, i int) interface{}
