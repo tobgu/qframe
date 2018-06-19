@@ -76,10 +76,10 @@ func SQLite() ConfigFunc {
 	}
 }
 
-// MariaDB configures the query builder to
-// generate SQL that is compatible MariaDB
-// and MySQL. See github.com/go-sql-driver/mysql
-func MariaDB() ConfigFunc {
+// MySQL configures the query builder to
+// generate SQL that is compatible with MySQL/MariaDB
+// See github.com/go-sql-driver/mysql
+func MySQL() ConfigFunc {
 	return func(c *Config) {
 		EscapeChar('`')(c)
 	}

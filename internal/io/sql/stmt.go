@@ -20,13 +20,13 @@ func escape(s string, char rune, buf *bytes.Buffer) {
 // of SQL that need to be produced for each driver.
 // This has been tested with the following:
 // PostgreSQL - github.com/lib/pq
-// MariaDB - github.com/go-sql-driver/mysql
+// MySQL/MariaDB - github.com/go-sql-driver/mysql
 // SQLite - github.com/mattn/go-sqlite3
 //
 // "Parameter markers" are used to specify placeholders
 // for values scanned by the implementing driver:
 // PostgreSQL accepts "incrementing" markers e.g. $1..$2
-// While MariaDB/MySQL and SQLite accept ?..?.
+// While MySQL/MariaDB and SQLite accept ?..?.
 func Insert(colNames []string, conf SQLConfig) string {
 	buf := bytes.NewBuffer(nil)
 	buf.WriteString("INSERT INTO ")
