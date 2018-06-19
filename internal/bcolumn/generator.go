@@ -40,7 +40,6 @@ func GenerateFilters() (*bytes.Buffer, error) {
 func GenerateDoc() (*bytes.Buffer, error) {
 	return template.GenerateDocs(
 		"bcolumn",
-		"Boolean",
 		maps.StringKeys(filterFuncs, filterFuncs2),
 		maps.StringKeys(aggregations))
 }

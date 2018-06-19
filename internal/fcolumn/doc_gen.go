@@ -5,10 +5,7 @@ import ()
 // Code generated from template/... DO NOT EDIT
 
 func Doc() string {
-	return "Float\n" +
-		"=======\n" +
-		"\n  Built in filters\n" +
-		"  ----------------\n" +
+	return "\n Built in filters\n" +
 		"  !=\n" +
 		"  <\n" +
 		"  <=\n" +
@@ -18,8 +15,7 @@ func Doc() string {
 		"  isnotnull\n" +
 		"  isnull\n" +
 
-		"\n  Built in aggregations\n" +
-		"  ---------------------\n" +
+		"\n Built in aggregations\n" +
 		"  sum\n" +
 		"\n"
 }

@@ -68,7 +68,6 @@ func GenerateFilters() (*bytes.Buffer, error) {
 func GenerateDoc() (*bytes.Buffer, error) {
 	return template.GenerateDocs(
 		"ecolumn",
-		"Enum",
 		maps.StringKeys(filterFuncs0, filterFuncs1, filterFuncs2, multiFilterFuncs, multiInputFilterFuncs),
 		maps.StringKeys())
 }

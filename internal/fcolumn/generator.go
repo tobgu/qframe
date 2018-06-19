@@ -48,7 +48,6 @@ func GenerateFilters() (*bytes.Buffer, error) {
 func GenerateDoc() (*bytes.Buffer, error) {
 	return template.GenerateDocs(
 		"fcolumn",
-		"Float",
 		maps.StringKeys(filterFuncs0, filterFuncs1, filterFuncs2),
 		maps.StringKeys(aggregations))
 }

@@ -2078,11 +2078,15 @@ func assertContains(t *testing.T, actual, expected string) {
 }
 
 func TestDoc(t *testing.T) {
+	// This is just a verification that something is printed rather than a proper test.
 	doc := qframe.Doc()
-	assertContains(t, doc, "Boolean")
+	assertContains(t, doc, "context")
+	assertContains(t, doc, "Single arg")
+	assertContains(t, doc, "Double arg")
+	assertContains(t, doc, "Bool")
 	assertContains(t, doc, "Enum")
 	assertContains(t, doc, "Float")
-	assertContains(t, doc, "Integer")
+	assertContains(t, doc, "Int")
 	assertContains(t, doc, "String")
 	assertContains(t, doc, "filters")
 	assertContains(t, doc, "aggregations")

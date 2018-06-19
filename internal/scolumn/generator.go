@@ -72,7 +72,6 @@ func GenerateFilters() (*bytes.Buffer, error) {
 func GenerateDoc() (*bytes.Buffer, error) {
 	return template.GenerateDocs(
 		"scolumn",
-		"String",
 		maps.StringKeys(filterFuncs0, filterFuncs1, filterFuncs2, multiInputFilterFuncs),
 		maps.StringKeys())
 }

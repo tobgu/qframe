@@ -1,12 +1,14 @@
 package eval
 
 import (
+	"fmt"
 	"math"
 	"reflect"
+	"strings"
 
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/function"
-	"github.com/tobgu/qframe/internal/strings"
+	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -128,7 +130,7 @@ func (ctx *Context) setFunc(typ types.FunctionType, ac ArgCount, name string, fn
 
 // SetFunc inserts a function into the context under the given name.
 func (ctx *Context) SetFunc(name string, fn interface{}) error {
-	if err := strings.CheckName(name); err != nil {
+	if err := qfstrings.CheckName(name); err != nil {
 		return errors.Propagate("SetFunc", err)
 	}
 
@@ -168,4 +170,22 @@ func (ctx *Context) SetFunc(name string, fn interface{}) error {
 
 	ctx.setFunc(typ, ac, name, fn)
 	return nil
+}
+
+func (ctx *Context) String() string {
+	result := ""
+	for fnType, funcs := range ctx.functions {
+		result += fmt.Sprintf("\n%s\n%s", fnType, strings.Repeat("-", len(fnType.String())))
+		result += "\n Single arg\n"
+		for funcName := range funcs.singleArgs {
+			result += "  " + funcName + "\n"
+		}
+
+		result += "\n Double arg\n"
+		for funcName := range funcs.doubleArgs {
+			result += "  " + funcName + "\n"
+		}
+	}
+
+	return result
 }

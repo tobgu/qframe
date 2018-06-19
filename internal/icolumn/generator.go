@@ -48,7 +48,6 @@ func GenerateFilters() (*bytes.Buffer, error) {
 func GenerateDoc() (*bytes.Buffer, error) {
 	return template.GenerateDocs(
 		"icolumn",
-		"Integer",
 		maps.StringKeys(filterFuncs, filterFuncs2, multiInputFilterFuncs),
 		maps.StringKeys(aggregations))
 }

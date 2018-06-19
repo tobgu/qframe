@@ -1048,7 +1048,18 @@ func (qf QFrame) ByteSize() int {
 // Doc returns a generated documentation string that states which built in filters,
 // aggregations and transformations that exist for each column type.
 func Doc() string {
-	return bcolumn.Doc() + ecolumn.Doc() + fcolumn.Doc() + icolumn.Doc() + scolumn.Doc()
+	result := fmt.Sprintf("Default context\n===============\n%s\n", eval.NewDefaultCtx())
+	result += "\nColumns\n=======\n\n"
+	for typeName, docString := range map[types.DataType]string{
+		types.Bool:   bcolumn.Doc(),
+		types.Enum:   ecolumn.Doc(),
+		types.Float:  fcolumn.Doc(),
+		types.Int:    icolumn.Doc(),
+		types.String: scolumn.Doc()} {
+		result += fmt.Sprintf("%s\n%s\n%s\n", strings.Title(string(typeName)), strings.Repeat("-", len(typeName)), docString)
+	}
+
+	return result
 }
 
 // TODO?
@@ -1066,7 +1077,6 @@ func Doc() string {
 //   performance allowed by avoiding use of the index?
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
 //   aggregation for example.
-// - Add default evaluation context to Doc()
 // - Equals should support an option to ignore column orders in the QFrame.
 
 // TODO performance?
