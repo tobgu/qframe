@@ -34,6 +34,9 @@ type SQLConfig struct {
 	// CoerceMap is a map of columns to perform explicit
 	// type coercion on.
 	CoerceMap map[string]CoerceFunc
+	// Precision specifies how much precision float values
+	// should have. 0 has no effect.
+	Precision int
 }
 
 type ArgBuilder func(ix index.Int, i int) interface{}

@@ -1,9 +1,10 @@
 package sql
 
 import (
-	"fmt"
 	"math"
 	"reflect"
+
+	"github.com/tobgu/qframe/internal/math/float"
 
 	"github.com/tobgu/qframe/errors"
 )
@@ -23,7 +24,8 @@ type Column struct {
 		Bools   []bool
 		Strings []*string
 	}
-	coerce func(t interface{}) error
+	coerce    func(t interface{}) error
+	precision int
 }
 
 // Null appends a new Null value to
@@ -44,7 +46,7 @@ func (c *Column) Null() error {
 	case reflect.String:
 		c.data.Strings = append(c.data.Strings, nil)
 	default:
-		return errors.New("Column Null", fmt.Sprintf("non-nullable type: %s", c.kind))
+		return errors.New("Column Null", "non-nullable type: %s", c.kind)
 	}
 	return nil
 }
@@ -70,6 +72,9 @@ func (c *Column) Float(f float64) {
 			}
 			c.nulls = 0
 		}
+	}
+	if c.precision > 0 {
+		f = float.Fixed(f, c.precision)
 	}
 	c.data.Floats = append(c.data.Floats, f)
 }

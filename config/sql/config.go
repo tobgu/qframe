@@ -114,3 +114,11 @@ func Coerce(pairs ...CoercePair) ConfigFunc {
 		}
 	}
 }
+
+// Precision sets the precision float64 types will
+// be rounded to when read from SQL.
+func Precision(i int) ConfigFunc {
+	return func(c *Config) {
+		c.Precision = i
+	}
+}

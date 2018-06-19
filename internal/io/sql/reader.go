@@ -22,7 +22,7 @@ func ReadSQL(rows *sql.Rows, conf SQLConfig) (map[string]types.DataSlice, []stri
 				return nil, colNames, errors.New("ReadSQL Columns", err.Error())
 			}
 			for _, name := range names {
-				col := &Column{}
+				col := &Column{precision: conf.Precision}
 				if conf.CoerceMap != nil {
 					fn, ok := conf.CoerceMap[name]
 					if ok {
