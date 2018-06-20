@@ -4,7 +4,10 @@ generate:
 	go generate github.com/tobgu/qframe/...
 
 test: generate
-	go test github.com/tobgu/qframe/ && go test github.com/tobgu/qframe/internal/fastcsv && go test github.com/tobgu/qframe/internal/hash
+	go test github.com/tobgu/qframe/ && \
+		go test github.com/tobgu/qframe/internal/fastcsv && \
+		go test github.com/tobgu/qframe/internal/hash && \
+		go test github.com/tobgu/qframe/internal/io/sql
 
 fmt: generate
 	go fmt ./...

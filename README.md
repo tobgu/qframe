@@ -25,8 +25,11 @@ in any way. For a complete description of all operations including more
 examples see the [docs](https://godoc.org/github.com/tobgu/qframe).
 
 ### IO
-QFrames can currently be read from and written to CSV and record
-oriented JSON.
+QFrames can currently be read from and written to CSV, record
+oriented JSON, and any SQL database supported by the go `database/sql`
+driver.
+
+#### CSV Data
 
 Read CSV data:
 ```go
@@ -47,6 +50,85 @@ COL1(s) COL2(f)
       c       3
 
 Dims = 2 x 3
+```
+
+#### SQL Data
+
+QFrame supports reading and writing data from the standard library `database/sql`
+drivers. It has been tested with [SQLite](github.com/mattn/go-sqlite3), [Postgres](github.com/lib/pq), and [MariaDB](github.com/go-sql-driver/mysql).
+
+##### SQLite Example
+
+Load data to and from an in-memory SQLite database. Note
+that this example requires you to have [go-sqlite3](https://github.com/mattn/go-sqlite3) installed
+prior to running.
+
+```
+package main
+
+import (
+	"database/sql"
+	"fmt"
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/tobgu/qframe"
+	qsql "github.com/tobgu/qframe/config/sql"
+)
+
+func main() {
+	// Create a new in-memory SQLite database.
+	db, _ := sql.Open("sqlite3", ":memory:")
+	// Add a new table.
+	db.Exec(`
+	CREATE TABLE test (
+		COL1 INT,
+		COL2 REAL,
+		COL3 TEXT,
+		COL4 BOOL
+	);`)
+	// Create a new QFrame to populate our table with.
+	qf := qframe.New(map[string]interface{}{
+		"COL1": []int{1, 2, 3},
+		"COL2": []float64{1.1, 2.2, 3.3},
+		"COL3": []string{"one", "two", "three"},
+		"COL4": []bool{true, true, true},
+	})
+	fmt.Println(qf)
+	// Start a new SQL Transaction.
+	tx, _ := db.Begin()
+	// Write the QFrame to the database.
+	qf.ToSQL(tx,
+		// Write only to the test table
+		qsql.Table("test"),
+		// Explicitly set SQLite compatibility.
+		qsql.SQLite(),
+	)
+	// Create a new QFrame from SQL.
+	newQf := qframe.ReadSQL(tx,
+		// A query must return at least one column. In this 
+		// case it will return all of the columns we created above.
+		qsql.Query("SELECT * FROM test"),
+		// SQLite stores boolean values as integers, so we
+		// can coerce them back to bools with the CoercePair option.
+		qsql.Coerce(qsql.CoercePair{Column: "COL4", Type: qsql.Int64ToBool}),
+		qsql.SQLite(),
+	)
+	fmt.Println(newQf)
+	fmt.Println(newQf.Equals(qf))
+}
+```
+
+Output:
+
+```
+COL1(i) COL2(f) COL3(s) COL4(b)
+------- ------- ------- -------
+      1     1.1     one    true
+      2     2.2     two    true
+      3     3.3   three    true
+
+Dims = 4 x 3
+true 
 ```
 
 ### Filtering

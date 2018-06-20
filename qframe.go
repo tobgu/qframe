@@ -1,6 +1,7 @@
 package qframe
 
 import (
+	"database/sql"
 	stdcsv "encoding/csv"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"github.com/tobgu/qframe/config/eval"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
+	qsql "github.com/tobgu/qframe/config/sql"
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
@@ -22,6 +24,7 @@ import (
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	qfio "github.com/tobgu/qframe/internal/io"
+	qfsqlio "github.com/tobgu/qframe/internal/io/sql"
 	"github.com/tobgu/qframe/internal/math/integer"
 	"github.com/tobgu/qframe/internal/scolumn"
 	qfsort "github.com/tobgu/qframe/internal/sort"
@@ -930,6 +933,29 @@ func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
 	return New(data, fns...)
 }
 
+// ReadSQL returns a QFrame by reading the results of a SQL query.
+func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
+	conf := qsql.NewConfig(confFuncs)
+	// The MySQL can only use prepared
+	// statements to return "native" types, otherwise
+	// everything is returned as text.
+	// see https://github.com/go-sql-driver/mysql/issues/407
+	stmt, err := tx.Prepare(conf.Query)
+	if err != nil {
+		return QFrame{Err: err}
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		return QFrame{Err: err}
+	}
+	data, columns, err := qfsqlio.ReadSQL(rows, qfsqlio.SQLConfig(conf))
+	if err != nil {
+		return QFrame{Err: err}
+	}
+	return New(data, newqf.ColumnOrder(columns...))
+}
+
 // ToCSV writes the data in the QFrame, in CSV format, to writer.
 //
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
@@ -1020,6 +1046,32 @@ func (qf QFrame) ToJSON(writer io.Writer) error {
 
 	_, err = writer.Write([]byte{']'})
 	return err
+}
+
+// ToSQL writes a QFrame into a SQL database.
+func (qf QFrame) ToSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) error {
+	if qf.Err != nil {
+		return errors.Propagate("ToSQL", qf.Err)
+	}
+	builders := make([]qfsqlio.ArgBuilder, len(qf.columns))
+	var err error
+	for i, column := range qf.columns {
+		builders[i], err = qfsqlio.NewArgBuilder(column.Column)
+		if err != nil {
+			return errors.New("ToSQL", err.Error())
+		}
+	}
+	for i := range qf.index {
+		args := make([]interface{}, len(qf.columns))
+		for j, b := range builders {
+			args[j] = b(qf.index, i)
+		}
+		_, err = tx.Exec(qfsqlio.Insert(qf.ColumnNames(), qfsqlio.SQLConfig(qsql.NewConfig(confFuncs))), args...)
+		if err != nil {
+			return errors.New("ToSQL", err.Error())
+		}
+	}
+	return nil
 }
 
 // ByteSize returns a best effort estimate of the current size occupied by the QFrame.
