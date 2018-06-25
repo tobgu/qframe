@@ -115,7 +115,7 @@ func newConstExpr(x interface{}) (constExpr, bool) {
 	// TODO: Support const functions somehow? Or perhaps add some kind of
 	//       "variable" (accessed by $...?) to the context?
 	value := x
-	isConst := false
+	var isConst bool
 	switch x.(type) {
 	case int, float64, bool, string:
 		isConst = true

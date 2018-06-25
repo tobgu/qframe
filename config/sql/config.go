@@ -28,10 +28,13 @@ func coerceFunc(cType coerceType) qsqlio.CoerceFunc {
 	return nil
 }
 
+// Config holds configuration parameters for reading/writing to/from a SQL DB.
 type Config qsqlio.SQLConfig
 
+// ConfigFunc manipulates a Config object.
 type ConfigFunc func(*Config)
 
+// NewConfig creates a new config object.
 func NewConfig(ff []ConfigFunc) Config {
 	conf := Config{}
 	for _, f := range ff {

@@ -3,18 +3,38 @@ package filter
 import "fmt"
 
 const (
-	Gt        = ">"
-	Gte       = ">="
-	Eq        = "="
-	Neq       = "!="
-	Lt        = "<"
-	Lte       = "<="
-	In        = "in"
-	Nin       = "not in"
-	IsNull    = "isnull"
+	// Gt = Greater than.
+	Gt = ">"
+
+	// Gte = Greater than equals.
+	Gte = ">="
+
+	// Eq = Equals.
+	Eq = "="
+
+	// Neq = Not equals.
+	Neq = "!="
+
+	// Lt = Less than.
+	Lt = "<"
+
+	// Lte = Less than equals.
+	Lte = "<="
+
+	// In = In given set.
+	In = "in"
+
+	// Nin = Not in given set.
+	Nin = "not in"
+
+	// IsNull = Is null.
+	IsNull = "isnull"
+
+	// IsNotNull = IsNotNull.
 	IsNotNull = "isnotnull"
 )
 
+// Inverse is a mapping from one comparator to its inverse.
 var Inverse = map[string]string{
 	Gt:        Lte,
 	Gte:       Lt,

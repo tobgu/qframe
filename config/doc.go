@@ -12,5 +12,4 @@ This structure hopes to help (a bit) in fixing that by having a separate package
 type. That way the function listing of each package conveys all options available for that particular
 config option.
 */
-
 package config

@@ -1,5 +1,6 @@
 package types
 
+// DataType represents any of the data types valid in a QFrame.
 type DataType string
 
 const (
