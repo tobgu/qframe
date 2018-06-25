@@ -2,7 +2,7 @@ package errors
 
 import "fmt"
 
-// Error holds data identifying an error that occured
+// Error holds data identifying an error that occurred
 // while executing a qframe operation.
 type Error struct {
 	source    error
