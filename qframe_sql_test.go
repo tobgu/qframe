@@ -136,9 +136,9 @@ func TestQFrame_ToSQL(t *testing.T) {
 	dvr := MockDriver{t: t}
 	dvr.query = "INSERT INTO test (COL1,COL2,COL3,COL4) VALUES (?,?,?,?);"
 	dvr.args.values = [][]driver.Value{
-		[]driver.Value{int64(1), 1.1, "one", true},
-		[]driver.Value{int64(2), 2.2, "two", true},
-		[]driver.Value{int64(3), 3.3, "three", false},
+		{int64(1), 1.1, "one", true},
+		{int64(2), 2.2, "two", true},
+		{int64(3), 3.3, "three", false},
 	}
 	sql.Register("TestToSQL", dvr)
 	db, _ := sql.Open("TestToSQL", "")
@@ -156,9 +156,9 @@ func TestQFrame_ReadSQL(t *testing.T) {
 	dvr := MockDriver{t: t}
 	dvr.results.columns = []string{"COL1", "COL2", "COL3", "COL4"}
 	dvr.results.values = [][]driver.Value{
-		[]driver.Value{int64(1), 1.1, "one", true},
-		[]driver.Value{int64(2), 2.2, "two", true},
-		[]driver.Value{int64(3), 3.3, "three", false},
+		{int64(1), 1.1, "one", true},
+		{int64(2), 2.2, "two", true},
+		{int64(3), 3.3, "three", false},
 	}
 	sql.Register("TestReadSQL", dvr)
 	db, _ := sql.Open("TestReadSQL", "")
@@ -178,9 +178,9 @@ func TestQFrame_ReadSQLCoercion(t *testing.T) {
 	dvr := MockDriver{t: t}
 	dvr.results.columns = []string{"COL1", "COL2"}
 	dvr.results.values = [][]driver.Value{
-		[]driver.Value{int64(1), int64(0)},
-		[]driver.Value{int64(1), int64(0)},
-		[]driver.Value{int64(0), int64(1)},
+		{int64(1), int64(0)},
+		{int64(1), int64(0)},
+		{int64(0), int64(1)},
 	}
 	sql.Register("TestReadSQLCoercion", dvr)
 	db, _ := sql.Open("TestReadSQLCoercion", "")

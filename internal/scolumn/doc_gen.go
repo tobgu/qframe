@@ -1,7 +1,5 @@
 package scolumn
 
-import ()
-
 // Code generated from template/... DO NOT EDIT
 
 func Doc() string {

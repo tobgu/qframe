@@ -36,7 +36,7 @@ func ReadSQL(rows *sql.Rows, conf SQLConfig) (map[string]types.DataSlice, []stri
 			// an error explicitly.
 			if conf.CoerceMap != nil {
 			checkMap:
-				for name, _ := range conf.CoerceMap {
+				for name := range conf.CoerceMap {
 					for _, colName := range colNames {
 						if name == colName {
 							continue checkMap

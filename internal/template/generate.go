@@ -9,10 +9,12 @@ import (
 const HeaderTemplate = `
 package {{.pkgName}}
 
+{{if .imports}}
 import (
 {{ range $_, $imp := .imports }}
 "{{$imp}}"{{ end }}
 )
+{{end}}
 
 // Code generated from template/... DO NOT EDIT
 `
