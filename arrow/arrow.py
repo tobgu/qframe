@@ -16,6 +16,11 @@ def write_data(data_dict, file_name):
     writer.write(batch)
     writer.close()
 
+def read_data(file_name):
+    reader = pa.RecordBatchStreamReader(file_name)
+    table = reader.read_all()
+    print(str(table.to_pydict()))
+
 
 write_data({'f0': [True, False, True]}, 'bool.bin')
 write_data({'f0': [1.5, 2.5, None]}, 'float.bin')
@@ -25,6 +30,8 @@ write_data({'f0': [1, 2, 3],
             'f1': [1.5, 2.5, None],
             'f2': [True, False, True],
             'f3': ['foo', 'bar', None]}, 'mixed.bin')
+
+read_data('mixed.bin')
 
 # TODO: dictionary/enum
 # TODO: corner cases, empty arrays for example
