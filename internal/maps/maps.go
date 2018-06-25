@@ -1,9 +1,10 @@
 package maps
 
 import (
-	"github.com/tobgu/qframe/internal/strings"
 	"reflect"
 	"sort"
+
+	"github.com/tobgu/qframe/internal/strings"
 )
 
 // StringKeys returns a sorted list of all unique keys present in mm.
