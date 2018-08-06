@@ -1,9 +1,17 @@
-package gonum
+package qfplot
 
 import (
 	"strconv"
 
 	"github.com/tobgu/qframe"
+	"gonum.org/v1/plot/plotter"
+)
+
+var (
+	_ plotter.XYer       = (*XYer)(nil)
+	_ plotter.XYZer      = (*XYZer)(nil)
+	_ plotter.Labeller   = (*Labeller)(nil)
+	_ plotter.XYLabeller = (*XYLabeller)(nil)
 )
 
 // LabelFunc returns a string representation of
