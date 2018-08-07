@@ -220,3 +220,21 @@ func ExampleQFrame_view() {
 	// Output:
 	// [1 2 3]
 }
+
+func ExampleQFrame_iter() {
+	qf := qframe.New(map[string]interface{}{
+		"COL1": []string{"a", "b", "c"},
+		"COL2": []int{0, 1, 2},
+		"COL3": []string{"d", "e", "f"},
+		"COL4": []int{3, 4, 5},
+	})
+	named := qf.ColumnTypeMap()
+	for _, col := range qf.ColumnNames() {
+		if named[col] == types.Int {
+			view := qf.MustIntView(col)
+			for i := 0; i < view.Len(); i++ {
+				fmt.Println(view.ItemAt(i))
+			}
+		}
+	}
+}
