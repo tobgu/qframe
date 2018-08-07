@@ -7,11 +7,11 @@ package icolumn
 import (
 	"fmt"
 
-	"reflect"
-
 	"github.com/tobgu/qframe/internal/column"
 
 	"github.com/tobgu/qframe/internal/index"
+
+	"github.com/tobgu/qframe/types"
 )
 
 // Code generated from template/column.go DO NOT EDIT
@@ -169,9 +169,17 @@ func (c Column) View(ix index.Int) View {
 	return View{data: c.data, index: ix}
 }
 
-func (c Column) DataType() string {
-	var x int
-	return fmt.Sprintf("%v", reflect.TypeOf(x))
+func (c Column) DataType() types.DataType {
+	var dt int
+	switch interface{}(dt).(type) {
+	case int:
+		return types.Int
+	case float64:
+		return types.Float
+	case bool:
+		return types.Bool
+	}
+	return types.None
 }
 
 type Comparable struct {

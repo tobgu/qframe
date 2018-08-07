@@ -579,7 +579,7 @@ func (qf QFrame) String() string {
 	colWidths := make([]int, len(qf.columns))
 	minColWidth := 5
 	for i, s := range qf.columns {
-		colHeader := s.name + "(" + s.DataType()[:1] + ")"
+		colHeader := s.name + "(" + string(s.DataType())[:1] + ")"
 		colWidths[i] = integer.Max(len(colHeader), minColWidth)
 		row[i] = fixLengthString(colHeader, " ", colWidths[i])
 	}

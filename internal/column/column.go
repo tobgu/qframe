@@ -24,7 +24,8 @@ type Column interface {
 	Apply2(fn interface{}, s2 Column, ix index.Int) (Column, error)
 
 	FunctionType() types.FunctionType
-	DataType() string
+	//DataType() string
+	DataType() types.DataType
 }
 
 type CompareResult byte

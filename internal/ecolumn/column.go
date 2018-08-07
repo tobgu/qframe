@@ -550,8 +550,8 @@ func (c Column) FunctionType() types.FunctionType {
 	return types.FunctionTypeString
 }
 
-func (c Column) DataType() string {
-	return "enum"
+func (c Column) DataType() types.DataType {
+	return types.Enum
 }
 
 type Comparable struct {
