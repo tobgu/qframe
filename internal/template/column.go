@@ -5,7 +5,7 @@ package template
 import (
 	"fmt"
 
-	"github.com/cheekybits/genny/generic"
+	"github.com/mauricelam/genny/generic"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 
