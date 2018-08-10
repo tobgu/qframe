@@ -398,7 +398,7 @@ func (qf QFrame) ColumnNames() []string {
 }
 
 // ColumnTypes returns all underlying column types.DataType
-
+//
 // Time complexity O(n) where n = number of columns.
 func (qf QFrame) ColumnTypes() []types.DataType {
 	types := make([]types.DataType, len(qf.columns))
@@ -410,7 +410,7 @@ func (qf QFrame) ColumnTypes() []types.DataType {
 
 // ColumnTypeMap returns a map of each underlying column with
 // the column name as a key and it's types.DataType as a value.
-
+//
 // Time complexity O(n) where n = number of columns.
 func (qf QFrame) ColumnTypeMap() map[string]types.DataType {
 	types := map[string]types.DataType{}
