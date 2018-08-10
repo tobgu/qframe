@@ -17,6 +17,10 @@ var aggregations = map[string]func([]dataType) dataType{}
 
 var filterFuncs = map[string]func(index.Int, []dataType, interface{}, index.Bool) error{}
 
+func (c Column) DataType() types.DataType {
+	return types.None
+}
+
 // Functions not generated but needed to fulfill interface
 func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
 	return nil

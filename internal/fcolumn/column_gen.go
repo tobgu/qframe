@@ -10,8 +10,6 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 
 	"github.com/tobgu/qframe/internal/index"
-
-	"github.com/tobgu/qframe/types"
 )
 
 // Code generated from template/column.go DO NOT EDIT
@@ -167,19 +165,6 @@ func (c Column) subsetWithBuf(index index.Int, buf *[]float64) Column {
 
 func (c Column) View(ix index.Int) View {
 	return View{data: c.data, index: ix}
-}
-
-func (c Column) DataType() types.DataType {
-	var dt float64
-	switch interface{}(dt).(type) {
-	case int:
-		return types.Int
-	case float64:
-		return types.Float
-	case bool:
-		return types.Bool
-	}
-	return types.None
 }
 
 type Comparable struct {

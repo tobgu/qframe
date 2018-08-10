@@ -8,8 +8,6 @@ import (
 	"github.com/mauricelam/genny/generic"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
-
-	"github.com/tobgu/qframe/types"
 )
 
 type dataType generic.Number
@@ -169,19 +167,6 @@ func (c Column) subsetWithBuf(index index.Int, buf *[]dataType) Column {
 
 func (c Column) View(ix index.Int) View {
 	return View{data: c.data, index: ix}
-}
-
-func (c Column) DataType() types.DataType {
-	var dt dataType
-	switch interface{}(dt).(type) {
-	case int:
-		return types.Int
-	case float64:
-		return types.Float
-	case bool:
-		return types.Bool
-	}
-	return types.None
 }
 
 type Comparable struct {

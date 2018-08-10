@@ -31,6 +31,10 @@ func (c Comparable) HashBytes(i uint32, buf *hash.Murm32) {
 	buf.WriteByte(0)
 }
 
+func (c Column) DataType() types.DataType {
+	return types.Bool
+}
+
 func (c Column) StringAt(i uint32, _ string) string {
 	return strconv.FormatBool(c.data[i])
 }
