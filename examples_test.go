@@ -237,4 +237,12 @@ func ExampleQFrame_iter() {
 			}
 		}
 	}
+
+	// Output:
+	// 0
+	// 1
+	// 2
+	// 3
+	// 4
+	// 5
 }
