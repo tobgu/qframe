@@ -430,8 +430,8 @@ func (c Column) FunctionType() types.FunctionType {
 	return types.FunctionTypeString
 }
 
-func (c Column) DataType() string {
-	return "string"
+func (c Column) DataType() types.DataType {
+	return types.String
 }
 
 type Comparable struct {

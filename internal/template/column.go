@@ -4,9 +4,8 @@ package template
 
 import (
 	"fmt"
-	"reflect"
 
-	"github.com/cheekybits/genny/generic"
+	"github.com/mauricelam/genny/generic"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 )
@@ -168,11 +167,6 @@ func (c Column) subsetWithBuf(index index.Int, buf *[]dataType) Column {
 
 func (c Column) View(ix index.Int) View {
 	return View{data: c.data, index: ix}
-}
-
-func (c Column) DataType() string {
-	var x dataType
-	return fmt.Sprintf("%v", reflect.TypeOf(x))
 }
 
 type Comparable struct {

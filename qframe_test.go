@@ -2070,6 +2070,29 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 	}
 }
 
+func TestQFrame_Typing(t *testing.T) {
+	qf := qframe.New(map[string]interface{}{
+		"ints":    []int{1, 2},
+		"bools":   []bool{true, false},
+		"floats":  []float64{1, 0},
+		"strings": []string{"a", "b"},
+		"enums":   []string{"a", "b"},
+	},
+		newqf.Enums(map[string][]string{"enums": []string{"a", "b"}}),
+		newqf.ColumnOrder("ints", "bools", "floats", "strings", "enums"),
+	)
+	assertTrue(t, qf.ColumnTypeMap()["ints"] == types.Int)
+	assertTrue(t, qf.ColumnTypes()[0] == types.Int)
+	assertTrue(t, qf.ColumnTypeMap()["bools"] == types.Bool)
+	assertTrue(t, qf.ColumnTypes()[1] == types.Bool)
+	assertTrue(t, qf.ColumnTypeMap()["floats"] == types.Float)
+	assertTrue(t, qf.ColumnTypes()[2] == types.Float)
+	assertTrue(t, qf.ColumnTypeMap()["strings"] == types.String)
+	assertTrue(t, qf.ColumnTypes()[3] == types.String)
+	assertTrue(t, qf.ColumnTypeMap()["enums"] == types.Enum)
+	assertTrue(t, qf.ColumnTypes()[4] == types.Enum)
+}
+
 func assertContains(t *testing.T, actual, expected string) {
 	t.Helper()
 	if !strings.Contains(actual, expected) {

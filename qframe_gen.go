@@ -38,6 +38,20 @@ func (qf QFrame) IntView(colName string) (IntView, error) {
 	return IntView{View: col.View(qf.index)}, nil
 }
 
+// MustIntView returns a view into an int column identified by name.
+//
+// colName - Name of the column.
+//
+// Panics if the column is missing or of wrong type.
+// Time complexity 0(1).
+func (qf QFrame) MustIntView(colName string) IntView {
+	view, err := qf.IntView(colName)
+	if err != nil {
+		panic(errors.Propagate("MustIntView", err))
+	}
+	return view
+}
+
 // FloatView provides a "view" into an float column and can be used for access to individual elements.
 type FloatView struct {
 	fcolumn.View
@@ -63,6 +77,20 @@ func (qf QFrame) FloatView(colName string) (FloatView, error) {
 	}
 
 	return FloatView{View: col.View(qf.index)}, nil
+}
+
+// MustFloatView returns a view into an float column identified by name.
+//
+// colName - Name of the column.
+//
+// Panics if the column is missing or of wrong type.
+// Time complexity 0(1).
+func (qf QFrame) MustFloatView(colName string) FloatView {
+	view, err := qf.FloatView(colName)
+	if err != nil {
+		panic(errors.Propagate("MustFloatView", err))
+	}
+	return view
 }
 
 // BoolView provides a "view" into an bool column and can be used for access to individual elements.
@@ -92,6 +120,20 @@ func (qf QFrame) BoolView(colName string) (BoolView, error) {
 	return BoolView{View: col.View(qf.index)}, nil
 }
 
+// MustBoolView returns a view into an bool column identified by name.
+//
+// colName - Name of the column.
+//
+// Panics if the column is missing or of wrong type.
+// Time complexity 0(1).
+func (qf QFrame) MustBoolView(colName string) BoolView {
+	view, err := qf.BoolView(colName)
+	if err != nil {
+		panic(errors.Propagate("MustBoolView", err))
+	}
+	return view
+}
+
 // StringView provides a "view" into an string column and can be used for access to individual elements.
 type StringView struct {
 	scolumn.View
@@ -119,6 +161,20 @@ func (qf QFrame) StringView(colName string) (StringView, error) {
 	return StringView{View: col.View(qf.index)}, nil
 }
 
+// MustStringView returns a view into an string column identified by name.
+//
+// colName - Name of the column.
+//
+// Panics if the column is missing or of wrong type.
+// Time complexity 0(1).
+func (qf QFrame) MustStringView(colName string) StringView {
+	view, err := qf.StringView(colName)
+	if err != nil {
+		panic(errors.Propagate("MustStringView", err))
+	}
+	return view
+}
+
 // EnumView provides a "view" into an enum column and can be used for access to individual elements.
 type EnumView struct {
 	ecolumn.View
@@ -144,4 +200,18 @@ func (qf QFrame) EnumView(colName string) (EnumView, error) {
 	}
 
 	return EnumView{View: col.View(qf.index)}, nil
+}
+
+// MustEnumView returns a view into an enum column identified by name.
+//
+// colName - Name of the column.
+//
+// Panics if the column is missing or of wrong type.
+// Time complexity 0(1).
+func (qf QFrame) MustEnumView(colName string) EnumView {
+	view, err := qf.EnumView(colName)
+	if err != nil {
+		panic(errors.Propagate("MustEnumView", err))
+	}
+	return view
 }

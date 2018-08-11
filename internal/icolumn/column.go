@@ -12,6 +12,10 @@ import (
 	"github.com/tobgu/qframe/types"
 )
 
+func (c Column) DataType() types.DataType {
+	return types.Int
+}
+
 func (c Column) StringAt(i uint32, _ string) string {
 	return strconv.FormatInt(int64(c.data[i]), 10)
 }

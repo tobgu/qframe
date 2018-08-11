@@ -13,6 +13,10 @@ import (
 	"github.com/tobgu/qframe/types"
 )
 
+func (c Column) DataType() types.DataType {
+	return types.Float
+}
+
 func (c Column) StringAt(i uint32, naRep string) string {
 	value := c.data[i]
 	if math.IsNaN(value) {

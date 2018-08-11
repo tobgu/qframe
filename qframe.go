@@ -397,6 +397,29 @@ func (qf QFrame) ColumnNames() []string {
 	return result
 }
 
+// ColumnTypes returns all underlying column types.DataType
+//
+// Time complexity O(n) where n = number of columns.
+func (qf QFrame) ColumnTypes() []types.DataType {
+	types := make([]types.DataType, len(qf.columns))
+	for i, col := range qf.columns {
+		types[i] = col.DataType()
+	}
+	return types
+}
+
+// ColumnTypeMap returns a map of each underlying column with
+// the column name as a key and it's types.DataType as a value.
+//
+// Time complexity O(n) where n = number of columns.
+func (qf QFrame) ColumnTypeMap() map[string]types.DataType {
+	types := map[string]types.DataType{}
+	for name, col := range qf.columnsByName {
+		types[name] = col.DataType()
+	}
+	return types
+}
+
 func (qf QFrame) columnsOrAll(columns []string) []string {
 	if len(columns) == 0 {
 		return qf.ColumnNames()
@@ -579,7 +602,7 @@ func (qf QFrame) String() string {
 	colWidths := make([]int, len(qf.columns))
 	minColWidth := 5
 	for i, s := range qf.columns {
-		colHeader := s.name + "(" + s.DataType()[:1] + ")"
+		colHeader := s.name + "(" + string(s.DataType())[:1] + ")"
 		colWidths[i] = integer.Max(len(colHeader), minColWidth)
 		row[i] = fixLengthString(colHeader, " ", colWidths[i])
 	}

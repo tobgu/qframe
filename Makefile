@@ -23,4 +23,4 @@ deps:
 	go get -t ./...
 
 dev-deps: deps
-	go get github.com/cheekybits/genny
+	go get github.com/mauricelam/genny

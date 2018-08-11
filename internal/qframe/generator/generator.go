@@ -37,6 +37,20 @@ func (qf QFrame) {{.type}}View(colName string) ({{.type}}View, error) {
 	return  {{.type}}View{View: col.View(qf.index)}, nil
 }
 
+// Must{{.type}}View returns a view into an {{.lowerType}} column identified by name.
+//
+// colName - Name of the column.
+//
+// Panics if the column is missing or of wrong type.
+// Time complexity 0(1).
+func (qf QFrame) Must{{.type}}View(colName string) {{.type}}View {
+	view, err := qf.{{.type}}View(colName)
+	if err != nil {
+		panic(errors.Propagate("Must{{.type}}View", err))
+	}
+	return view
+}
+
 `
 
 func spec(typeName, srcPackage string) template.Spec {
