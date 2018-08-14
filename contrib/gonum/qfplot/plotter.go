@@ -4,6 +4,8 @@ import (
 	"strconv"
 
 	"github.com/tobgu/qframe"
+	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/types"
 )
 
 // LabelFunc returns a string representation of
@@ -75,6 +77,31 @@ type XYLabeller struct {
 // ValueFunc returns a float representation of
 // the value in row i.
 type ValueFunc func(i int) float64
+
+// NewValueFunc returns a ValueFunc for column col
+// if it is a numeric column, or returns an error.
+func NewValueFunc(col string, qf qframe.QFrame) (ValueFunc, error) {
+	if !isNumCol(col, qf) {
+		return nil, errors.New("NewValueFunc", "Column %s is not a numeric value")
+	}
+	switch qf.ColumnTypeMap()[col] {
+	case types.Int:
+		return ValueOfInt(qf.MustIntView(col)), nil
+	case types.Float:
+		return ValueOfFloat(qf.MustFloatView(col)), nil
+	}
+	panic(errors.New("NewValueFunc", "forgot to support a new column type?"))
+}
+
+// MustNewValueFunc returns a ValueFunc and panics when
+// encountering an error.
+func MustNewValueFunc(col string, qf qframe.QFrame) ValueFunc {
+	fn, err := NewValueFunc(col, qf)
+	if err != nil {
+		panic(errors.Propagate("MustNewValueFunc", err))
+	}
+	return fn
+}
 
 // ValueOfInt returns an IntView compatible ValueFunc
 func ValueOfInt(view qframe.IntView) ValueFunc {
