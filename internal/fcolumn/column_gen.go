@@ -10,6 +10,8 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 
 	"github.com/tobgu/qframe/internal/index"
+
+	"github.com/tobgu/qframe/errors"
 )
 
 // Code generated from template/column.go DO NOT EDIT
@@ -32,6 +34,10 @@ func NewConst(val float64, count int) Column {
 	}
 
 	return Column{data: data}
+}
+
+func (c Column) fnName(name string) string {
+	return fmt.Sprintf("%s.%s", c.DataType(), name)
 }
 
 // Apply single argument function. The result may be a column
@@ -63,7 +69,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		}
 		return result, nil
 	default:
-		return nil, fmt.Errorf("%s.Apply1: cannot apply type %#v to column", c.DataType(), fn)
+		return nil, errors.New(c.fnName("Apply1"), "cannot apply type %#v to column", fn)
 	}
 }
 
@@ -72,12 +78,12 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	ss2, ok := s2.(Column)
 	if !ok {
-		return Column{}, fmt.Errorf("%s.Apply2: invalid column type: %s", c.DataType(), s2.DataType())
+		return Column{}, errors.New(c.fnName("Apply2"), "invalid column type: %s", s2.DataType())
 	}
 
 	t, ok := fn.(func(float64, float64) float64)
 	if !ok {
-		return Column{}, fmt.Errorf("%s.Apply2: invalid function type: %#v", c.DataType(), fn)
+		return Column{}, errors.New("Apply2", "invalid function type: %#v", fn)
 	}
 
 	result := make([]float64, len(c.data))
@@ -130,14 +136,12 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	case string:
 		actualFn, ok = aggregations[t]
 		if !ok {
-			return nil, fmt.Errorf("aggregation function %c is not defined for column", fn)
+			return nil, errors.New(c.fnName("Aggregate"), "aggregation function %c is not defined for column", fn)
 		}
 	case func([]float64) float64:
 		actualFn = t
 	default:
-		// TODO: Genny is buggy and won't let you use your own errors package.
-		//       We use a standard error here for now.
-		return nil, fmt.Errorf("invalid aggregation function type: %v", t)
+		return nil, errors.New(c.fnName("Aggregate"), "invalid aggregation function type: %v", t)
 	}
 
 	data := make([]float64, 0, len(indices))

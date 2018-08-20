@@ -2,7 +2,7 @@ package io
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/tobgu/qframe/errors"
 	"io"
 )
 
@@ -15,12 +15,12 @@ func fillInts(col []int, records JSONRecords, colName string) error {
 		record := records[i]
 		value, ok := record[colName]
 		if !ok {
-			return fmt.Errorf("missing value for column %s, row %d", colName, i)
+			return errors.New("fillInts", "missing value for column %s, row %d", colName, i)
 		}
 
 		intValue, ok := value.(int)
 		if !ok {
-			return fmt.Errorf("wrong type for column %s, row %d, expected int", colName, i)
+			return errors.New("fillInts", "wrong type for column %s, row %d, expected int", colName, i)
 		}
 		col[i] = intValue
 	}
@@ -33,12 +33,12 @@ func fillFloats(col []float64, records JSONRecords, colName string) error {
 		record := records[i]
 		value, ok := record[colName]
 		if !ok {
-			return fmt.Errorf("missing value for column %s, row %d", colName, i)
+			return errors.New("fillFloats", "missing value for column %s, row %d", colName, i)
 		}
 
 		floatValue, ok := value.(float64)
 		if !ok {
-			return fmt.Errorf("wrong type for column %s, row %d, expected float", colName, i)
+			return errors.New("fillFloats", "wrong type for column %s, row %d, expected float", colName, i)
 		}
 		col[i] = floatValue
 	}
@@ -51,12 +51,12 @@ func fillBools(col []bool, records JSONRecords, colName string) error {
 		record := records[i]
 		value, ok := record[colName]
 		if !ok {
-			return fmt.Errorf("wrong type for column %s, row %d", colName, i)
+			return errors.New("fillBools", "wrong type for column %s, row %d", colName, i)
 		}
 
 		boolValue, ok := value.(bool)
 		if !ok {
-			return fmt.Errorf("wrong type for column %s, row %d, expected bool", colName, i)
+			return errors.New("fillBools", "wrong type for column %s, row %d, expected bool", colName, i)
 		}
 		col[i] = boolValue
 	}
@@ -69,7 +69,7 @@ func fillStrings(col []*string, records JSONRecords, colName string) error {
 		record := records[i]
 		value, ok := record[colName]
 		if !ok {
-			return fmt.Errorf("wrong type for column %s, row %d", colName, i)
+			return errors.New("fillStrings", "wrong type for column %s, row %d", colName, i)
 		}
 
 		switch t := value.(type) {
@@ -78,7 +78,7 @@ func fillStrings(col []*string, records JSONRecords, colName string) error {
 		case nil:
 			col[i] = nil
 		default:
-			return fmt.Errorf("wrong type for column %s, row %d, expected int", colName, i)
+			return errors.New("fillStrings", "wrong type for column %s, row %d, expected int", colName, i)
 		}
 	}
 
@@ -119,7 +119,7 @@ func jsonRecordsToData(records JSONRecords) (map[string]interface{}, error) {
 			}
 			result[colName] = col
 		default:
-			return nil, fmt.Errorf("unknown type of %s", t)
+			return nil, errors.New("jsonRecordsToData", "unknown type of %s", t)
 		}
 	}
 	return result, nil
@@ -132,7 +132,7 @@ func UnmarshalJSON(r io.Reader) (map[string]interface{}, error) {
 	decoder := json.NewDecoder(r)
 	err := decoder.Decode(&records)
 	if err != nil {
-		return nil, err
+		return nil, errors.Propagate("UnmarshalJSON", err)
 	}
 
 	return jsonRecordsToData(records)

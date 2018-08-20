@@ -33,3 +33,7 @@ func New(operation, reason string, params ...interface{}) Error {
 func Propagate(operation string, err error) Error {
 	return Error{operation: operation, source: err}
 }
+
+// Error types:
+//   - Type error
+//   - Input error (which would basically always be the case...)
