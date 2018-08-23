@@ -6,7 +6,6 @@ import (
 	"gonum.org/v1/plot/vg"
 
 	"github.com/tobgu/qframe"
-	//"github.com/tobgu/qframe/errors"
 )
 
 // PlotterFunc returns a plot.Plotter from data in a QFrame.
@@ -20,18 +19,11 @@ type LineConfig func(*plotter.Line)
 // an XY axis of a QFrame.
 func LinePlotter(x, y string, cfg LineConfig) PlotterFunc {
 	return func(qf qframe.QFrame) (plot.Plotter, error) {
-		xvals, err := NewValueFunc(x, qf)
+		xyer, err := NewXYer(x, y, qf)
 		if err != nil {
 			return nil, err
 		}
-		yvals, err := NewValueFunc(y, qf)
-		if err != nil {
-			return nil, err
-		}
-		line, err := plotter.NewLine(NewXYer(qf.Len(), xvals, yvals))
-		if err != nil {
-			return nil, err
-		}
+		line, err := plotter.NewLine(xyer)
 		if cfg != nil {
 			cfg(line)
 		}
@@ -47,14 +39,11 @@ type BarConfig func(*plotter.BarChart)
 // the values in column col of a QFrame.
 func BarPlotter(col string, width vg.Length, cfg BarConfig) PlotterFunc {
 	return func(qf qframe.QFrame) (plot.Plotter, error) {
-		valuer, err := NewValueFunc(col, qf)
+		valuer, err := NewValuer(col, qf)
 		if err != nil {
 			return nil, err
 		}
-		bar, err := plotter.NewBarChart(NewValuer(qf.Len(), valuer), width)
-		if err != nil {
-			return nil, err
-		}
+		bar, err := plotter.NewBarChart(valuer, width)
 		if cfg != nil {
 			cfg(bar)
 		}

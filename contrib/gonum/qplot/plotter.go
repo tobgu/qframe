@@ -130,9 +130,24 @@ func (v Valuer) Len() int { return v.len }
 // Value returns the value in row i of the underlying view
 func (v Valuer) Value(i int) float64 { return v.fn(i) }
 
-// NewValuer returns a new Valuer
-func NewValuer(len int, fn ValueFunc) Valuer {
-	return Valuer{len: len, fn: fn}
+// NewValuer returns a new Valuer from the values
+// in col. The column must be a numeric type.
+func NewValuer(col string, qf qframe.QFrame) (Valuer, error) {
+	fn, err := NewValueFunc(col, qf)
+	if err != nil {
+		return Valuer{}, err
+	}
+	return Valuer{len: qf.Len(), fn: fn}, nil
+}
+
+// MustNewValuer returns a new Valuer from the values
+// in col.
+func MustNewValuer(col string, qf qframe.QFrame) Valuer {
+	valuer, err := NewValuer(col, qf)
+	if err != nil {
+		panic(errors.Propagate("MustNewValuer", err))
+	}
+	return valuer
 }
 
 // XYer implements the XYer interface
@@ -149,9 +164,26 @@ func (xy XYer) Len() int { return xy.len }
 // XY returns the values of X and Y in the underlying view
 func (xy XYer) XY(i int) (float64, float64) { return xy.xfn(i), xy.yfn(i) }
 
-// NewXYer returns a new XYer
-func NewXYer(len int, xfn, yfn ValueFunc) XYer {
-	return XYer{len: len, xfn: xfn, yfn: yfn}
+// NewXYer returns a new XYer from the values
+// in column x and y. Both columns must have numeric types.
+func NewXYer(x, y string, qf qframe.QFrame) (XYer, error) {
+	xvals, err := NewValueFunc(x, qf)
+	if err != nil {
+		return XYer{}, errors.Propagate("NewXYer", err)
+	}
+	yvals, err := NewValueFunc(y, qf)
+	if err != nil {
+		return XYer{}, errors.Propagate("NewXYer", err)
+	}
+	return XYer{len: qf.Len(), xfn: xvals, yfn: yvals}, nil
+}
+
+func MustNewXYer(x, y string, qf qframe.QFrame) XYer {
+	xyer, err := NewXYer(x, y, qf)
+	if err != nil {
+		panic(errors.Propagate("MustNewXYer", err))
+	}
+	return xyer
 }
 
 // XYZer implements the XYZer interface
@@ -176,7 +208,28 @@ func (xyz XYZer) XY(i int) (float64, float64) {
 	return xyz.xfn(i), xyz.yfn(i)
 }
 
-// NewXYZer returns a new XYZer
-func NewXYZer(len int, xfn, yfn, zfn ValueFunc) XYZer {
-	return XYZer{len: len, xfn: xfn, yfn: yfn, zfn: zfn}
+// NewXYZer returns a new XYZer from the values
+// in column x, y, and z. All columns must have numeric types.
+func NewXYZer(x, y, z string, qf qframe.QFrame) (XYZer, error) {
+	xvals, err := NewValueFunc(x, qf)
+	if err != nil {
+		return XYZer{}, errors.Propagate("NewXYZer", err)
+	}
+	yvals, err := NewValueFunc(y, qf)
+	if err != nil {
+		return XYZer{}, errors.Propagate("NewXYZer", err)
+	}
+	zvals, err := NewValueFunc(z, qf)
+	if err != nil {
+		return XYZer{}, errors.Propagate("NewXYZer", err)
+	}
+	return XYZer{len: qf.Len(), xfn: xvals, yfn: yvals, zfn: zvals}, nil
+}
+
+func MustNewXYZer(x, y, z string, qf qframe.QFrame) XYZer {
+	xyzer, err := NewXYZer(x, y, z, qf)
+	if err != nil {
+		panic(errors.Propagate("MustNewXYZer", err))
+	}
+	return xyzer
 }
