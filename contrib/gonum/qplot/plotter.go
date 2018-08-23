@@ -84,6 +84,9 @@ func NewValueFunc(col string, qf qframe.QFrame) (ValueFunc, error) {
 	if !isNumCol(col, qf) {
 		return nil, errors.New("NewValueFunc", "Column %s is not a numeric value")
 	}
+	if !qf.Contains(col) {
+		return nil, errors.New("NewValueFunc", "QFrame does not contain column %s", col)
+	}
 	switch qf.ColumnTypeMap()[col] {
 	case types.Int:
 		return ValueOfInt(qf.MustIntView(col)), nil
