@@ -9,7 +9,7 @@ import (
 	"gonum.org/v1/plot/vg"
 
 	"github.com/tobgu/qframe"
-	"github.com/tobgu/qframe/contrib/gonum/qfplot"
+	"github.com/tobgu/qframe/contrib/gonum/qplot"
 )
 
 func main() {
@@ -20,15 +20,15 @@ func main() {
 	})
 
 	// Create a new configuration
-	cfg := qfplot.NewConfig(
-		qfplot.PlotConfig(
+	cfg := qplot.NewConfig(
+		qplot.PlotConfig(
 			func(plt *plot.Plot) {
 				plt.Title.Text = "My Cool Chart"
 			},
 		),
-		qfplot.Plotter(
+		qplot.Plotter(
 			// Extract values from column A.
-			qfplot.BarPlotter("A", 24*vg.Millimeter,
+			qplot.BarPlotter("A", 24*vg.Millimeter,
 				// Configure the color and various aspects
 				// of the BarChart.
 				func(bar *plotter.BarChart) {
@@ -36,8 +36,8 @@ func main() {
 					bar.Offset = 1 * vg.Inch
 				}),
 		),
-		qfplot.Plotter(
-			qfplot.LinePlotter("A", "B",
+		qplot.Plotter(
+			qplot.LinePlotter("A", "B",
 				// Configure the color and various aspects
 				// of the Line.
 				func(line *plotter.Line) {
@@ -45,7 +45,7 @@ func main() {
 				})),
 	)
 	// Create a new QPlot
-	qp := qfplot.NewQPlot(qf, cfg)
+	qp := qplot.NewQPlot(qf, cfg)
 
 	qp.WriteTo(os.Stdout)
 }

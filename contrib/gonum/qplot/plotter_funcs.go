@@ -1,4 +1,4 @@
-package qfplot
+package qplot
 
 import (
 	"gonum.org/v1/plot"

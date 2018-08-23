@@ -1,4 +1,4 @@
-package qfplot
+package qplot
 
 import (
 	"github.com/tobgu/qframe"
