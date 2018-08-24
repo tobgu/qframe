@@ -1,8 +1,6 @@
 package qplot
 
 import (
-	"image/color"
-
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/vg"
 )
@@ -18,13 +16,11 @@ const (
 
 // Config specifies the QPlot configuration.
 type Config struct {
-	Plotters        []PlotterFunc
-	BackgroundColor color.Color
-	ShowGrid        bool
-	Width           vg.Length
-	Height          vg.Length
-	Format          FormatType
-	PlotConfig      func(*plot.Plot)
+	Plotters   []PlotterFunc
+	Width      vg.Length
+	Height     vg.Length
+	Format     FormatType
+	PlotConfig func(*plot.Plot)
 }
 
 // ConfigFunc is a functional option for configuring QPlot.
@@ -34,10 +30,9 @@ type ConfigFunc func(*Config)
 func NewConfig(fns ...ConfigFunc) Config {
 	cfg := Config{
 		// Defaults
-		Format:          PNG,
-		BackgroundColor: color.White,
-		Width:           245 * vg.Millimeter,
-		Height:          127 * vg.Millimeter,
+		Format: PNG,
+		Width:  245 * vg.Millimeter,
+		Height: 127 * vg.Millimeter,
 	}
 	for _, fn := range fns {
 		fn(&cfg)

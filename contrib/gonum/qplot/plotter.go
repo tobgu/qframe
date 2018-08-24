@@ -82,7 +82,7 @@ type ValueFunc func(i int) float64
 // if it is a numeric column, or returns an error.
 func NewValueFunc(col string, qf qframe.QFrame) (ValueFunc, error) {
 	if !isNumCol(col, qf) {
-		return nil, errors.New("NewValueFunc", "Column %s is not a numeric value")
+		return nil, errors.New("NewValueFunc", "Column %s is not a numeric value", col)
 	}
 	if !qf.Contains(col) {
 		return nil, errors.New("NewValueFunc", "QFrame does not contain column %s", col)
@@ -181,6 +181,8 @@ func NewXYer(x, y string, qf qframe.QFrame) (XYer, error) {
 	return XYer{len: qf.Len(), xfn: xvals, yfn: yvals}, nil
 }
 
+// MustNewXYer returns a new XYer from the values
+// in column x and y. Both columns must have numeric types.
 func MustNewXYer(x, y string, qf qframe.QFrame) XYer {
 	xyer, err := NewXYer(x, y, qf)
 	if err != nil {
@@ -229,6 +231,8 @@ func NewXYZer(x, y, z string, qf qframe.QFrame) (XYZer, error) {
 	return XYZer{len: qf.Len(), xfn: xvals, yfn: yvals, zfn: zvals}, nil
 }
 
+// MustNewXYZer returns a new XYZer from the values
+// in column x, y, and z. All columns must have numeric types.
 func MustNewXYZer(x, y, z string, qf qframe.QFrame) XYZer {
 	xyzer, err := NewXYZer(x, y, z, qf)
 	if err != nil {

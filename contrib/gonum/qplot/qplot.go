@@ -6,7 +6,6 @@ import (
 
 	"gonum.org/v1/plot"
 
-	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/errors"
 )
 
@@ -14,13 +13,12 @@ import (
 // for a less verbose experience in interactive environments
 // such as Jypter notebooks.
 type QPlot struct {
-	qf qframe.QFrame
 	Config
 }
 
 // NewQPlot returns a new QPlot.
-func NewQPlot(qf qframe.QFrame, cfg Config) QPlot {
-	return QPlot{qf: qf, Config: cfg}
+func NewQPlot(cfg Config) QPlot {
+	return QPlot{Config: cfg}
 }
 
 // WriteTo writes a plot to an io.Writer
@@ -30,9 +28,9 @@ func (qp QPlot) WriteTo(writer io.Writer) error {
 		return err
 	}
 	for _, fn := range qp.Plotters {
-		pltr, err := fn(qp.qf)
+		pltr, err := fn(plt)
 		if err != nil {
-			return errors.Propagate("QPlot.Plot", err)
+			return errors.Propagate("WriteTo", err)
 		}
 		plt.Add(pltr)
 	}
@@ -52,7 +50,7 @@ func (qp QPlot) Bytes() ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	err := qp.WriteTo(buf)
 	if err != nil {
-		return nil, err
+		return nil, errors.Propagate("Bytes", err)
 	}
 	return buf.Bytes(), nil
 }
@@ -62,7 +60,7 @@ func (qp QPlot) Bytes() ([]byte, error) {
 func (qp QPlot) MustBytes() []byte {
 	raw, err := qp.Bytes()
 	if err != nil {
-		panic(err)
+		panic(errors.Propagate("MustBytes", err))
 	}
 	return raw
 }
