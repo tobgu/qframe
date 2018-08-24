@@ -4,10 +4,7 @@ generate:
 	go generate github.com/tobgu/qframe/...
 
 test: generate
-	go test github.com/tobgu/qframe/ && \
-		go test github.com/tobgu/qframe/internal/fastcsv && \
-		go test github.com/tobgu/qframe/internal/hash && \
-		go test github.com/tobgu/qframe/internal/io/sql
+	go test ./...
 
 fmt: generate
 	go fmt ./...
@@ -24,3 +21,7 @@ deps:
 
 dev-deps: deps
 	go get github.com/mauricelam/genny
+
+qplot_examples:
+	cd contrib/gonum/qplot/examples \
+		&& go run temperatures.go
