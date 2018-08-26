@@ -27,21 +27,16 @@ func maybe(t *testing.T, err error) {
 	}
 }
 
-func FilterNaN(col string) qframe.Filter {
-	return qframe.Filter{
-		Column:     col,
-		Comparator: func(f float64) bool { return !math.IsNaN(f) },
-	}
-}
-
-// SMAFn returns a function for computing SMA
-func SMAFn(n int) func(float64) float64 {
+// SlidingWindow returns a function that finds
+// the average of n time periods.
+func SlidingWindow(n int) func(float64) float64 {
 	var buf []float64
 	return func(value float64) float64 {
-		buf = append(buf, value)
 		if len(buf) < n {
+			buf = append(buf, value)
 			return value
 		}
+		buf = append(buf[1:len(buf)], value)
 		return stat.Mean(buf, nil)
 	}
 }
@@ -53,7 +48,10 @@ func ExampleQPlot(t *testing.T) {
 
 	qf := qframe.ReadCSV(fp)
 	// Filter out any missing values
-	qf = qf.Filter(FilterNaN("LandAndOceanAverageTemperature"))
+	qf = qf.Filter(qframe.Filter{
+		Column:     "LandAndOceanAverageTemperature",
+		Comparator: func(f float64) bool { return !math.IsNaN(f) },
+	})
 	// QFrame does not yet have native support for timeseries
 	// data so we convert the timestamp to epoch time.
 	qf = qf.Apply(qframe.Instruction{
@@ -65,11 +63,11 @@ func ExampleQPlot(t *testing.T) {
 		SrcCol1: "dt",
 		DstCol:  "time",
 	})
-	// Compute an SMA of the temperatures
-	sma := SMAFn(10)
+	// Compute the average of the last 2 years of temperatures.
+	window := SlidingWindow(24)
 	qf = qf.Apply(qframe.Instruction{
 		Fn: func(value float64) float64 {
-			return sma(value)
+			return window(value)
 		},
 		SrcCol1: "LandAndOceanAverageTemperature",
 		DstCol:  "SMA",
