@@ -1,10 +1,12 @@
-package main
+package qplot_test
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
+	"testing"
 	"time"
 
 	"gonum.org/v1/gonum/stat"
@@ -12,13 +14,13 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
-	//"gonum.org/v1/plot/vg"
 
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/contrib/gonum/qplot"
 )
 
-func maybe(err error) {
+func maybe(t *testing.T, err error) {
+	t.Helper()
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 		os.Exit(1)
@@ -44,9 +46,9 @@ func SMAFn(n int) func(float64) float64 {
 	}
 }
 
-func main() {
-	fp, err := os.Open("GlobalTemperatures.csv")
-	maybe(err)
+func ExampleQPlot(t *testing.T) {
+	fp, err := os.Open("testdata/GlobalTemperatures.csv")
+	maybe(t, err)
 	defer fp.Close()
 
 	qf := qframe.ReadCSV(fp)
@@ -56,9 +58,9 @@ func main() {
 	// data so we convert the timestamp to epoch time.
 	qf = qf.Apply(qframe.Instruction{
 		Fn: func(ts *string) int {
-			t, err := time.Parse("2006-02-01", *ts)
-			maybe(err)
-			return int(t.Unix())
+			tm, err := time.Parse("2006-02-01", *ts)
+			maybe(t, err)
+			return int(tm.Unix())
 		},
 		SrcCol1: "dt",
 		DstCol:  "time",
@@ -106,5 +108,20 @@ func main() {
 	// Create a new QPlot
 	qp := qplot.NewQPlot(cfg)
 	// Write the plot to disk
-	maybe(ioutil.WriteFile("global_temperatures.png", qp.MustBytes(), 0644))
+	maybe(t, ioutil.WriteFile("testdata/GlobalTemperatures.png", qp.MustBytes(), 0644))
+}
+
+func getHash(t *testing.T, path string) [32]byte {
+	raw, err := ioutil.ReadFile(path)
+	maybe(t, err)
+	return sha256.Sum256(raw)
+}
+
+func TestQPlot(t *testing.T) {
+	original := getHash(t, "testdata/GlobalTemperatures.png")
+	ExampleQPlot(t)
+	modified := getHash(t, "testdata/GlobalTemperatures.png")
+	if original != modified {
+		t.Errorf("output image has changed")
+	}
 }
