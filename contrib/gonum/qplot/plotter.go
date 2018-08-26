@@ -51,7 +51,7 @@ func LabelOfBool(view qframe.BoolView) LabelFunc {
 // Labeller implements the Labeller interface
 // defined in gonum.org/v1/plot/plotter. It accepts
 // any of the predefined LabelFunc methods in this
-// package or a custom function many be specified.
+// package or a custom function may be specified.
 type Labeller struct {
 	len int
 	fn  LabelFunc
@@ -92,12 +92,13 @@ func NewValueFunc(col string, qf qframe.QFrame) (ValueFunc, error) {
 		return ValueOfInt(qf.MustIntView(col)), nil
 	case types.Float:
 		return ValueOfFloat(qf.MustFloatView(col)), nil
+	default:
+		panic(errors.New("NewValueFunc", "forgot to support a new column type?"))
 	}
-	panic(errors.New("NewValueFunc", "forgot to support a new column type?"))
 }
 
 // MustNewValueFunc returns a ValueFunc and panics when
-// encountering an error.
+// an error is encountered.
 func MustNewValueFunc(col string, qf qframe.QFrame) ValueFunc {
 	fn, err := NewValueFunc(col, qf)
 	if err != nil {
@@ -113,15 +114,15 @@ func ValueOfInt(view qframe.IntView) ValueFunc {
 	}
 }
 
-// ValueOfInt returns an FloatView compatible ValueFunc
+// ValueOfFloat returns an FloatView compatible ValueFunc
 func ValueOfFloat(view qframe.FloatView) ValueFunc {
 	return func(i int) float64 {
 		return view.ItemAt(i)
 	}
 }
 
-// Valuer impelements the Valuer interface
-// defined in gonum.org/v1/plot/plotter.
+// Valuer implements the Valuer interface
+// defined in gonum.org/v1/plot/plotter.Valuer
 type Valuer struct {
 	len int
 	fn  ValueFunc
@@ -203,7 +204,7 @@ type XYZer struct {
 // Len returns the length of the underlying view
 func (xyz XYZer) Len() int { return xyz.len }
 
-// XYZ returns the values of X, Y, and X in the underlying view
+// XYZ returns the values of X, Y, and Z in the underlying view
 func (xyz XYZer) XYZ(i int) (float64, float64, float64) {
 	return xyz.xfn(i), xyz.yfn(i), xyz.zfn(i)
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/tobgu/qframe/types"
 )
 
-// isNumCol checks to see if column contains a numberic
+// isNumCol checks to see if column contains a numeric
 // type and may be plotted.
 func isNumCol(col string, qf qframe.QFrame) bool {
 	cType, ok := qf.ColumnTypeMap()[col]

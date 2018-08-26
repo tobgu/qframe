@@ -45,7 +45,7 @@ func BarPlotter(valuer plotter.Valuer, width vg.Length, cfg BarConfig) PlotterFu
 	}
 }
 
-// HistConfig is an optional function which
+// HistogramConfig is an optional function which
 // configures a Histogram after creation.
 type HistogramConfig func(*plot.Plot, *plotter.Histogram)
 
