@@ -9,7 +9,7 @@ import (
 	"github.com/tobgu/qframe/errors"
 )
 
-// QPlot is a abstraction over Gonum's ploting interface
+// QPlot is a abstraction over Gonum's plotting interface
 // for a less verbose experience in interactive environments
 // such as Jypter notebooks.
 type QPlot struct {
