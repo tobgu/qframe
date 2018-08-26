@@ -11,4 +11,6 @@ var (
 	_ plotter.XYZer      = (*qplot.XYZer)(nil)
 	_ plotter.Labeller   = (*qplot.Labeller)(nil)
 	_ plotter.XYLabeller = (*qplot.XYLabeller)(nil)
+	_ plotter.YErrorer   = (*qplot.YErrorer)(nil)
+	_ plotter.XErrorer   = (*qplot.XErrorer)(nil)
 )

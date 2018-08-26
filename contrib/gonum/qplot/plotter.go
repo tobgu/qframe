@@ -241,3 +241,81 @@ func MustNewXYZer(x, y, z string, qf qframe.QFrame) XYZer {
 	}
 	return xyzer
 }
+
+// YErrorer implements the YErrorer interface
+// defined in gonum.org/v1/plot/plotter
+type YErrorer struct {
+	low  ValueFunc
+	high ValueFunc
+}
+
+// YError returns the low and high error values in the underlying view.
+func (ye YErrorer) YError(i int) (float64, float64) { return ye.low(i), ye.high(i) }
+
+// NewYErrorer returns a new YErrorer for the values in
+// column low and high of the QFrame. All columns must have
+// numeric types.
+func NewYErrorer(low, high string, qf qframe.QFrame) (YErrorer, error) {
+	lowFn, err := NewValueFunc(low, qf)
+	if err != nil {
+		return YErrorer{}, errors.Propagate("NewYErrorer", err)
+	}
+	highFn, err := NewValueFunc(high, qf)
+	if err != nil {
+		return YErrorer{}, errors.Propagate("NewYErrorer", err)
+	}
+	return YErrorer{low: lowFn, high: highFn}, nil
+}
+
+// NewYErrorer returns a new YErrorer for the values in
+// column low and high of the QFrame. All columns must have
+// numeric types.
+func MustNewYErrorer(low, high string, qf qframe.QFrame) YErrorer {
+	y, err := NewYErrorer(low, high, qf)
+	if err != nil {
+		panic(errors.Propagate("MustNewYErrorer", err))
+	}
+	return y
+}
+
+// XErrorer implements the XErrorer interface
+// defined in gonum.org/v1/plot/plotter
+type XErrorer struct {
+	low  ValueFunc
+	high ValueFunc
+}
+
+// XError returns the low and high error values in the underlying view.
+func (xe XErrorer) XError(i int) (float64, float64) { return xe.low(i), xe.high(i) }
+
+// NewXErrorer returns a new XErrorer for the values in
+// column low and high of the QFrame. All columns must have
+// numeric types.
+func NewXErrorer(low, high string, qf qframe.QFrame) (XErrorer, error) {
+	lowFn, err := NewValueFunc(low, qf)
+	if err != nil {
+		return XErrorer{}, errors.Propagate("NewXErrorer", err)
+	}
+	highFn, err := NewValueFunc(high, qf)
+	if err != nil {
+		return XErrorer{}, errors.Propagate("NewXErrorer", err)
+	}
+	return XErrorer{low: lowFn, high: highFn}, nil
+}
+
+// NewXErrorer returns a new XErrorer for the values in
+// column low and high of the QFrame. All columns must have
+// numeric types.
+func MustNewXErrorer(low, high string, qf qframe.QFrame) XErrorer {
+	x, err := NewXErrorer(low, high, qf)
+	if err != nil {
+		panic(errors.Propagate("MustNewXErrorer", err))
+	}
+	return x
+}
+
+// TODO:
+// GridXYZ is used in HeatMap plotters but is too
+// specific AFAICT to be generalized here. It can easily
+// be implemented by wrapping a QFrame or composing
+// several ValueFunc together.
