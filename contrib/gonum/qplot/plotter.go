@@ -303,7 +303,7 @@ func NewXErrorer(low, high string, qf qframe.QFrame) (XErrorer, error) {
 	return XErrorer{low: lowFn, high: highFn}, nil
 }
 
-// NewXErrorer returns a new XErrorer for the values in
+// MustNewXErrorer returns a new XErrorer for the values in
 // column low and high of the QFrame. All columns must have
 // numeric types.
 func MustNewXErrorer(low, high string, qf qframe.QFrame) XErrorer {

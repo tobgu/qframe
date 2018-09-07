@@ -4,6 +4,8 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
+
+	"github.com/tobgu/qframe/errors"
 )
 
 // PlotterFunc returns a plot.Plotter.
@@ -18,7 +20,7 @@ func LinePlotter(xyer plotter.XYer, cfg LineConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewLine(xyer)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("LinePlotter", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -36,7 +38,7 @@ func BarPlotter(valuer plotter.Valuer, width vg.Length, cfg BarConfig) PlotterFu
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewBarChart(valuer, width)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("BarPlotter", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -54,7 +56,7 @@ func HistogramPlotter(xyer plotter.XYer, n int, cfg HistogramConfig) PlotterFunc
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewHistogram(xyer, n)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("HistogramPlotter", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -72,7 +74,7 @@ func PolygonPlotter(xyer plotter.XYer, cfg PolygonConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewPolygon(xyer)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("PolygonPlotter", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -90,7 +92,7 @@ func ScatterPlotter(xyer plotter.XYer, cfg ScatterConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewScatter(xyer)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("ScatterPlotter", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -103,12 +105,12 @@ func ScatterPlotter(xyer plotter.XYer, cfg ScatterConfig) PlotterFunc {
 // configures a BoxPlot after creation.
 type BoxPlotConfig func(*plot.Plot, *plotter.BoxPlot)
 
-// BotPlot returns a new PlotterFunc that plots a BoxPlot.
+// BoxPlot returns a new PlotterFunc that plots a BoxPlot.
 func BoxPlot(w vg.Length, loc float64, values plotter.Valuer, cfg BoxPlotConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewBoxPlot(w, loc, values)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("BoxPlot", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -126,7 +128,7 @@ func Labels(labeller XYLabeller, cfg LabelsConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewLabels(labeller)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("Labels", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -139,12 +141,12 @@ func Labels(labeller XYLabeller, cfg LabelsConfig) PlotterFunc {
 // configures a QuartPlot after creation.
 type QuartConfig func(*plot.Plot, *plotter.QuartPlot)
 
-// QuartPlot returns a new PloterFunc that plots a QuartPlot.
+// QuartPlot returns a new PlotterFunc that plots a QuartPlot.
 func QuartPlot(loc float64, values plotter.Valuer, cfg QuartConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewQuartPlot(loc, values)
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("QuartPlot", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -169,7 +171,7 @@ func YErrorBars(xyer XYer, yerr YErrorer, cfg YErrorBarsConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewYErrorBars(errorBars{XYer: xyer, YErrorer: yerr})
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("YErrorBars", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
@@ -187,7 +189,7 @@ func XErrorBars(xyer XYer, xerr XErrorer, cfg XErrorBarsConfig) PlotterFunc {
 	return func(plt *plot.Plot) (plot.Plotter, error) {
 		pltr, err := plotter.NewXErrorBars(errorBars{XYer: xyer, XErrorer: xerr})
 		if err != nil {
-			return nil, err
+			return nil, errors.Propagate("XErrorBars", err)
 		}
 		if cfg != nil {
 			cfg(plt, pltr)
