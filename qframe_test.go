@@ -17,6 +17,8 @@ import (
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/types"
+	"io"
+	"log"
 )
 
 func assertEquals(t *testing.T, expected, actual qframe.QFrame) {
@@ -745,6 +747,7 @@ func TestQFrame_ReadCSV(t *testing.T) {
 		types            map[string]string
 		expectedErr      string
 		delimiter        byte
+		rowDelimiter     string
 	}{
 		{
 			name:         "base",
@@ -872,6 +875,17 @@ func TestQFrame_ReadCSV(t *testing.T) {
 			emptyNull:    true,
 			expected:     map[string]interface{}{"foo": []*string{&a, nil, &c}},
 		},
+		{
+			name:         "CRLF",
+			rowDelimiter: "\r\n",
+			inputHeaders: []string{"a_string", "b_number", "c_string"},
+			inputData:    "abc,1,cde\r\n,1,cde\r\nabc,1,\r\n",
+			emptyNull:    false,
+			expected: map[string]interface{}{
+				"a_string": []string{"abc", "", "abc"},
+				"b_number": []int{1, 1, 1},
+				"c_string": []string{"cde", "cde", ""}},
+		},
 	}
 
 	for _, tc := range table {
@@ -880,7 +894,11 @@ func TestQFrame_ReadCSV(t *testing.T) {
 				tc.delimiter = ','
 			}
 
-			input := strings.Join(tc.inputHeaders, string([]byte{tc.delimiter})) + "\n" + tc.inputData
+			if tc.rowDelimiter == "" {
+				tc.rowDelimiter = "\n"
+			}
+
+			input := strings.Join(tc.inputHeaders, string([]byte{tc.delimiter})) + tc.rowDelimiter + tc.inputData
 			out := qframe.ReadCSV(strings.NewReader(input),
 				csv.EmptyNull(tc.emptyNull),
 				csv.Types(tc.types),
@@ -902,6 +920,37 @@ func TestQFrame_ReadCSV(t *testing.T) {
 			}
 		})
 	}
+}
+
+// EOFReader is a mock to simulate io.Reader implementation that returns data together with err == io.EOF.
+type EOFReader struct {
+	s      string
+	isRead bool
+}
+
+func (r *EOFReader) Read(b []byte) (int, error) {
+	if r.isRead {
+		return 0, io.EOF
+	}
+
+	if len(b) < len(r.s) {
+		// This is just a mock, don't bother supporting more complicated cases
+		log.Fatalf("Buffer len too short for string: %d < %d", len(b), len(r.s))
+	}
+
+	count := copy(b, []byte(r.s))
+	r.isRead = true
+	return count, io.EOF
+}
+
+func TestQFrame_ReadCSVCombinedReadAndEOF(t *testing.T) {
+	input := `abc,def
+1,2
+3,4
+`
+	out := qframe.ReadCSV(&EOFReader{s: input})
+	expected := qframe.New(map[string]interface{}{"abc": []int{1, 3}, "def": []int{2, 4}}, newqf.ColumnOrder("abc", "def"))
+	assertEquals(t, expected, out)
 }
 
 func TestQFrame_Enum(t *testing.T) {

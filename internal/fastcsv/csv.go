@@ -209,8 +209,32 @@ func (r *Reader) Read() ([][]byte, error) {
 	return nil, r.fields.err
 }
 
+// eofReaderWrapper exists to allow readers that return an EOF error in the same call that they read data
+// to work as expected with the CSV reader. There is not support for such readers in the code for CSV
+// reading so this wrapper turns such a reader into reading until EOF and then only return err == io.EOF
+// when there are zero more bytes to read.
+type eofReaderWrapper struct {
+	r     io.Reader
+	isEof bool
+}
+
+func (r *eofReaderWrapper) Read(b []byte) (int, error) {
+	if r.isEof {
+		return 0, io.EOF
+	}
+
+	c, err := r.r.Read(b)
+	if err == io.EOF && c > 0 {
+		err = nil
+		r.isEof = true
+	}
+
+	return c, err
+}
+
 // Constructs a new Reader from a source CSV io.Reader
 func NewReader(r io.Reader, delimiter byte) Reader {
+	r = &eofReaderWrapper{r: r}
 	return Reader{
 		fields: fields{
 			buffer:    bufferedReader{r: r, data: make([]byte, 0, 1024)},

@@ -7,11 +7,11 @@ package fcolumn
 import (
 	"fmt"
 
+	"github.com/tobgu/qframe/errors"
+
 	"github.com/tobgu/qframe/internal/column"
 
 	"github.com/tobgu/qframe/internal/index"
-
-	"github.com/tobgu/qframe/errors"
 )
 
 // Code generated from template/column.go DO NOT EDIT

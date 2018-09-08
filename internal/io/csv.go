@@ -33,7 +33,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	r := fastcsv.NewReader(reader, conf.Delimiter)
 	byteHeader, err := r.Read()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Propagate("ReadCSV read header", err)
 	}
 
 	headers := make([]string, len(byteHeader))
@@ -49,7 +49,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	row := 1
 	for r.Next() {
 		if r.Err() != nil {
-			return nil, nil, r.Err()
+			return nil, nil, errors.Propagate("ReadCSV read body", r.Err())
 		}
 
 		row++
@@ -78,7 +78,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	for i, header := range headers {
 		data, err := columnToData(colBytes[i], colPointers[i], header, conf)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Propagate("ReadCSV convert data", err)
 		}
 
 		dataMap[header] = data
