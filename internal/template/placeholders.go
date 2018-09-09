@@ -13,9 +13,9 @@ import (
 // manually for each data type.
 
 // TODO: Probably need a more general aggregation pattern, int -> float (average for example)
-var aggregations = map[string]func([]dataType) dataType{}
+var aggregations = map[string]func([]genericDataType) genericDataType{}
 
-var filterFuncs = map[string]func(index.Int, []dataType, interface{}, index.Bool) error{}
+var filterFuncs = map[string]func(index.Int, []genericDataType, interface{}, index.Bool) error{}
 
 func (c Column) DataType() types.DataType {
 	return types.None

@@ -11,23 +11,23 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 )
 
-type dataType generic.Number
+type genericDataType generic.Number
 
-//go:generate genny -in=$GOFILE -out=../icolumn/column_gen.go -pkg=icolumn gen "dataType=int"
-//go:generate genny -in=$GOFILE -out=../fcolumn/column_gen.go -pkg=fcolumn gen "dataType=float64"
-//go:generate genny -in=$GOFILE -out=../bcolumn/column_gen.go -pkg=bcolumn gen "dataType=bool"
+//go:generate genny -in=$GOFILE -out=../icolumn/column_gen.go -pkg=icolumn gen "genericDataType=int"
+//go:generate genny -in=$GOFILE -out=../fcolumn/column_gen.go -pkg=fcolumn gen "genericDataType=float64"
+//go:generate genny -in=$GOFILE -out=../bcolumn/column_gen.go -pkg=bcolumn gen "genericDataType=bool"
 
 type Column struct {
-	data []dataType
+	data []genericDataType
 }
 
-func New(d []dataType) Column {
+func New(d []genericDataType) Column {
 	return Column{data: d}
 }
 
-func NewConst(val dataType, count int) Column {
-	var nullVal dataType
-	data := make([]dataType, count)
+func NewConst(val genericDataType, count int) Column {
+	var nullVal genericDataType
+	data := make([]genericDataType, count)
 	if val != nullVal {
 		for i := range data {
 			data[i] = val
@@ -45,25 +45,25 @@ func (c Column) fnName(name string) string {
 // of a different type than the current column.
 func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 	switch t := fn.(type) {
-	case func(dataType) int:
+	case func(genericDataType) int:
 		result := make([]int, len(c.data))
 		for _, i := range ix {
 			result[i] = t(c.data[i])
 		}
 		return result, nil
-	case func(dataType) float64:
+	case func(genericDataType) float64:
 		result := make([]float64, len(c.data))
 		for _, i := range ix {
 			result[i] = t(c.data[i])
 		}
 		return result, nil
-	case func(dataType) bool:
+	case func(genericDataType) bool:
 		result := make([]bool, len(c.data))
 		for _, i := range ix {
 			result[i] = t(c.data[i])
 		}
 		return result, nil
-	case func(dataType) *string:
+	case func(genericDataType) *string:
 		result := make([]*string, len(c.data))
 		for _, i := range ix {
 			result[i] = t(c.data[i])
@@ -82,12 +82,12 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 		return Column{}, errors.New(c.fnName("Apply2"), "invalid column type: %s", s2.DataType())
 	}
 
-	t, ok := fn.(func(dataType, dataType) dataType)
+	t, ok := fn.(func(genericDataType, genericDataType) genericDataType)
 	if !ok {
 		return Column{}, errors.New("Apply2", "invalid function type: %#v", fn)
 	}
 
-	result := make([]dataType, len(c.data))
+	result := make([]genericDataType, len(c.data))
 	for _, i := range ix {
 		result[i] = t(c.data[i], ss2.data[i])
 	}
@@ -96,7 +96,7 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 }
 
 func (c Column) subset(index index.Int) Column {
-	data := make([]dataType, len(index))
+	data := make([]genericDataType, len(index))
 	for i, ix := range index {
 		data[i] = c.data[ix]
 	}
@@ -130,7 +130,7 @@ func (c Column) Len() int {
 }
 
 func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, error) {
-	var actualFn func([]dataType) dataType
+	var actualFn func([]genericDataType) genericDataType
 	var ok bool
 
 	switch t := fn.(type) {
@@ -139,14 +139,14 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 		if !ok {
 			return nil, errors.New(c.fnName("Aggregate"), "aggregation function %c is not defined for column", fn)
 		}
-	case func([]dataType) dataType:
+	case func([]genericDataType) genericDataType:
 		actualFn = t
 	default:
 		return nil, errors.New(c.fnName("Aggregate"), "invalid aggregation function type: %v", t)
 	}
 
-	data := make([]dataType, 0, len(indices))
-	var buf []dataType
+	data := make([]genericDataType, 0, len(indices))
+	var buf []genericDataType
 	for _, ix := range indices {
 		subS := c.subsetWithBuf(ix, &buf)
 		data = append(data, actualFn(subS.data))
@@ -155,9 +155,9 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	return Column{data: data}, nil
 }
 
-func (c Column) subsetWithBuf(index index.Int, buf *[]dataType) Column {
+func (c Column) subsetWithBuf(index index.Int, buf *[]genericDataType) Column {
 	if cap(*buf) < len(index) {
-		*buf = make([]dataType, 0, len(index))
+		*buf = make([]genericDataType, 0, len(index))
 	}
 
 	data := (*buf)[:0]
@@ -173,7 +173,7 @@ func (c Column) View(ix index.Int) View {
 }
 
 type Comparable struct {
-	data           []dataType
+	data           []genericDataType
 	ltValue        column.CompareResult
 	gtValue        column.CompareResult
 	equalNullValue column.CompareResult
@@ -181,12 +181,12 @@ type Comparable struct {
 
 // View is a view into a column that allows access to individual elements by index.
 type View struct {
-	data  []dataType
+	data  []genericDataType
 	index index.Int
 }
 
 // ItemAt returns the value at position i.
-func (v View) ItemAt(i int) dataType {
+func (v View) ItemAt(i int) genericDataType {
 	return v.data[v.index[i]]
 }
 
@@ -196,11 +196,11 @@ func (v View) Len() int {
 }
 
 // Slice returns a slice containing a copy of the column data.
-func (v View) Slice() []dataType {
+func (v View) Slice() []genericDataType {
 	// TODO: This forces an alloc, as an alternative a slice could be taken
 	//       as input that can be (re)used by the client. Are there use cases
 	//       where this would actually make sense?
-	result := make([]dataType, v.Len())
+	result := make([]genericDataType, v.Len())
 	for i, j := range v.index {
 		result[i] = v.data[j]
 	}
