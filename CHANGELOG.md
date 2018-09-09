@@ -1,5 +1,5 @@
 ### 2018-09-09 v0.2.0
-SQL and plotting support! Thanks a lot to @kevinshoon for adding this!
+SQL and plotting support! Thanks a lot to @kevinschoon for adding this!
 * Add support for reading from/writing to SQL databases. Thanks @kevinschoon for this!
 * Add support for plotting using Gonum plot. Thanks @kevinschoon for this!
 * Rename `ToJson/FromJson/ToCsv/FromCsv` -> `ToJSON/FromJSON/ToCSV/FromCSV` for 
