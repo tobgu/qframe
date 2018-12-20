@@ -953,6 +953,23 @@ func TestQFrame_ReadCSVCombinedReadAndEOF(t *testing.T) {
 	assertEquals(t, expected, out)
 }
 
+func TestQFrame_ReadCSVNoRowsNoTypes(t *testing.T) {
+	// Should be possible to test an empty, non typed column against anything.
+	input := `abc,def
+`
+	t.Run("Empty column comparable to anything when not typed", func(t *testing.T) {
+		out := qframe.ReadCSV(strings.NewReader(input))
+		out = out.Filter(qframe.Filter{Column: "abc", Comparator: ">", Arg: "b"})
+		assertNotErr(t, out.Err)
+	})
+
+	t.Run("Empty column not comparable to anything when typed", func(t *testing.T) {
+		out := qframe.ReadCSV(strings.NewReader(input), csv.Types(map[string]string{"abc": "int"}))
+		out = out.Filter(qframe.Filter{Column: "abc", Comparator: ">", Arg: "b"})
+		assertErr(t, out.Err, "type")
+	})
+}
+
 func TestQFrame_Enum(t *testing.T) {
 	mon, tue, wed, thu, fri, sat, sun := "mon", "tue", "wed", "thu", "fri", "sat", "sun"
 	t.Run("Applies specified order", func(t *testing.T) {

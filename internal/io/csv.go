@@ -7,6 +7,7 @@ import (
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fastcsv"
+	"github.com/tobgu/qframe/internal/ncolumn"
 	"github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
 )
@@ -95,6 +96,10 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSVConfig) (interface{}, error) {
 	var err error
 	dataType := conf.Types[colName]
+
+	if len(pointers) == 0 && dataType == types.None {
+		return ncolumn.Column{}, nil
+	}
 
 	if dataType == types.Int || dataType == types.None {
 		intData := make([]int, 0, len(pointers))

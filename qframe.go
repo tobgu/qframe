@@ -148,6 +148,8 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 		localS = t
 	case qfstrings.StringBlob:
 		localS = scolumn.NewBytes(t.Pointers, t.Data)
+	case column.Column:
+		localS = t
 	default:
 		return nil, errors.New("createColumn", `unknown column data type "%s" for column "%s"`, reflect.TypeOf(t), name)
 	}
@@ -303,7 +305,7 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 		}
 
 		if err != nil {
-			return qf.withErr(errors.Propagate("Filter", err))
+			return qf.withErr(errors.Propagate(fmt.Sprintf("Filter column '%s'", f.Column), err))
 		}
 	}
 
