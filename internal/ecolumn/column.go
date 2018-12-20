@@ -36,13 +36,15 @@ func (v enumVal) compVal() int {
 type Column struct {
 	data   []enumVal
 	values []string
+
+	// strict is set to true if the set of values has been defined rather than derived from the data.
+	strict bool
 }
 
 // Factory is a helper used during construction of the enum column
 type Factory struct {
 	column    Column
 	valToEnum map[string]enumVal
-	strict    bool
 }
 
 func New(data []*string, values []string) (Column, error) {
@@ -97,9 +99,8 @@ func NewFactory(values []string, sizeHint int) (*Factory, error) {
 	}
 
 	return &Factory{column: Column{
-		data: make([]enumVal, 0, sizeHint), values: values},
-		valToEnum: valToEnum,
-		strict:    len(values) > 0}, nil
+		data: make([]enumVal, 0, sizeHint), values: values, strict: len(values) > 0},
+		valToEnum: valToEnum}, nil
 }
 
 func (f *Factory) AppendNil() {
@@ -145,7 +146,7 @@ func (f *Factory) enumVal(s *string) (enumVal, error) {
 		return e, nil
 	}
 
-	if f.strict {
+	if f.column.strict {
 		return 0, errors.New("enum val", `unknown enum value "%s" using strict enum`, *s)
 	}
 
@@ -157,7 +158,7 @@ func (f *Factory) enumVal(s *string) (enumVal, error) {
 }
 
 func (f *Factory) appendString(str string) error {
-	if f.strict {
+	if f.column.strict {
 		return errors.New("append enum val", `unknown enum value "%s" using strict enum`, str)
 	}
 
@@ -313,7 +314,12 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 				}
 			}
 
-			return errors.New("filter enum", "Unknown enum value in filter argument: %s", comp)
+			if c.strict {
+				return errors.New("filter enum", "Unknown enum value in filter argument: %s", comp)
+			}
+
+			// If no values have been explicitly set we quietly accept the comparator but do nothing
+			return nil
 		}
 
 		if multiFunc, ok := multiFilterFuncs[comparator]; ok {

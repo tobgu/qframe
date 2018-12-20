@@ -998,7 +998,7 @@ thu
 		assertEquals(t, expected, out)
 	})
 
-	t.Run("Orders give for non-enum columns results in error", func(t *testing.T) {
+	t.Run("Orders given for non-enum columns results in error", func(t *testing.T) {
 		input := `day
 tue
 `
@@ -1046,6 +1046,31 @@ tue
 			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
 
 		assertErr(t, out.Err, "specified for non enum column")
+	})
+
+	t.Run("Wont accept unknown filter values in strict mode", func(t *testing.T) {
+		input := `day
+tue
+mon
+`
+		out := qframe.ReadCSV(
+			strings.NewReader(input),
+			csv.Types(map[string]string{"day": "enum"}),
+			csv.EnumValues(map[string][]string{"day": {mon, tue, wed, thu, fri, sat, sun}}))
+		out = out.Filter(qframe.Filter{Column: "day", Comparator: ">", Arg: "foo"})
+		assertErr(t, out.Err, "unknown enum value")
+	})
+
+	t.Run("Will accept unknown filter values in non-strict mode", func(t *testing.T) {
+		input := `day
+tue
+mon
+`
+		out := qframe.ReadCSV(
+			strings.NewReader(input),
+			csv.Types(map[string]string{"day": "enum"}))
+		out = out.Filter(qframe.Filter{Column: "day", Comparator: ">", Arg: "foo"})
+		assertNotErr(t, out.Err)
 	})
 }
 
