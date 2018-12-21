@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -318,7 +319,16 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 				return errors.New("filter enum", "Unknown enum value in filter argument: %s", comp)
 			}
 
-			// If no values have been explicitly set we quietly accept the comparator but do nothing
+			// If no enum values have been explicitly defined we quietly accept the comparator
+
+			// In case comparator is != we can tell that it's true for all values since the comparatee is not present
+			if comparator == filter.Neq {
+				for i := range bIndex {
+					bIndex[i] = true
+				}
+			}
+
+			// Otherwise it's false for all values
 			return nil
 		}
 

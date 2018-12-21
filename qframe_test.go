@@ -1094,6 +1094,19 @@ mon
 		out = out.Filter(qframe.Filter{Column: "day", Comparator: ">", Arg: "foo"})
 		assertNotErr(t, out.Err)
 	})
+
+	t.Run("Will accept and eval to true for neq and unknown filter value in non-strict mode", func(t *testing.T) {
+		input := `day
+tue
+mon
+`
+		out := qframe.ReadCSV(
+			strings.NewReader(input),
+			csv.Types(map[string]string{"day": "enum"}))
+		out = out.Filter(qframe.Filter{Column: "day", Comparator: "!=", Arg: "foo"})
+		assertNotErr(t, out.Err)
+		assertTrue(t, out.Len() == 2)
+	})
 }
 
 func TestQFrame_ReadJSON(t *testing.T) {
