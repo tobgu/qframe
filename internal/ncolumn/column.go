@@ -31,7 +31,7 @@ func (c Column) Equals(index index.Int, other column.Column, otherIndex index.In
 	return false
 }
 
-func (c Column) Comparable(reverse, equalNull bool) column.Comparable {
+func (c Column) Comparable(reverse, equalNull, nullLast bool) column.Comparable {
 	return Comparable{}
 }
 

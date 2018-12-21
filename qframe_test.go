@@ -399,6 +399,14 @@ func TestQFrame_Sort(t *testing.T) {
 			input: map[string]interface{}{
 				"COL1": []*string{&b, nil, &a}},
 			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"b", "a"}})}},
+		{
+			orders: []qframe.Order{{Column: "COL1", NullLast: true}},
+			expected: qframe.New(map[string]interface{}{
+				"COL1": []*string{&b, &a, nil}},
+				newqf.Enums(map[string][]string{"COL1": {"b", "a"}})),
+			input: map[string]interface{}{
+				"COL1": []*string{&b, nil, &a}},
+			configs: []newqf.ConfigFunc{newqf.Enums(map[string][]string{"COL1": {"b", "a"}})}},
 	}
 
 	for i, tc := range table {
@@ -439,6 +447,13 @@ func TestQFrame_SortNull(t *testing.T) {
 		},
 		{
 			stringIn,
+			[]qframe.Order{{Column: "COL1", NullLast: true}},
+			map[string]interface{}{
+				"COL1": []*string{&a, &a, &b, &c, nil, nil, nil},
+			},
+		},
+		{
+			stringIn,
 			[]qframe.Order{{Column: "COL1", Reverse: true}},
 			map[string]interface{}{
 				"COL1": []*string{&c, &b, &a, &a, nil, nil, nil},
@@ -456,6 +471,13 @@ func TestQFrame_SortNull(t *testing.T) {
 			[]qframe.Order{{Column: "COL1", Reverse: true}},
 			map[string]interface{}{
 				"COL1": []float64{1.0, -1.0, math.NaN(), math.NaN()},
+			},
+		},
+		{
+			floatIn,
+			[]qframe.Order{{Column: "COL1", NullLast: true}},
+			map[string]interface{}{
+				"COL1": []float64{-1.0, 1.0, math.NaN(), math.NaN()},
 			},
 		},
 	}

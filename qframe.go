@@ -357,6 +357,9 @@ type Order struct {
 
 	// Reverse specifies if sorting should be performed ascending (false, default) or descending (true)
 	Reverse bool
+
+	// NullLast specifies if null values should go last (true) or first (false, default) for columns that support null.
+	NullLast bool
 }
 
 // Sort returns a new QFrame sorted according to the orders specified.
@@ -378,7 +381,7 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 			return qf.withErr(errors.New("Sort", unknownCol(o.Column)))
 		}
 
-		comparables = append(comparables, s.Comparable(o.Reverse, false))
+		comparables = append(comparables, s.Comparable(o.Reverse, false, o.NullLast))
 	}
 
 	newDf := qf.withIndex(qf.index.Copy())
@@ -442,7 +445,7 @@ func (qf QFrame) orders(columns []string) []Order {
 func (qf QFrame) comparables(columns []string, orders []Order, groupByNull bool) []column.Comparable {
 	result := make([]column.Comparable, 0, len(columns))
 	for i := 0; i < len(columns); i++ {
-		result = append(result, qf.columnsByName[orders[i].Column].Comparable(false, groupByNull))
+		result = append(result, qf.columnsByName[orders[i].Column].Comparable(false, groupByNull, false))
 	}
 
 	return result

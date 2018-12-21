@@ -254,11 +254,11 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	x, y := c.column.data[i], c.column.data[j]
 	if x.isNull() || y.isNull() {
 		if !x.isNull() {
-			return c.gtValue
+			return c.nullGtValue
 		}
 
 		if !y.isNull() {
-			return c.ltValue
+			return c.nullLtValue
 		}
 
 		return c.equalNullValue
@@ -429,10 +429,15 @@ func (c Column) stringSlice(index index.Int) []*string {
 	return result
 }
 
-func (c Column) Comparable(reverse, equalNull bool) column.Comparable {
-	result := Comparable{column: c, ltValue: column.LessThan, gtValue: column.GreaterThan, equalNullValue: column.NotEqual}
+func (c Column) Comparable(reverse, equalNull, nullLast bool) column.Comparable {
+	result := Comparable{column: c, ltValue: column.LessThan, gtValue: column.GreaterThan, nullLtValue: column.LessThan, nullGtValue: column.GreaterThan, equalNullValue: column.NotEqual}
 	if reverse {
-		result.ltValue, result.gtValue = result.gtValue, result.ltValue
+		result.ltValue, result.nullLtValue, result.gtValue, result.nullGtValue =
+			result.gtValue, result.nullGtValue, result.ltValue, result.nullLtValue
+	}
+
+	if nullLast {
+		result.nullLtValue, result.nullGtValue = result.nullGtValue, result.nullLtValue
 	}
 
 	if equalNull {
@@ -563,6 +568,8 @@ func (c Column) DataType() types.DataType {
 type Comparable struct {
 	column         Column
 	ltValue        column.CompareResult
+	nullLtValue    column.CompareResult
 	gtValue        column.CompareResult
+	nullGtValue    column.CompareResult
 	equalNullValue column.CompareResult
 }

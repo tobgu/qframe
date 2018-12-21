@@ -70,11 +70,11 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 
 	if math.IsNaN(x) || math.IsNaN(y) {
 		if !math.IsNaN(x) {
-			return c.gtValue
+			return c.nullGtValue
 		}
 
 		if !math.IsNaN(y) {
-			return c.ltValue
+			return c.nullLtValue
 		}
 
 		return c.equalNullValue
