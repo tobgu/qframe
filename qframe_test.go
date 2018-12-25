@@ -977,11 +977,20 @@ func TestQFrame_ReadCSVCombinedReadAndEOF(t *testing.T) {
 
 func TestQFrame_ReadCSVNoRowsNoTypes(t *testing.T) {
 	// Should be possible to test an empty, non typed column against anything.
-	input := `abc,def
-`
+	input := `abc,def`
+
 	t.Run("Empty column comparable to anything when not typed", func(t *testing.T) {
 		out := qframe.ReadCSV(strings.NewReader(input))
+		assertNotErr(t, out.Err)
+
+		// Filtering
 		out = out.Filter(qframe.Filter{Column: "abc", Comparator: ">", Arg: "b"})
+		assertNotErr(t, out.Err)
+
+		// Aggregation
+		e := qframe.Expr("abs", types.ColumnName("abc"))
+		assertNotErr(t, e.Err())
+		out = out.Eval("abc", e)
 		assertNotErr(t, out.Err)
 	})
 

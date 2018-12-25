@@ -109,6 +109,12 @@ func NewDefaultCtx() *Context {
 // GetFunc returns a reference to a function matching the given function type, argument count and name.
 // If no matching function is found in the context the second return value is set to false.
 func (ctx *Context) GetFunc(typ types.FunctionType, ac ArgCount, name string) (interface{}, bool) {
+	if typ == types.FunctionTypeUndefined {
+		// This is a special case for functions on columns with undefined type. These columns
+		// always of zero and the function will never be executed.
+		return nil, true
+	}
+
 	var fn interface{}
 	var ok bool
 	if ac == ArgCountOne {

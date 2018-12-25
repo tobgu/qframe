@@ -4,7 +4,7 @@ package types
 type DataType string
 
 const (
-	// None represents an unspecified data type.
+	// None represents an unknown data type.
 	// This is mainly used to indicate that the type of a column should be auto detected.
 	None DataType = ""
 
@@ -25,6 +25,10 @@ const (
 	// Enum translates into the Go *string type. nil represents a missing value.
 	// An enum column can, at most, have 254 distinct values.
 	Enum = "enum"
+
+	// Undefined represents an unspecified data type.
+	// This is used for zero length columns where the datatype could not be identified.
+	Undefined DataType = "Undefined"
 )
 
 // FunctionType represents the different types of input that functions operating on columns can take.
@@ -48,6 +52,8 @@ func (t FunctionType) String() string {
 		return "String function"
 	case FunctionTypeFloat:
 		return "Float function"
+	case FunctionTypeUndefined:
+		return "Undefined type function"
 	default:
 		return "Unknown function"
 	}

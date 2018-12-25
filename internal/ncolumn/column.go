@@ -68,7 +68,7 @@ func (c Column) FunctionType() types.FunctionType {
 }
 
 func (c Column) DataType() types.DataType {
-	return types.None
+	return types.Undefined
 }
 
 type Comparable struct{}
