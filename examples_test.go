@@ -246,3 +246,46 @@ func ExampleQFrame_iter() {
 	// 4
 	// 5
 }
+
+func ExampleQFrame_groupByCount() {
+	qf := qframe.New(map[string]interface{}{
+		"COL1": []string{"a", "b", "a", "b", "b", "c"},
+		"COL2": []float64{0.1, 0.1, 0.2, 0.4, 0.5, 0.6},
+	})
+
+	g := qf.GroupBy(groupby.Columns("COL1"))
+	qf = g.Aggregate(qframe.Aggregation{Fn: "count", Column: "COL2"})
+
+	fmt.Println(qf)
+
+	// Output:
+	// COL1(s) COL2(i)
+	// ------- -------
+	//       a       2
+	//       b       3
+	//       c       1
+	//
+	// Dims = 2 x 3
+}
+
+func ExampleQFrame_distinct() {
+	qf := qframe.New(map[string]interface{}{
+		"COL1": []string{"a", "b", "a", "b", "b", "c"},
+		"COL2": []int{0, 1, 2, 4, 4, 6},
+	})
+
+	qf = qf.Distinct(groupby.Columns("COL1", "COL2")).Sort(qframe.Order{Column: "COL1"}, qframe.Order{Column: "COL2"})
+
+	fmt.Println(qf)
+
+	// Output:
+	// COL1(s) COL2(i)
+	// ------- -------
+	//       a       0
+	//       a       2
+	//       b       1
+	//       b       4
+	//       c       6
+	//
+	// Dims = 2 x 5
+}

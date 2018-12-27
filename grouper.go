@@ -3,6 +3,7 @@ package qframe
 import (
 	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/grouper"
+	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
 )
@@ -24,7 +25,7 @@ type Grouper struct {
 
 // Aggregation represents a function to apply to a column.
 type Aggregation struct {
-	// Fn is the aggregatoin function to apply.
+	// Fn is the aggregation function to apply.
 	//
 	// IMPORTANT: For pointer and reference types you must not assume that the data passed argument
 	// to this function is valid after the function returns. If you plan to keep it around you need
@@ -74,9 +75,20 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 				"cannot aggregate on column that is part of group by or is already an aggregate: %s", agg.Column)}
 		}
 
-		col.Column, err = col.Aggregate(g.indices, agg.Fn)
-		if err != nil {
-			return QFrame{Err: errors.Propagate("Aggregate", err)}
+		if agg.Fn == "count" {
+			// Special convenience case for "count" which would normally require a cast from
+			// any other type of column to int before being executed.
+			counts := make([]int, len(g.indices))
+			for i, ix := range g.indices {
+				counts[i] = len(ix)
+			}
+
+			col.Column = icolumn.New(counts)
+		} else {
+			col.Column, err = col.Aggregate(g.indices, agg.Fn)
+			if err != nil {
+				return QFrame{Err: errors.Propagate("Aggregate", err)}
+			}
 		}
 
 		newColumnsByName[agg.Column] = col
