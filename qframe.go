@@ -177,7 +177,7 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	}
 
 	if len(config.ColumnOrder) != len(data) {
-		return QFrame{Err: errors.New("New", "number of columns and columns order length do not match")}
+		return QFrame{Err: errors.New("New", "number of columns and columns order length do not match, %d, %d", len(config.ColumnOrder), len(data))}
 	}
 
 	for _, name := range config.ColumnOrder {

@@ -2,6 +2,10 @@ package strings
 
 type StringSet map[string]struct{}
 
+func NewEmptyStringSet() StringSet {
+	return make(StringSet, 0)
+}
+
 func NewStringSet(input []string) StringSet {
 	result := make(StringSet, len(input))
 	for _, s := range input {

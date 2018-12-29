@@ -86,7 +86,21 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	}
 
 	if len(conf.EnumVals) > 0 {
-		return nil, nil, errors.New("Read csv", "Enum values specified for non enum column")
+		return nil, nil, errors.New("ReadCsv", "Enum values specified for non enum column")
+	}
+
+	if len(headers) > len(dataMap) {
+		duplicates := make([]string, 0)
+		headerSet := strings.NewEmptyStringSet()
+		for _, h := range headers {
+			if headerSet.Contains(h) {
+				duplicates = append(duplicates, h)
+			} else {
+				headerSet.Add(h)
+			}
+		}
+
+		return nil, nil, errors.New("ReadCsv", "Duplicate columns detected: %v", duplicates)
 	}
 
 	return dataMap, headers, nil

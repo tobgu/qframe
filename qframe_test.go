@@ -908,6 +908,12 @@ func TestQFrame_ReadCSV(t *testing.T) {
 				"b_number": []int{1, 1, 1},
 				"c_string": []string{"cde", "cde", ""}},
 		},
+		{
+			name:         "Duplicate column error",
+			inputHeaders: []string{"foo", "bar", "foo"},
+			inputData:    "a,b,c",
+			expectedErr:  "Duplicate columns",
+		},
 	}
 
 	for _, tc := range table {

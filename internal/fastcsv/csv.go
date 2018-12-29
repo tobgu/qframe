@@ -1,6 +1,8 @@
 package fastcsv
 
-import "io"
+import (
+	"io"
+)
 
 type bufferedReader struct {
 	r      io.Reader
@@ -177,7 +179,9 @@ func (r *Reader) Next() bool {
 
 	// Handle CSVs that end with a blank last line
 	if len(r.fieldsBuffer) == 0 {
-		r.fields.err = io.EOF
+		if r.fields.err == nil {
+			r.fields.err = io.EOF
+		}
 		return false
 	}
 
