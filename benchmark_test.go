@@ -275,7 +275,7 @@ func BenchmarkQFrame_ReadCSV(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r := bytes.NewReader(input)
-		df := qf.ReadCSV(r)
+		df := qf.ReadCSV(r, csv.RowCountHint(rowCount))
 		if df.Err != nil {
 			b.Errorf("Unexpected CSV error: %s", df.Err)
 		}

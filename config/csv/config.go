@@ -83,3 +83,14 @@ func EnumValues(values map[string][]string) ConfigFunc {
 		}
 	}
 }
+
+// RowCountHint can be used to provide an indication of the number of rows
+// in the CSV. In some cases this will help allocating buffers more efficiently
+// and improve import times.
+//
+// rowCount - The number of rows.
+func RowCountHint(rowCount int) ConfigFunc {
+	return func(c *Config) {
+		c.RowCountHint = rowCount
+	}
+}

@@ -24,6 +24,7 @@ type CSVConfig struct {
 	Delimiter        byte
 	Types            map[string]types.DataType
 	EnumVals         map[string][]string
+	RowCountHint     int
 }
 
 func isEmptyLine(fields [][]byte) bool {
@@ -48,6 +49,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	colBytes := make([][]byte, len(headers))
 
 	row := 1
+	nonEmptyRows := 0
 	for r.Next() {
 		if r.Err() != nil {
 			return nil, nil, errors.Propagate("ReadCSV read body", r.Err())
@@ -72,6 +74,14 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 			start := len(colBytes[i])
 			colBytes[i] = append(colBytes[i], col...)
 			colPointers[i] = append(colPointers[i], bytePointer{start: uint32(start), end: uint32(len(colBytes[i]))})
+		}
+
+		nonEmptyRows++
+		if nonEmptyRows == 1000 && conf.RowCountHint > 2000 {
+			// This is an optimization that can reduce allocations and copying if the number
+			// of rows is provided. Not a huge impact but 5 - 10 % faster for big CSVs.
+			resizeColBytes(colBytes, nonEmptyRows, conf.RowCountHint)
+			resizeColPointers(colPointers, conf.RowCountHint)
 		}
 	}
 
@@ -104,6 +114,28 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	}
 
 	return dataMap, headers, nil
+}
+
+func resizeColPointers(pointers [][]bytePointer, sizeHint int) {
+	for i, p := range pointers {
+		if cap(p) < sizeHint {
+			newP := make([]bytePointer, 0, sizeHint)
+			newP = append(newP, p...)
+			pointers[i] = newP
+		}
+	}
+}
+
+func resizeColBytes(bytes [][]byte, currentRowCount, sizeHint int) {
+	for i, b := range bytes {
+		// Estimate final size by using current size + 20%
+		estimatedCap := int(1.2 * float64(len(b)) * (float64(sizeHint) / float64(currentRowCount)))
+		if cap(b) < estimatedCap {
+			newB := make([]byte, 0, estimatedCap)
+			newB = append(newB, b...)
+			bytes[i] = newB
+		}
+	}
 }
 
 // Convert bytes to data columns, try, in turn int, float, bool and last string.
