@@ -400,7 +400,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		if f, ok := stringApplyFuncs[t]; ok {
 			return f(ix, c), nil
 		}
-		return nil, errors.New("string.apply1", "unknown built in function %c", t)
+		return nil, errors.New("string.apply1", "unknown built in function %v", t)
 	default:
 		return nil, errors.New("string.apply1", "cannot apply type %#v to column", fn)
 	}
