@@ -276,7 +276,7 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *hash.Murm32) {
+func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
 	buf.WriteByte(byte(c.column.data[i]))
 }
 

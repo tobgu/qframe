@@ -12,7 +12,7 @@ import (
 /*
 This package implements a basic hash table used for GroupBy and Distinct operations.
 
-Hashing is done using murmur 3, collisions are handled using linear probing.
+Hashing is done using Go runtime memhash, collisions are handled using linear probing.
 
 When the table reaches a certain load factor it will be reallocated into a new, larger table.
 */
@@ -31,7 +31,7 @@ type table struct {
 	occupiedCount int
 	comparables   []column.Comparable
 	stats         GroupStats
-	hashBuf       *hash.Murm32
+	hashBuf       *hash.MemHash
 	loadFactor    float64
 	groupCount    uint32
 	collectIx     bool
@@ -115,7 +115,7 @@ func newTable(sizeExp int, comparables []column.Comparable, collectIx bool) *tab
 		entries:     make([]tableEntry, integer.Pow2(sizeExp)),
 		comparables: comparables,
 		collectIx:   collectIx,
-		hashBuf:     new(hash.Murm32)}
+		hashBuf:     new(hash.MemHash)}
 }
 
 func equals(comparables []column.Comparable, i, j uint32) bool {

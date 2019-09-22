@@ -254,7 +254,7 @@ func ExampleQFrame_groupByCount() {
 	})
 
 	g := qf.GroupBy(groupby.Columns("COL1"))
-	qf = g.Aggregate(qframe.Aggregation{Fn: "count", Column: "COL2"})
+	qf = g.Aggregate(qframe.Aggregation{Fn: "count", Column: "COL2"}).Sort(qframe.Order{Column: "COL1"})
 
 	fmt.Println(qf)
 

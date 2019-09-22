@@ -49,13 +49,13 @@ func genStringsWithCardinality(seed int64, size, cardinality, strLen int) []stri
 	return result
 }
 
-func TestMurm32_Hash(t *testing.T) {
+func Test_StringDistribution(t *testing.T) {
 	size := 100000
 	strs1 := genStringsWithCardinality(seed1, 100000, 1000, 10)
 	strs2 := genStringsWithCardinality(seed2, 100000, 10, 10)
 	strs3 := genStringsWithCardinality(seed3, 100000, 2, 10)
 
-	hasher := hash.Murm32{}
+	hasher := hash.MemHash{}
 	hashCounter := make(map[uint32]int)
 	stringCounter := make(map[string]int)
 	for i := 0; i < size; i++ {
@@ -75,10 +75,25 @@ func TestMurm32_Hash(t *testing.T) {
 	}
 }
 
-func TestMurm32_Fuzz(t *testing.T) {
+func Test_SmallIntDistribution(t *testing.T) {
+	result := make(map[uint32]uint32)
+	hasher := hash.MemHash{}
+	for i := 1; i < 177; i++ {
+		hasher.Reset()
+		hasher.Write([]byte{0,0,0,0,0,0,0,byte(i)})
+		hash := hasher.Hash()
+		result[hash] = result[hash] + 1
+	}
+
+	if len(result) != 176 {
+		t.Errorf("%d: %v", len(result), result)
+	}
+}
+
+func Test_Fuzz(t *testing.T) {
 	// Verify that there are no crashes for different
 	// combinations of input length.
-	hasher := hash.Murm32{}
+	hasher := hash.MemHash{}
 	for i := 0; i < 10; i++ {
 		hasher.Reset()
 		hasher.Write(make([]byte, i))
