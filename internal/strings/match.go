@@ -77,14 +77,8 @@ func (m *RegexpMatcher) Matches(s string) bool {
 }
 
 func trimPercent(s string) string {
-	if strings.HasPrefix(s, "%") {
-		s = s[1:]
-	}
-
-	if strings.HasSuffix(s, "%") {
-		s = s[:len(s)-1]
-	}
-
+	s = strings.TrimPrefix(s, "%")
+	s = strings.TrimSuffix(s, "%")
 	return s
 }
 

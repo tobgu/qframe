@@ -275,7 +275,7 @@ func TestQFrame_FilterNullArg(t *testing.T) {
 	}
 
 	for _, tc := range table {
-		t.Run(fmt.Sprintf("%s", tc.name), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			enums := map[string][]string{}
 			if tc.isEnum {
 				enums["COL1"] = nil

@@ -1016,7 +1016,10 @@ func (qf QFrame) ToCSV(writer io.Writer) error {
 		for _, col := range columns {
 			row = append(row, col.StringAt(qf.index[i], ""))
 		}
-		w.Write(row)
+		err = w.Write(row)
+		if err != nil {
+			return err
+		}
 	}
 
 	w.Flush()

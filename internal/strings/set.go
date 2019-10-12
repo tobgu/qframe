@@ -3,7 +3,7 @@ package strings
 type StringSet map[string]struct{}
 
 func NewEmptyStringSet() StringSet {
-	return make(StringSet, 0)
+	return make(StringSet)
 }
 
 func NewStringSet(input []string) StringSet {
