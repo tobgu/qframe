@@ -155,7 +155,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSV
 				err = intErr
 				break
 			}
-			intData = append(intData, int(x))
+			intData = append(intData, x)
 		}
 
 		if err == nil {

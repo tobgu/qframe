@@ -8,9 +8,9 @@ import (
 	"unsafe"
 )
 
-func ParseInt(b []byte) (i int64, err error) {
+func ParseInt(b []byte) (i int, err error) {
 	s := UnsafeBytesToString(b)
-	return strconv.ParseInt(s, 10, 64)
+	return strconv.Atoi(s)
 }
 
 func ParseFloat(b []byte) (float64, error) {
