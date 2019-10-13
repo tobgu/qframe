@@ -12,14 +12,19 @@ func assertEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
-func TestColumn(t *testing.T) {
+func panicOnErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
 
+func TestColumn(t *testing.T) {
 	// Column with two NULL values
 	col := &Column{}
-	col.Scan(0.0)
-	col.Scan(nil)
-	col.Scan(2.0)
-	col.Scan(nil)
+	panicOnErr(col.Scan(0.0))
+	panicOnErr(col.Scan(nil))
+	panicOnErr(col.Scan(2.0))
+	panicOnErr(col.Scan(nil))
 	data := col.Data().([]float64)
 	assertEqual(t, 4, len(data))
 	assertEqual(t, data[0], 0.0)
@@ -29,19 +34,19 @@ func TestColumn(t *testing.T) {
 
 	// Column with NULL values at the head
 	col = &Column{}
-	col.Scan(nil)
-	col.Scan(nil)
-	col.Scan(0.0)
-	col.Scan(1.0)
+	panicOnErr(col.Scan(nil))
+	panicOnErr(col.Scan(nil))
+	panicOnErr(col.Scan(0.0))
+	panicOnErr(col.Scan(1.0))
 	data = col.Data().([]float64)
 	assertEqual(t, 4, len(data))
 
 	// Column with all NULL values
 	col = &Column{}
-	col.Scan(nil)
-	col.Scan(nil)
-	col.Scan(nil)
-	col.Scan(nil)
+	panicOnErr(col.Scan(nil))
+	panicOnErr(col.Scan(nil))
+	panicOnErr(col.Scan(nil))
+	panicOnErr(col.Scan(nil))
 	assertEqual(t, nil, col.Data())
 
 }
@@ -49,10 +54,10 @@ func TestColumn(t *testing.T) {
 func TestColumnCoercion(t *testing.T) {
 	col := &Column{}
 	col.coerce = Int64ToBool(col)
-	col.Scan(int64(1))
-	col.Scan(int64(0))
-	col.Scan(int64(1))
-	col.Scan(int64(0))
+	panicOnErr(col.Scan(int64(1)))
+	panicOnErr(col.Scan(int64(0)))
+	panicOnErr(col.Scan(int64(1)))
+	panicOnErr(col.Scan(int64(0)))
 	data := col.Data().([]bool)
 	assertEqual(t, 4, len(data))
 	assertEqual(t, true, data[0])
@@ -64,6 +69,6 @@ func TestColumnCoercion(t *testing.T) {
 func BenchmarkColumn(b *testing.B) {
 	col := &Column{}
 	for n := 0; n < b.N; n++ {
-		col.Scan(1.0)
+		_ = col.Scan(1.0)
 	}
 }

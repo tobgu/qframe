@@ -8,7 +8,7 @@ test: generate
 	go test ./...
 
 lint:
-	~/go/bin/golangci-lint run .
+	~/go/bin/golangci-lint run ./...
 
 ci: test lint
 

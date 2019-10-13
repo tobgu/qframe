@@ -2,7 +2,6 @@ package qplot_test
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
@@ -19,11 +18,9 @@ import (
 	"github.com/tobgu/qframe/contrib/gonum/qplot"
 )
 
-func maybe(t *testing.T, err error) {
-	t.Helper()
+func panicOnErr(err error) {
 	if err != nil {
-		fmt.Printf("Error: %s\n", err.Error())
-		os.Exit(1)
+		panic(err)
 	}
 }
 
@@ -36,14 +33,14 @@ func SlidingWindow(n int) func(float64) float64 {
 			buf = append(buf, value)
 			return value
 		}
-		buf = append(buf[1:len(buf)], value)
+		buf = append(buf[1:], value)
 		return stat.Mean(buf, nil)
 	}
 }
 
-func ExampleQPlot(t *testing.T) {
+func ExampleQPlot() {
 	fp, err := os.Open("testdata/GlobalTemperatures.csv")
-	maybe(t, err)
+	panicOnErr(err)
 	defer fp.Close()
 
 	qf := qframe.ReadCSV(fp)
@@ -57,7 +54,9 @@ func ExampleQPlot(t *testing.T) {
 	qf = qf.Apply(qframe.Instruction{
 		Fn: func(ts *string) int {
 			tm, err := time.Parse("2006-02-01", *ts)
-			maybe(t, err)
+			if err != nil {
+				panic(err)
+			}
 			return int(tm.Unix())
 		},
 		SrcCol1: "dt",
@@ -106,18 +105,18 @@ func ExampleQPlot(t *testing.T) {
 	// Create a new QPlot
 	qp := qplot.NewQPlot(cfg)
 	// Write the plot to disk
-	maybe(t, ioutil.WriteFile("testdata/GlobalTemperatures.png", qp.MustBytes(), 0644))
+	panicOnErr(ioutil.WriteFile("testdata/GlobalTemperatures.png", qp.MustBytes(), 0644))
 }
 
 func getHash(t *testing.T, path string) [32]byte {
 	raw, err := ioutil.ReadFile(path)
-	maybe(t, err)
+	panicOnErr(err)
 	return sha256.Sum256(raw)
 }
 
 func TestQPlot(t *testing.T) {
 	original := getHash(t, "testdata/GlobalTemperatures.png")
-	ExampleQPlot(t)
+	ExampleQPlot()
 	modified := getHash(t, "testdata/GlobalTemperatures.png")
 	if original != modified {
 		t.Errorf("output image has changed")

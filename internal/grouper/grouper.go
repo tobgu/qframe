@@ -28,7 +28,6 @@ type tableEntry struct {
 
 type table struct {
 	entries       []tableEntry
-	occupiedCount int
 	comparables   []column.Comparable
 	stats         GroupStats
 	hashBuf       *hash.MemHash

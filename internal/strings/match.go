@@ -12,8 +12,8 @@ type Matcher interface {
 }
 
 type CIStringMatcher struct {
-	matchString string
-	buf         []byte
+	matchString string   //nolint:structcheck
+	buf         []byte   //nolint:structcheck
 }
 
 type CIPrefixMatcher CIStringMatcher
@@ -41,7 +41,7 @@ func (m *CIExactMatcher) Matches(s string) bool {
 }
 
 type StringMatcher struct {
-	matchString string
+	matchString string    //nolint:structcheck
 }
 
 type PrefixMatcher StringMatcher
