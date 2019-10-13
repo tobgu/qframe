@@ -24,12 +24,12 @@ type {{.type}}View struct {
 func (qf QFrame) {{.type}}View(colName string) ({{.type}}View, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return {{.type}}View{}, errors.New("{{.type}}View", "unknown column: %s", colName)
+		return {{.type}}View{}, qerrors.New("{{.type}}View", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.({{.package}}.Column)
 	if !ok {
-		return {{.type}}View{}, errors.New(
+		return {{.type}}View{}, qerrors.New(
 			"{{.type}}View",
 			"invalid column type, expected: %s, was: %s", "{{.lowerType}}", namedColumn.DataType())
 	}
@@ -46,7 +46,7 @@ func (qf QFrame) {{.type}}View(colName string) ({{.type}}View, error) {
 func (qf QFrame) Must{{.type}}View(colName string) {{.type}}View {
 	view, err := qf.{{.type}}View(colName)
 	if err != nil {
-		panic(errors.Propagate("Must{{.type}}View", err))
+		panic(qerrors.Propagate("Must{{.type}}View", err))
 	}
 	return view
 }
@@ -72,7 +72,7 @@ func GenerateQFrame() (*bytes.Buffer, error) {
 		view("String", "scolumn"),
 		view("Enum", "ecolumn"),
 	}, []string{
-		"github.com/tobgu/qframe/errors",
+		"github.com/tobgu/qframe/qerrors",
 		"github.com/tobgu/qframe/internal/icolumn",
 		"github.com/tobgu/qframe/internal/fcolumn",
 		"github.com/tobgu/qframe/internal/bcolumn",

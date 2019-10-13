@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/mauricelam/genny/generic"
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 )
@@ -70,7 +70,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		}
 		return result, nil
 	default:
-		return nil, errors.New(c.fnName("Apply1"), "cannot apply type %#v to column", fn)
+		return nil, qerrors.New(c.fnName("Apply1"), "cannot apply type %#v to column", fn)
 	}
 }
 
@@ -79,12 +79,12 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	ss2, ok := s2.(Column)
 	if !ok {
-		return Column{}, errors.New(c.fnName("Apply2"), "invalid column type: %s", s2.DataType())
+		return Column{}, qerrors.New(c.fnName("Apply2"), "invalid column type: %s", s2.DataType())
 	}
 
 	t, ok := fn.(func(genericDataType, genericDataType) genericDataType)
 	if !ok {
-		return Column{}, errors.New("Apply2", "invalid function type: %#v", fn)
+		return Column{}, qerrors.New("Apply2", "invalid function type: %#v", fn)
 	}
 
 	result := make([]genericDataType, len(c.data))
@@ -142,12 +142,12 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	case string:
 		actualFn, ok = aggregations[t]
 		if !ok {
-			return nil, errors.New(c.fnName("Aggregate"), "aggregation function %c is not defined for column", fn)
+			return nil, qerrors.New(c.fnName("Aggregate"), "aggregation function %c is not defined for column", fn)
 		}
 	case func([]genericDataType) genericDataType:
 		actualFn = t
 	default:
-		return nil, errors.New(c.fnName("Aggregate"), "invalid aggregation function type: %v", t)
+		return nil, qerrors.New(c.fnName("Aggregate"), "invalid aggregation function type: %v", t)
 	}
 
 	data := make([]genericDataType, 0, len(indices))

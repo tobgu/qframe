@@ -3,7 +3,7 @@ package sql
 import (
 	"database/sql"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -19,7 +19,7 @@ func ReadSQL(rows *sql.Rows, conf SQLConfig) (map[string]types.DataSlice, []stri
 		if columns == nil {
 			names, err := rows.Columns()
 			if err != nil {
-				return nil, colNames, errors.New("ReadSQL Columns", err.Error())
+				return nil, colNames, qerrors.New("ReadSQL Columns", err.Error())
 			}
 			for _, name := range names {
 				col := &Column{precision: conf.Precision}
@@ -41,7 +41,7 @@ func ReadSQL(rows *sql.Rows, conf SQLConfig) (map[string]types.DataSlice, []stri
 						if name == colName {
 							continue checkMap
 						}
-						return nil, colNames, errors.New("ReadSQL Columns", "column %s does not exist to coerce", name)
+						return nil, colNames, qerrors.New("ReadSQL Columns", "column %s does not exist to coerce", name)
 					}
 				}
 			}
@@ -50,7 +50,7 @@ func ReadSQL(rows *sql.Rows, conf SQLConfig) (map[string]types.DataSlice, []stri
 		// Scan the result into our columns
 		err := rows.Scan(columns...)
 		if err != nil {
-			return nil, colNames, errors.New("ReadSQL Scan", err.Error())
+			return nil, colNames, qerrors.New("ReadSQL Scan", err.Error())
 		}
 	}
 	result := map[string]types.DataSlice{}

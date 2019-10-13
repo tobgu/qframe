@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
@@ -87,7 +87,7 @@ func NewConst(val *string, count int, values []string) (Column, error) {
 
 func NewFactory(values []string, sizeHint int) (*Factory, error) {
 	if len(values) > maxCardinality {
-		return nil, errors.New("New enum", "too many unique values, max cardinality is %d", maxCardinality)
+		return nil, qerrors.New("New enum", "too many unique values, max cardinality is %d", maxCardinality)
 	}
 
 	if values == nil {
@@ -148,11 +148,11 @@ func (f *Factory) enumVal(s *string) (enumVal, error) {
 	}
 
 	if f.column.strict {
-		return 0, errors.New("enum val", `unknown enum value "%s" using strict enum`, *s)
+		return 0, qerrors.New("enum val", `unknown enum value "%s" using strict enum`, *s)
 	}
 
 	if len(f.column.values) >= maxCardinality {
-		return 0, errors.New("enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
+		return 0, qerrors.New("enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
 	}
 
 	return f.newEnumVal(*s), nil
@@ -160,11 +160,11 @@ func (f *Factory) enumVal(s *string) (enumVal, error) {
 
 func (f *Factory) appendString(str string) error {
 	if f.column.strict {
-		return errors.New("append enum val", `unknown enum value "%s" using strict enum`, str)
+		return qerrors.New("append enum val", `unknown enum value "%s" using strict enum`, str)
 	}
 
 	if len(f.column.values) >= maxCardinality {
-		return errors.New("append enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
+		return qerrors.New("append enum val", `enum max cardinality (%d) exceeded`, maxCardinality)
 	}
 
 	ev := f.newEnumVal(str)
@@ -316,7 +316,7 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 			}
 
 			if c.strict {
-				return errors.New("filter enum", "Unknown enum value in filter argument: %s", comp)
+				return qerrors.New("filter enum", "Unknown enum value in filter argument: %s", comp)
 			}
 
 			// If no enum values have been explicitly defined we quietly accept the comparator
@@ -335,14 +335,14 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 		if multiFunc, ok := multiFilterFuncs[comparator]; ok {
 			bset, err := multiFunc(comp, c.values)
 			if err != nil {
-				return errors.Propagate("filter enum", err)
+				return qerrors.Propagate("filter enum", err)
 			}
 
 			c.filterWithBitset(index, bset, bIndex)
 			return nil
 		}
 
-		return errors.New("filter enum", "unknown comparison operator for single argument comparison, %v", comparator)
+		return qerrors.New("filter enum", "unknown comparison operator for single argument comparison, %v", comparator)
 	case []string:
 		if multiFunc, ok := multiInputFilterFuncs[comparator]; ok {
 			bset := multiFunc(qfstrings.NewStringSet(comp), c.values)
@@ -350,15 +350,15 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 			return nil
 		}
 
-		return errors.New("filter enum", "unknown comparison operator for multi argument comparison, %v", comparator)
+		return qerrors.New("filter enum", "unknown comparison operator for multi argument comparison, %v", comparator)
 	case Column:
 		if ok := equalTypes(c, comp); !ok {
-			return errors.New("filter enum", "cannot compare enums of different types")
+			return qerrors.New("filter enum", "cannot compare enums of different types")
 		}
 
 		compFunc, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter enum", "unknown comparison operator for column - column comparison, %v", comparator)
+			return qerrors.New("filter enum", "unknown comparison operator for column - column comparison, %v", comparator)
 		}
 
 		compFunc(index, c.data, comp.data, bIndex)
@@ -366,12 +366,12 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 	case nil:
 		compFunc, ok := filterFuncs0[comparator]
 		if !ok {
-			return errors.New("filter enum", "unknown comparison operator for zero argument comparison, %v", comparator)
+			return qerrors.New("filter enum", "unknown comparison operator for zero argument comparison, %v", comparator)
 		}
 		compFunc(index, c.data, bIndex)
 		return nil
 	default:
-		return errors.New("filter enum", "invalid comparison type, %v, expected string or other enum column", reflect.TypeOf(comparatee))
+		return qerrors.New("filter enum", "invalid comparison type, %v, expected string or other enum column", reflect.TypeOf(comparatee))
 	}
 }
 
@@ -386,7 +386,7 @@ func (c Column) filterCustom1(index index.Int, fn func(*string) bool, bIndex ind
 func (c Column) filterCustom2(index index.Int, fn func(*string, *string) bool, comparatee interface{}, bIndex index.Bool) error {
 	otherC, ok := comparatee.(Column)
 	if !ok {
-		return errors.New("filter string", "expected comparatee to be string column, was %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter string", "expected comparatee to be string column, was %v", reflect.TypeOf(comparatee))
 	}
 
 	for i, x := range bIndex {
@@ -408,7 +408,7 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 	case func(*string, *string) bool:
 		err = c.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		err = errors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = qerrors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 	return err
 }
@@ -476,7 +476,7 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	switch t := fn.(type) {
 	case string:
 		// There are currently no build in aggregations for enums
-		return nil, errors.New("enum aggregate", "aggregation function %v is not defined for enum column", fn)
+		return nil, qerrors.New("enum aggregate", "aggregation function %v is not defined for enum column", fn)
 	case func([]*string) *string:
 		data := make([]*string, 0, len(indices))
 		for _, ix := range indices {
@@ -484,7 +484,7 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 		}
 		return scolumn.New(data), nil
 	default:
-		return nil, errors.New("enum aggregate", "invalid aggregation function type: %v", t)
+		return nil, qerrors.New("enum aggregate", "invalid aggregation function type: %v", t)
 	}
 }
 
@@ -532,16 +532,16 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		if f, ok := enumApplyFuncs[t]; ok {
 			return f(ix, c), nil
 		}
-		return nil, errors.New("string.apply1", "unknown built in function %s", t)
+		return nil, qerrors.New("string.apply1", "unknown built in function %s", t)
 	default:
-		return nil, errors.New("enum.apply1", "cannot apply type %#v to column", fn)
+		return nil, qerrors.New("enum.apply1", "cannot apply type %#v to column", fn)
 	}
 }
 
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	s2S, ok := s2.(Column)
 	if !ok {
-		return nil, errors.New("enum.apply2", "invalid column type %s", s2.DataType())
+		return nil, qerrors.New("enum.apply2", "invalid column type %s", s2.DataType())
 	}
 
 	switch t := fn.(type) {
@@ -557,9 +557,9 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 		return scolumn.New(result), nil
 	case string:
 		// No built in functions for enums at this stage
-		return nil, errors.New("enum.apply2", "unknown built in function %s", t)
+		return nil, qerrors.New("enum.apply2", "unknown built in function %s", t)
 	default:
-		return nil, errors.New("enum.apply2", "cannot apply type %#v to column", fn)
+		return nil, qerrors.New("enum.apply2", "cannot apply type %#v to column", fn)
 	}
 }
 

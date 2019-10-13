@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -153,30 +153,30 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 	case string:
 		filterFn, ok := filterFuncs1[comparator]
 		if !ok {
-			return errors.New("filter string", "unknown filter operator %v for single value argument", comparator)
+			return qerrors.New("filter string", "unknown filter operator %v for single value argument", comparator)
 		}
 		return filterFn(index, c, t, bIndex)
 	case []string:
 		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
-			return errors.New("filter string", "unknown filter operator %v for multi value argument", comparator)
+			return qerrors.New("filter string", "unknown filter operator %v for multi value argument", comparator)
 		}
 
 		return filterFn(index, c, qfstrings.NewStringSet(t), bIndex)
 	case Column:
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter string", "unknown filter operator %v for column - column comparison", comparator)
+			return qerrors.New("filter string", "unknown filter operator %v for column - column comparison", comparator)
 		}
 		return filterFn(index, c, t, bIndex)
 	case nil:
 		filterFn, ok := filterFuncs0[comparator]
 		if !ok {
-			return errors.New("filter string", "unknown filter operator %v for zero argument", comparator)
+			return qerrors.New("filter string", "unknown filter operator %v for zero argument", comparator)
 		}
 		return filterFn(index, c, bIndex)
 	default:
-		return errors.New("filter string", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter string", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
 }
 
@@ -191,7 +191,7 @@ func (c Column) filterCustom1(index index.Int, fn func(*string) bool, bIndex ind
 func (c Column) filterCustom2(index index.Int, fn func(*string, *string) bool, comparatee interface{}, bIndex index.Bool) error {
 	otherC, ok := comparatee.(Column)
 	if !ok {
-		return errors.New("filter string", "expected comparatee to be string column, was %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter string", "expected comparatee to be string column, was %v", reflect.TypeOf(comparatee))
 	}
 
 	for i, x := range bIndex {
@@ -213,7 +213,7 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 	case func(*string, *string) bool:
 		err = c.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		err = errors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = qerrors.New("filter string", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 	return err
 }
@@ -349,7 +349,7 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 	switch t := fn.(type) {
 	case string:
 		// There are currently no build in aggregations for strings
-		return nil, errors.New("enum aggregate", "aggregation function %c is not defined for string column", fn)
+		return nil, qerrors.New("enum aggregate", "aggregation function %c is not defined for string column", fn)
 	case func([]*string) *string:
 		data := make([]*string, 0, len(indices))
 		for _, ix := range indices {
@@ -357,7 +357,7 @@ func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, e
 		}
 		return New(data), nil
 	default:
-		return nil, errors.New("string aggregate", "invalid aggregation function type: %v", t)
+		return nil, qerrors.New("string aggregate", "invalid aggregation function type: %v", t)
 	}
 }
 
@@ -398,16 +398,16 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 		if f, ok := stringApplyFuncs[t]; ok {
 			return f(ix, c), nil
 		}
-		return nil, errors.New("string.apply1", "unknown built in function %v", t)
+		return nil, qerrors.New("string.apply1", "unknown built in function %v", t)
 	default:
-		return nil, errors.New("string.apply1", "cannot apply type %#v to column", fn)
+		return nil, qerrors.New("string.apply1", "cannot apply type %#v to column", fn)
 	}
 }
 
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	s2S, ok := s2.(Column)
 	if !ok {
-		return nil, errors.New("string.apply2", "invalid column type %v", reflect.TypeOf(s2))
+		return nil, qerrors.New("string.apply2", "invalid column type %v", reflect.TypeOf(s2))
 	}
 
 	switch t := fn.(type) {
@@ -419,9 +419,9 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 		return New(result), nil
 	case string:
 		// No built in functions for strings at this stage
-		return nil, errors.New("string.apply2", "unknown built in function %s", t)
+		return nil, qerrors.New("string.apply2", "unknown built in function %s", t)
 	default:
-		return nil, errors.New("string.apply2", "cannot apply type %#v to column", fn)
+		return nil, qerrors.New("string.apply2", "cannot apply type %#v to column", fn)
 	}
 }
 

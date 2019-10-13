@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/tobgu/qframe/config/eval"
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -16,12 +16,12 @@ func getFunc(ctx *eval.Context, ac eval.ArgCount, qf QFrame, colName types.Colum
 
 	typ, err := qf.functionType(string(colName))
 	if err != nil {
-		return qf.withErr(errors.Propagate("getFunc", err)), nil
+		return qf.withErr(qerrors.Propagate("getFunc", err)), nil
 	}
 
 	fn, ok := ctx.GetFunc(typ, ac, funcName)
 	if !ok {
-		return qf.withErr(errors.New("getFunc", "Could not find %s %s function with name '%s'", typ, ac, funcName)), nil
+		return qf.withErr(qerrors.New("getFunc", "Could not find %s %s function with name '%s'", typ, ac, funcName)), nil
 	}
 
 	return qf, fn
@@ -276,12 +276,12 @@ func newExprExpr(x interface{}) Expression {
 		if len(l) == 2 || len(l) == 3 {
 			operation, oOk := opIdentifier(l[0])
 			if !oOk {
-				return errorExpr{err: errors.New("newExprExpr", "invalid operation: %v", l[0])}
+				return errorExpr{err: qerrors.New("newExprExpr", "invalid operation: %v", l[0])}
 			}
 
 			lhs := newExpr(l[1])
 			if lhs.Err() != nil {
-				return errorExpr{err: errors.Propagate("newExprExpr", lhs.Err())}
+				return errorExpr{err: qerrors.Propagate("newExprExpr", lhs.Err())}
 			}
 
 			if len(l) == 2 {
@@ -291,15 +291,15 @@ func newExprExpr(x interface{}) Expression {
 
 			rhs := newExpr(l[2])
 			if rhs.Err() != nil {
-				return errorExpr{err: errors.Propagate("newExprExpr", rhs.Err())}
+				return errorExpr{err: qerrors.Propagate("newExprExpr", rhs.Err())}
 			}
 
 			return exprExpr2{operation: operation, lhs: lhs, rhs: rhs}
 		}
-		return errorExpr{err: errors.New("newExprExpr", "Expected a list with two or three elements, was: %v", x)}
+		return errorExpr{err: qerrors.New("newExprExpr", "Expected a list with two or three elements, was: %v", x)}
 	}
 
-	return errorExpr{err: errors.New("newExprExpr", "Expected a list of elements, was: %v", x)}
+	return errorExpr{err: qerrors.New("newExprExpr", "Expected a list of elements, was: %v", x)}
 }
 
 func (e exprExpr1) execute(qf QFrame, ctx *eval.Context) (QFrame, types.ColumnName) {
@@ -375,7 +375,7 @@ func Val(value interface{}) Expression {
 func Expr(name string, args ...interface{}) Expression {
 	if len(args) == 0 {
 		// This is currently the case. It may change if introducing variables for example.
-		return errorExpr{err: errors.New("Expr", "Expressions require at least one argument")}
+		return errorExpr{err: qerrors.New("Expr", "Expressions require at least one argument")}
 
 	}
 

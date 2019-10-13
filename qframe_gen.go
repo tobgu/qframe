@@ -1,12 +1,12 @@
 package qframe
 
 import (
-	"github.com/tobgu/qframe/errors"
 	"github.com/tobgu/qframe/internal/bcolumn"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fcolumn"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/scolumn"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 // Code generated from template/... DO NOT EDIT
@@ -25,12 +25,12 @@ type IntView struct {
 func (qf QFrame) IntView(colName string) (IntView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return IntView{}, errors.New("IntView", "unknown column: %s", colName)
+		return IntView{}, qerrors.New("IntView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(icolumn.Column)
 	if !ok {
-		return IntView{}, errors.New(
+		return IntView{}, qerrors.New(
 			"IntView",
 			"invalid column type, expected: %s, was: %s", "int", namedColumn.DataType())
 	}
@@ -47,7 +47,7 @@ func (qf QFrame) IntView(colName string) (IntView, error) {
 func (qf QFrame) MustIntView(colName string) IntView {
 	view, err := qf.IntView(colName)
 	if err != nil {
-		panic(errors.Propagate("MustIntView", err))
+		panic(qerrors.Propagate("MustIntView", err))
 	}
 	return view
 }
@@ -66,12 +66,12 @@ type FloatView struct {
 func (qf QFrame) FloatView(colName string) (FloatView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return FloatView{}, errors.New("FloatView", "unknown column: %s", colName)
+		return FloatView{}, qerrors.New("FloatView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(fcolumn.Column)
 	if !ok {
-		return FloatView{}, errors.New(
+		return FloatView{}, qerrors.New(
 			"FloatView",
 			"invalid column type, expected: %s, was: %s", "float", namedColumn.DataType())
 	}
@@ -88,7 +88,7 @@ func (qf QFrame) FloatView(colName string) (FloatView, error) {
 func (qf QFrame) MustFloatView(colName string) FloatView {
 	view, err := qf.FloatView(colName)
 	if err != nil {
-		panic(errors.Propagate("MustFloatView", err))
+		panic(qerrors.Propagate("MustFloatView", err))
 	}
 	return view
 }
@@ -107,12 +107,12 @@ type BoolView struct {
 func (qf QFrame) BoolView(colName string) (BoolView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return BoolView{}, errors.New("BoolView", "unknown column: %s", colName)
+		return BoolView{}, qerrors.New("BoolView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(bcolumn.Column)
 	if !ok {
-		return BoolView{}, errors.New(
+		return BoolView{}, qerrors.New(
 			"BoolView",
 			"invalid column type, expected: %s, was: %s", "bool", namedColumn.DataType())
 	}
@@ -129,7 +129,7 @@ func (qf QFrame) BoolView(colName string) (BoolView, error) {
 func (qf QFrame) MustBoolView(colName string) BoolView {
 	view, err := qf.BoolView(colName)
 	if err != nil {
-		panic(errors.Propagate("MustBoolView", err))
+		panic(qerrors.Propagate("MustBoolView", err))
 	}
 	return view
 }
@@ -148,12 +148,12 @@ type StringView struct {
 func (qf QFrame) StringView(colName string) (StringView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return StringView{}, errors.New("StringView", "unknown column: %s", colName)
+		return StringView{}, qerrors.New("StringView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(scolumn.Column)
 	if !ok {
-		return StringView{}, errors.New(
+		return StringView{}, qerrors.New(
 			"StringView",
 			"invalid column type, expected: %s, was: %s", "string", namedColumn.DataType())
 	}
@@ -170,7 +170,7 @@ func (qf QFrame) StringView(colName string) (StringView, error) {
 func (qf QFrame) MustStringView(colName string) StringView {
 	view, err := qf.StringView(colName)
 	if err != nil {
-		panic(errors.Propagate("MustStringView", err))
+		panic(qerrors.Propagate("MustStringView", err))
 	}
 	return view
 }
@@ -189,12 +189,12 @@ type EnumView struct {
 func (qf QFrame) EnumView(colName string) (EnumView, error) {
 	namedColumn, ok := qf.columnsByName[colName]
 	if !ok {
-		return EnumView{}, errors.New("EnumView", "unknown column: %s", colName)
+		return EnumView{}, qerrors.New("EnumView", "unknown column: %s", colName)
 	}
 
 	col, ok := namedColumn.Column.(ecolumn.Column)
 	if !ok {
-		return EnumView{}, errors.New(
+		return EnumView{}, qerrors.New(
 			"EnumView",
 			"invalid column type, expected: %s, was: %s", "enum", namedColumn.DataType())
 	}
@@ -211,7 +211,7 @@ func (qf QFrame) EnumView(colName string) (EnumView, error) {
 func (qf QFrame) MustEnumView(colName string) EnumView {
 	view, err := qf.EnumView(colName)
 	if err != nil {
-		panic(errors.Propagate("MustEnumView", err))
+		panic(qerrors.Propagate("MustEnumView", err))
 	}
 	return view
 }

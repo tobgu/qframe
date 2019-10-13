@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 type Matcher interface {
@@ -105,7 +105,7 @@ func NewMatcher(comparatee string, caseSensitive bool) (Matcher, error) {
 
 		r, err := regexp.Compile(comparatee)
 		if err != nil {
-			return nil, errors.Propagate("string like", err)
+			return nil, qerrors.Propagate("string like", err)
 		}
 
 		return &RegexpMatcher{r: r}, nil

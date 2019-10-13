@@ -14,7 +14,7 @@ import (
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	qsql "github.com/tobgu/qframe/config/sql"
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
 	"github.com/tobgu/qframe/internal/column"
@@ -121,7 +121,7 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 		if values, ok := config.EnumColumns[name]; ok {
 			localS, err = ecolumn.New(t, values)
 			if err != nil {
-				return nil, errors.Propagate(fmt.Sprintf("New columns %s", name), err)
+				return nil, qerrors.Propagate(fmt.Sprintf("New columns %s", name), err)
 			}
 			// Book keeping
 			delete(config.EnumColumns, name)
@@ -132,7 +132,7 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 		if values, ok := config.EnumColumns[name]; ok {
 			localS, err = ecolumn.NewConst(t.Val, t.Count, values)
 			if err != nil {
-				return nil, errors.Propagate(fmt.Sprintf("New columns %s", name), err)
+				return nil, qerrors.Propagate(fmt.Sprintf("New columns %s", name), err)
 			}
 			// Book keeping
 			delete(config.EnumColumns, name)
@@ -151,7 +151,7 @@ func createColumn(name string, data interface{}, config *newqf.Config) (column.C
 	case column.Column:
 		localS = t
 	default:
-		return nil, errors.New("createColumn", `unknown column data type "%s" for column "%s"`, reflect.TypeOf(t), name)
+		return nil, qerrors.New("createColumn", `unknown column data type "%s" for column "%s"`, reflect.TypeOf(t), name)
 	}
 	return localS, nil
 }
@@ -164,7 +164,7 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 
 	for colName := range data {
 		if err := qfstrings.CheckName(colName); err != nil {
-			return QFrame{Err: errors.Propagate("New", err)}
+			return QFrame{Err: qerrors.Propagate("New", err)}
 		}
 	}
 
@@ -177,12 +177,12 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 	}
 
 	if len(config.ColumnOrder) != len(data) {
-		return QFrame{Err: errors.New("New", "number of columns and columns order length do not match, %d, %d", len(config.ColumnOrder), len(data))}
+		return QFrame{Err: qerrors.New("New", "number of columns and columns order length do not match, %d, %d", len(config.ColumnOrder), len(data))}
 	}
 
 	for _, name := range config.ColumnOrder {
 		if _, ok := data[name]; !ok {
-			return QFrame{Err: errors.New("New", `column "%s" in column order does not exist`, name)}
+			return QFrame{Err: qerrors.New("New", `column "%s" in column order does not exist`, name)}
 		}
 	}
 
@@ -204,7 +204,7 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 		}
 
 		if firstLen != currentLen {
-			return QFrame{Err: errors.New("New", "different lengths on columns not allowed")}
+			return QFrame{Err: qerrors.New("New", "different lengths on columns not allowed")}
 		}
 	}
 
@@ -214,7 +214,7 @@ func New(data map[string]types.DataSlice, fns ...newqf.ConfigFunc) QFrame {
 			colNames = append(colNames, k)
 		}
 
-		return QFrame{Err: errors.New("New", "unknown enum columns: %v", colNames)}
+		return QFrame{Err: qerrors.New("New", "unknown enum columns: %v", colNames)}
 	}
 
 	return QFrame{columns: columns, columnsByName: colByName, index: index.NewAscending(uint32(currentLen)), Err: nil}
@@ -260,13 +260,13 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 	for _, f := range filters {
 		s, ok := qf.columnsByName[f.Column]
 		if !ok {
-			return qf.withErr(errors.New("Filter", unknownCol(f.Column)))
+			return qf.withErr(qerrors.New("Filter", unknownCol(f.Column)))
 		}
 
 		if name, ok := f.Arg.(types.ColumnName); ok {
 			argC, ok := qf.columnsByName[string(name)]
 			if !ok {
-				return qf.withErr(errors.New("Filter", `unknown argument column: "%s"`, name))
+				return qf.withErr(qerrors.New("Filter", `unknown argument column: "%s"`, name))
 			}
 			f.Arg = argC.Column
 		}
@@ -305,7 +305,7 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 		}
 
 		if err != nil {
-			return qf.withErr(errors.Propagate(fmt.Sprintf("Filter column '%s'", f.Column), err))
+			return qf.withErr(qerrors.Propagate(fmt.Sprintf("Filter column '%s'", f.Column), err))
 		}
 	}
 
@@ -378,7 +378,7 @@ func (qf QFrame) Sort(orders ...Order) QFrame {
 	for _, o := range orders {
 		s, ok := qf.columnsByName[o.Column]
 		if !ok {
-			return qf.withErr(errors.New("Sort", unknownCol(o.Column)))
+			return qf.withErr(qerrors.New("Sort", unknownCol(o.Column)))
 		}
 
 		comparables = append(comparables, s.Comparable(o.Reverse, false, o.NullLast))
@@ -470,7 +470,7 @@ func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 
 	for _, col := range config.Columns {
 		if _, ok := qf.columnsByName[col]; !ok {
-			return qf.withErr(errors.New("Distinct", unknownCol(col)))
+			return qf.withErr(qerrors.New("Distinct", unknownCol(col)))
 		}
 	}
 
@@ -484,7 +484,7 @@ func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 func (qf QFrame) checkColumns(operation string, columns []string) error {
 	for _, col := range columns {
 		if _, ok := qf.columnsByName[col]; !ok {
-			return errors.New("operation", unknownCol(col))
+			return qerrors.New("operation", unknownCol(col))
 		}
 	}
 
@@ -645,15 +645,15 @@ func (qf QFrame) Slice(start, end int) QFrame {
 	}
 
 	if start < 0 {
-		return qf.withErr(errors.New("Slice", "start must be non negative"))
+		return qf.withErr(qerrors.New("Slice", "start must be non negative"))
 	}
 
 	if start > end {
-		return qf.withErr(errors.New("Slice", "start must not be greater than end"))
+		return qf.withErr(qerrors.New("Slice", "start must not be greater than end"))
 	}
 
 	if end > qf.Len() {
-		return qf.withErr(errors.New("Slice", "end must not be greater than qframe length"))
+		return qf.withErr(qerrors.New("Slice", "end must not be greater than qframe length"))
 	}
 
 	return qf.withIndex(qf.index[start:end])
@@ -661,7 +661,7 @@ func (qf QFrame) Slice(start, end int) QFrame {
 
 func (qf QFrame) setColumn(name string, c column.Column) QFrame {
 	if err := qfstrings.CheckName(name); err != nil {
-		return qf.withErr(errors.Propagate("setColumn", err))
+		return qf.withErr(qerrors.Propagate("setColumn", err))
 	}
 
 	newF := qf.withIndex(qf.index)
@@ -701,7 +701,7 @@ func (qf QFrame) Copy(dstCol, srcCol string) QFrame {
 
 	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("Copy", unknownCol(srcCol)))
+		return qf.withErr(qerrors.New("Copy", unknownCol(srcCol)))
 	}
 
 	if dstCol == srcCol {
@@ -762,7 +762,7 @@ func (qf QFrame) apply0(fn types.DataFuncOrBuiltInId, dstCol string) QFrame {
 	case types.ColumnName:
 		return qf.Copy(dstCol, string(t))
 	default:
-		return qf.withErr(errors.New("apply0", "unknown apply type: %v", reflect.TypeOf(fn)))
+		return qf.withErr(qerrors.New("apply0", "unknown apply type: %v", reflect.TypeOf(fn)))
 	}
 
 	c, err := createColumn(dstCol, data, newqf.NewConfig(nil))
@@ -781,14 +781,14 @@ func (qf QFrame) apply1(fn types.DataFuncOrBuiltInId, dstCol, srcCol string) QFr
 
 	namedColumn, ok := qf.columnsByName[srcCol]
 	if !ok {
-		return qf.withErr(errors.New("apply1", unknownCol(srcCol)))
+		return qf.withErr(qerrors.New("apply1", unknownCol(srcCol)))
 	}
 
 	srcColumn := namedColumn.Column
 
 	sliceResult, err := srcColumn.Apply1(fn, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("apply1", err))
+		return qf.withErr(qerrors.Propagate("apply1", err))
 	}
 
 	var resultColumn column.Column
@@ -804,7 +804,7 @@ func (qf QFrame) apply1(fn types.DataFuncOrBuiltInId, dstCol, srcCol string) QFr
 	case column.Column:
 		resultColumn = t
 	default:
-		return qf.withErr(errors.New("apply1", "unexpected type of new columns %#v", t))
+		return qf.withErr(qerrors.New("apply1", "unexpected type of new columns %#v", t))
 	}
 
 	return qf.setColumn(dstCol, resultColumn)
@@ -818,19 +818,19 @@ func (qf QFrame) apply2(fn types.DataFuncOrBuiltInId, dstCol, srcCol1, srcCol2 s
 
 	namedSrcColumn1, ok := qf.columnsByName[srcCol1]
 	if !ok {
-		return qf.withErr(errors.New("apply2", unknownCol(srcCol1)))
+		return qf.withErr(qerrors.New("apply2", unknownCol(srcCol1)))
 	}
 	srcColumn1 := namedSrcColumn1.Column
 
 	namedSrcColumn2, ok := qf.columnsByName[srcCol2]
 	if !ok {
-		return qf.withErr(errors.New("apply2", unknownCol(srcCol2)))
+		return qf.withErr(qerrors.New("apply2", unknownCol(srcCol2)))
 	}
 	srcColumn2 := namedSrcColumn2.Column
 
 	resultColumn, err := srcColumn1.Apply2(fn, srcColumn2, qf.index)
 	if err != nil {
-		return qf.withErr(errors.Propagate("apply2", err))
+		return qf.withErr(qerrors.Propagate("apply2", err))
 	}
 
 	return qf.setColumn(dstCol, resultColumn)
@@ -925,7 +925,7 @@ func (qf QFrame) Eval(dstCol string, expr Expression, ff ...eval.ConfigFunc) QFr
 func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 	namedColumn, ok := qf.columnsByName[name]
 	if !ok {
-		return types.FunctionTypeUndefined, errors.New("functionType", unknownCol(name))
+		return types.FunctionTypeUndefined, qerrors.New("functionType", unknownCol(name))
 	}
 
 	return namedColumn.FunctionType(), nil
@@ -992,7 +992,7 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 // a custom written CSV writer that handles quoting etc. differently.
 func (qf QFrame) ToCSV(writer io.Writer) error {
 	if qf.Err != nil {
-		return errors.Propagate("ToCSV", qf.Err)
+		return qerrors.Propagate("ToCSV", qf.Err)
 	}
 
 	row := make([]string, 0, len(qf.columns))
@@ -1031,7 +1031,7 @@ func (qf QFrame) ToCSV(writer io.Writer) error {
 // Time complexity O(m * n) where m = number of rows, n = number of columns.
 func (qf QFrame) ToJSON(writer io.Writer) error {
 	if qf.Err != nil {
-		return errors.Propagate("ToJSON", qf.Err)
+		return qerrors.Propagate("ToJSON", qf.Err)
 	}
 
 	colByteNames := make([][]byte, 0, len(qf.columns))
@@ -1082,14 +1082,14 @@ func (qf QFrame) ToJSON(writer io.Writer) error {
 // ToSQL writes a QFrame into a SQL database.
 func (qf QFrame) ToSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) error {
 	if qf.Err != nil {
-		return errors.Propagate("ToSQL", qf.Err)
+		return qerrors.Propagate("ToSQL", qf.Err)
 	}
 	builders := make([]qfsqlio.ArgBuilder, len(qf.columns))
 	var err error
 	for i, column := range qf.columns {
 		builders[i], err = qfsqlio.NewArgBuilder(column.Column)
 		if err != nil {
-			return errors.New("ToSQL", err.Error())
+			return qerrors.New("ToSQL", err.Error())
 		}
 	}
 	for i := range qf.index {
@@ -1099,7 +1099,7 @@ func (qf QFrame) ToSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) error {
 		}
 		_, err = tx.Exec(qfsqlio.Insert(qf.ColumnNames(), qfsqlio.SQLConfig(qsql.NewConfig(confFuncs))), args...)
 		if err != nil {
-			return errors.New("ToSQL", err.Error())
+			return qerrors.New("ToSQL", err.Error())
 		}
 	}
 	return nil

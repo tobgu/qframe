@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -68,17 +68,17 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 	case bool:
 		compFunc, ok := filterFuncs[comparator]
 		if !ok {
-			return errors.New("filter bool", "invalid comparison operator for bool, %v", comparator)
+			return qerrors.New("filter bool", "invalid comparison operator for bool, %v", comparator)
 		}
 		compFunc(index, c.data, t, bIndex)
 	case Column:
 		compFunc, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter bool", "invalid comparison operator for bool, %v", comparator)
+			return qerrors.New("filter bool", "invalid comparison operator for bool, %v", comparator)
 		}
 		compFunc(index, c.data, t.data, bIndex)
 	default:
-		return errors.New("filter bool", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter bool", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func (c Column) filterCustom1(index index.Int, fn func(bool) bool, bIndex index.
 func (c Column) filterCustom2(index index.Int, fn func(bool, bool) bool, comparatee interface{}, bIndex index.Bool) error {
 	otherC, ok := comparatee.(Column)
 	if !ok {
-		return errors.New("filter bool", "expected comparatee to be bool column, was %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter bool", "expected comparatee to be bool column, was %v", reflect.TypeOf(comparatee))
 	}
 
 	for i, x := range bIndex {
@@ -116,7 +116,7 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 	case func(bool, bool) bool:
 		err = c.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		err = errors.New("filter bool", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = qerrors.New("filter bool", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 	return err
 }

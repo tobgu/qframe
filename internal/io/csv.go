@@ -4,7 +4,7 @@ import (
 	"io"
 	"math"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fastcsv"
 	"github.com/tobgu/qframe/internal/ncolumn"
@@ -35,7 +35,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	r := fastcsv.NewReader(reader, conf.Delimiter)
 	byteHeader, err := r.Read()
 	if err != nil {
-		return nil, nil, errors.Propagate("ReadCSV read header", err)
+		return nil, nil, qerrors.Propagate("ReadCSV read header", err)
 	}
 
 	headers := make([]string, len(byteHeader))
@@ -52,7 +52,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	nonEmptyRows := 0
 	for r.Next() {
 		if r.Err() != nil {
-			return nil, nil, errors.Propagate("ReadCSV read body", r.Err())
+			return nil, nil, qerrors.Propagate("ReadCSV read body", r.Err())
 		}
 
 		row++
@@ -62,7 +62,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 				continue
 			}
 
-			return nil, nil, errors.New("ReadCSV", "Wrong number of columns on line %d, expected %d, was %d",
+			return nil, nil, qerrors.New("ReadCSV", "Wrong number of columns on line %d, expected %d, was %d",
 				row, len(headers), len(fields))
 		}
 
@@ -89,14 +89,14 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 	for i, header := range headers {
 		data, err := columnToData(colBytes[i], colPointers[i], header, conf)
 		if err != nil {
-			return nil, nil, errors.Propagate("ReadCSV convert data", err)
+			return nil, nil, qerrors.Propagate("ReadCSV convert data", err)
 		}
 
 		dataMap[header] = data
 	}
 
 	if len(conf.EnumVals) > 0 {
-		return nil, nil, errors.New("ReadCsv", "Enum values specified for non enum column")
+		return nil, nil, qerrors.New("ReadCsv", "Enum values specified for non enum column")
 	}
 
 	if len(headers) > len(dataMap) {
@@ -110,7 +110,7 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 			}
 		}
 
-		return nil, nil, errors.New("ReadCsv", "Duplicate columns detected: %v", duplicates)
+		return nil, nil, qerrors.New("ReadCsv", "Duplicate columns detected: %v", duplicates)
 	}
 
 	return dataMap, headers, nil
@@ -163,7 +163,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSV
 		}
 
 		if dataType == types.Int {
-			return nil, errors.Propagate("Create int column", err)
+			return nil, qerrors.Propagate("Create int column", err)
 		}
 	}
 
@@ -189,7 +189,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSV
 		}
 
 		if dataType == types.Float {
-			return nil, errors.Propagate("Create float column", err)
+			return nil, qerrors.Propagate("Create float column", err)
 		}
 	}
 
@@ -210,7 +210,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSV
 		}
 
 		if dataType == types.Bool {
-			return nil, errors.Propagate("Create bool column", err)
+			return nil, qerrors.Propagate("Create bool column", err)
 		}
 	}
 
@@ -241,7 +241,7 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSV
 			} else {
 				err := factory.AppendByteString(bytes[p.start:p.end])
 				if err != nil {
-					return nil, errors.Propagate("Create column", err)
+					return nil, qerrors.Propagate("Create column", err)
 				}
 			}
 		}
@@ -249,5 +249,5 @@ func columnToData(bytes []byte, pointers []bytePointer, colName string, conf CSV
 		return factory.ToColumn(), nil
 	}
 
-	return nil, errors.New("Create column", "unknown data type: %s", dataType)
+	return nil, qerrors.New("Create column", "unknown data type: %s", dataType)
 }

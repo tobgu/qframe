@@ -1,7 +1,7 @@
 package icolumn
 
 import (
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -125,23 +125,23 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 	if intC, ok := intComp(comparatee); ok {
 		filterFn, ok := filterFuncs[comparator]
 		if !ok {
-			return errors.New("filter int", "unknown filter operator %v", comparator)
+			return qerrors.New("filter int", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, c.data, intC, bIndex)
 	} else if set, ok := newIntSet(comparatee); ok {
 		filterFn, ok := multiInputFilterFuncs[comparator]
 		if !ok {
-			return errors.New("filter int", "unknown filter operator %v", comparator)
+			return qerrors.New("filter int", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, c.data, set, bIndex)
 	} else if columnC, ok := comparatee.(Column); ok {
 		filterFn, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter int", "unknown filter operator %v", comparator)
+			return qerrors.New("filter int", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, c.data, columnC.data, bIndex)
 	} else {
-		return errors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
 
 	return nil
@@ -158,7 +158,7 @@ func (c Column) filterCustom1(index index.Int, fn func(int) bool, bIndex index.B
 func (c Column) filterCustom2(index index.Int, fn func(int, int) bool, comparatee interface{}, bIndex index.Bool) error {
 	otherC, ok := comparatee.(Column)
 	if !ok {
-		return errors.New("filter int", "expected comparatee to be int column, was %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter int", "expected comparatee to be int column, was %v", reflect.TypeOf(comparatee))
 	}
 
 	for i, x := range bIndex {
@@ -180,7 +180,7 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 	case func(int, int) bool:
 		err = c.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		err = errors.New("filter int", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = qerrors.New("filter int", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 	return err
 }

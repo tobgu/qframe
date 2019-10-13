@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/math/integer"
@@ -52,7 +52,7 @@ func anyFilterErr(clauses []FilterClause) error {
 // And returns a new AndClause that represents the conjunction of the passed filter clauses.
 func And(clauses ...FilterClause) AndClause {
 	if len(clauses) == 0 {
-		return AndClause{err: errors.New("new AND clause", "zero subclauses not allowed")}
+		return AndClause{err: qerrors.New("new AND clause", "zero subclauses not allowed")}
 	}
 
 	return AndClause{subClauses: clauses, err: anyFilterErr(clauses)}
@@ -101,7 +101,7 @@ func (c AndClause) Err() error {
 // Or returns a new OrClause that represents the disjunction of the passed filter clauses.
 func Or(clauses ...FilterClause) OrClause {
 	if len(clauses) == 0 {
-		return OrClause{err: errors.New("new OR clause", "zero subclauses not allowed")}
+		return OrClause{err: qerrors.New("new OR clause", "zero subclauses not allowed")}
 	}
 
 	return OrClause{subClauses: clauses, err: anyFilterErr(clauses)}

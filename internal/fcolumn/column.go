@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -100,28 +100,28 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 	switch t := comparatee.(type) {
 	case float64:
 		if math.IsNaN(t) {
-			return errors.New("filter float", "NaN not allowed as filter argument")
+			return qerrors.New("filter float", "NaN not allowed as filter argument")
 		}
 
 		compFunc, ok := filterFuncs1[comparator]
 		if !ok {
-			return errors.New("filter float", "invalid comparison operator to single argument filter, %v", comparator)
+			return qerrors.New("filter float", "invalid comparison operator to single argument filter, %v", comparator)
 		}
 		compFunc(index, c.data, t, bIndex)
 	case Column:
 		compFunc, ok := filterFuncs2[comparator]
 		if !ok {
-			return errors.New("filter float", "invalid comparison operator to column - column filter, %v", comparator)
+			return qerrors.New("filter float", "invalid comparison operator to column - column filter, %v", comparator)
 		}
 		compFunc(index, c.data, t.data, bIndex)
 	case nil:
 		compFunc, ok := filterFuncs0[comparator]
 		if !ok {
-			return errors.New("filter float", "invalid comparison operator to zero argument filter, %v", comparator)
+			return qerrors.New("filter float", "invalid comparison operator to zero argument filter, %v", comparator)
 		}
 		compFunc(index, c.data, bIndex)
 	default:
-		return errors.New("filter float", "invalid comparison value type %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter float", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}
 	return nil
 }
@@ -137,7 +137,7 @@ func (c Column) filterCustom1(index index.Int, fn func(float64) bool, bIndex ind
 func (c Column) filterCustom2(index index.Int, fn func(float64, float64) bool, comparatee interface{}, bIndex index.Bool) error {
 	otherC, ok := comparatee.(Column)
 	if !ok {
-		return errors.New("filter float", "expected comparatee to be float column, was %v", reflect.TypeOf(comparatee))
+		return qerrors.New("filter float", "expected comparatee to be float column, was %v", reflect.TypeOf(comparatee))
 	}
 
 	for i, x := range bIndex {
@@ -159,7 +159,7 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 	case func(float64, float64) bool:
 		err = c.filterCustom2(index, t, comparatee, bIndex)
 	default:
-		err = errors.New("filter float", "invalid filter type %v", reflect.TypeOf(comparator))
+		err = qerrors.New("filter float", "invalid filter type %v", reflect.TypeOf(comparator))
 	}
 	return err
 }

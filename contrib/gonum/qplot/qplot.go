@@ -6,7 +6,7 @@ import (
 
 	"gonum.org/v1/plot"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 // QPlot is a abstraction over Gonum's plotting interface
@@ -30,7 +30,7 @@ func (qp QPlot) WriteTo(writer io.Writer) error {
 	for _, fn := range qp.Plotters {
 		pltr, err := fn(plt)
 		if err != nil {
-			return errors.Propagate("WriteTo", err)
+			return qerrors.Propagate("WriteTo", err)
 		}
 		plt.Add(pltr)
 	}
@@ -50,7 +50,7 @@ func (qp QPlot) Bytes() ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	err := qp.WriteTo(buf)
 	if err != nil {
-		return nil, errors.Propagate("Bytes", err)
+		return nil, qerrors.Propagate("Bytes", err)
 	}
 	return buf.Bytes(), nil
 }
@@ -60,7 +60,7 @@ func (qp QPlot) Bytes() ([]byte, error) {
 func (qp QPlot) MustBytes() []byte {
 	raw, err := qp.Bytes()
 	if err != nil {
-		panic(errors.Propagate("MustBytes", err))
+		panic(qerrors.Propagate("MustBytes", err))
 	}
 	return raw
 }

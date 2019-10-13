@@ -1,7 +1,7 @@
 package ecolumn
 
 import (
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
@@ -50,7 +50,7 @@ func ilike(comp string, values []string) (*bitset, error) {
 func filterLike(comp string, values []string, caseSensitive bool) (*bitset, error) {
 	matcher, err := qfstrings.NewMatcher(comp, caseSensitive)
 	if err != nil {
-		return nil, errors.Propagate("enum like", err)
+		return nil, qerrors.Propagate("enum like", err)
 	}
 
 	bset := &bitset{}

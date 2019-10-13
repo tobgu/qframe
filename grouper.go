@@ -1,7 +1,7 @@
 package qframe
 
 import (
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/grouper"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
@@ -65,12 +65,12 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 	for _, agg := range aggs {
 		col, ok := g.columnsByName[agg.Column]
 		if !ok {
-			return QFrame{Err: errors.New("Aggregate", unknownCol(agg.Column))}
+			return QFrame{Err: qerrors.New("Aggregate", unknownCol(agg.Column))}
 		}
 
 		_, ok = newColumnsByName[agg.Column]
 		if ok {
-			return QFrame{Err: errors.New(
+			return QFrame{Err: qerrors.New(
 				"Aggregate",
 				"cannot aggregate on column that is part of group by or is already an aggregate: %s", agg.Column)}
 		}
@@ -87,7 +87,7 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 		} else {
 			col.Column, err = col.Aggregate(g.indices, agg.Fn)
 			if err != nil {
-				return QFrame{Err: errors.Propagate("Aggregate", err)}
+				return QFrame{Err: qerrors.Propagate("Aggregate", err)}
 			}
 		}
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/tobgu/qframe/internal/math/float"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 // Column implements the sql.Scanner interface
@@ -46,7 +46,7 @@ func (c *Column) Null() error {
 	case reflect.String:
 		c.data.Strings = append(c.data.Strings, nil)
 	default:
-		return errors.New("Column Null", "non-nullable type: %s", c.kind)
+		return qerrors.New("Column Null", "non-nullable type: %s", c.kind)
 	}
 	return nil
 }
@@ -126,7 +126,7 @@ func (c *Column) Scan(t interface{}) error {
 			return err
 		}
 	default:
-		return errors.New(
+		return qerrors.New(
 			"Column Scan", "unsupported scan type: %s", reflect.ValueOf(t).Kind())
 	}
 	return nil

@@ -7,7 +7,7 @@ import (
 	"go/format"
 	"os"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	bgenerator "github.com/tobgu/qframe/internal/bcolumn"
 	egenerator "github.com/tobgu/qframe/internal/ecolumn"
 	fgenerator "github.com/tobgu/qframe/internal/fcolumn"
@@ -60,7 +60,7 @@ func main() {
 
 func writeFile(buf *bytes.Buffer, file string) error {
 	if file == "" {
-		return errors.New("writeFile", "Output file must be specified")
+		return qerrors.New("writeFile", "Output file must be specified")
 	}
 
 	f, err := os.Create(file)
@@ -74,7 +74,7 @@ func writeFile(buf *bytes.Buffer, file string) error {
 	fmtSrc, err := format.Source(src)
 	if err != nil {
 		os.Stdout.WriteString(string(src))
-		return errors.Propagate("Format error", err)
+		return qerrors.Propagate("Format error", err)
 	}
 
 	_, err = f.Write(fmtSrc)

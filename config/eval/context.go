@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/function"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/types"
@@ -137,7 +137,7 @@ func (ctx *Context) setFunc(typ types.FunctionType, ac ArgCount, name string, fn
 // SetFunc inserts a function into the context under the given name.
 func (ctx *Context) SetFunc(name string, fn interface{}) error {
 	if err := qfstrings.CheckName(name); err != nil {
-		return errors.Propagate("SetFunc", err)
+		return qerrors.Propagate("SetFunc", err)
 	}
 
 	// Since there's such a flexibility in the function types that can be
@@ -171,7 +171,7 @@ func (ctx *Context) SetFunc(name string, fn interface{}) error {
 		ac, typ = ArgCountOne, types.FunctionTypeString
 
 	default:
-		return errors.New("SetFunc", "invalid function type for function \"%s\": %v", name, reflect.TypeOf(fn))
+		return qerrors.New("SetFunc", "invalid function type for function \"%s\": %v", name, reflect.TypeOf(fn))
 	}
 
 	ctx.setFunc(typ, ac, name, fn)

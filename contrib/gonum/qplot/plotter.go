@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/tobgu/qframe"
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -82,10 +82,10 @@ type ValueFunc func(i int) float64
 // if it is a numeric column, or returns an error.
 func NewValueFunc(col string, qf qframe.QFrame) (ValueFunc, error) {
 	if !isNumCol(col, qf) {
-		return nil, errors.New("NewValueFunc", "Column %s is not a numeric value", col)
+		return nil, qerrors.New("NewValueFunc", "Column %s is not a numeric value", col)
 	}
 	if !qf.Contains(col) {
-		return nil, errors.New("NewValueFunc", "QFrame does not contain column %s", col)
+		return nil, qerrors.New("NewValueFunc", "QFrame does not contain column %s", col)
 	}
 	switch qf.ColumnTypeMap()[col] {
 	case types.Int:
@@ -93,7 +93,7 @@ func NewValueFunc(col string, qf qframe.QFrame) (ValueFunc, error) {
 	case types.Float:
 		return ValueOfFloat(qf.MustFloatView(col)), nil
 	default:
-		panic(errors.New("NewValueFunc", "forgot to support a new column type?"))
+		panic(qerrors.New("NewValueFunc", "forgot to support a new column type?"))
 	}
 }
 
@@ -102,7 +102,7 @@ func NewValueFunc(col string, qf qframe.QFrame) (ValueFunc, error) {
 func MustNewValueFunc(col string, qf qframe.QFrame) ValueFunc {
 	fn, err := NewValueFunc(col, qf)
 	if err != nil {
-		panic(errors.Propagate("MustNewValueFunc", err))
+		panic(qerrors.Propagate("MustNewValueFunc", err))
 	}
 	return fn
 }
@@ -149,7 +149,7 @@ func NewValuer(col string, qf qframe.QFrame) (Valuer, error) {
 func MustNewValuer(col string, qf qframe.QFrame) Valuer {
 	valuer, err := NewValuer(col, qf)
 	if err != nil {
-		panic(errors.Propagate("MustNewValuer", err))
+		panic(qerrors.Propagate("MustNewValuer", err))
 	}
 	return valuer
 }
@@ -173,11 +173,11 @@ func (xy XYer) XY(i int) (float64, float64) { return xy.xfn(i), xy.yfn(i) }
 func NewXYer(x, y string, qf qframe.QFrame) (XYer, error) {
 	xvals, err := NewValueFunc(x, qf)
 	if err != nil {
-		return XYer{}, errors.Propagate("NewXYer", err)
+		return XYer{}, qerrors.Propagate("NewXYer", err)
 	}
 	yvals, err := NewValueFunc(y, qf)
 	if err != nil {
-		return XYer{}, errors.Propagate("NewXYer", err)
+		return XYer{}, qerrors.Propagate("NewXYer", err)
 	}
 	return XYer{len: qf.Len(), xfn: xvals, yfn: yvals}, nil
 }
@@ -187,7 +187,7 @@ func NewXYer(x, y string, qf qframe.QFrame) (XYer, error) {
 func MustNewXYer(x, y string, qf qframe.QFrame) XYer {
 	xyer, err := NewXYer(x, y, qf)
 	if err != nil {
-		panic(errors.Propagate("MustNewXYer", err))
+		panic(qerrors.Propagate("MustNewXYer", err))
 	}
 	return xyer
 }
@@ -219,15 +219,15 @@ func (xyz XYZer) XY(i int) (float64, float64) {
 func NewXYZer(x, y, z string, qf qframe.QFrame) (XYZer, error) {
 	xvals, err := NewValueFunc(x, qf)
 	if err != nil {
-		return XYZer{}, errors.Propagate("NewXYZer", err)
+		return XYZer{}, qerrors.Propagate("NewXYZer", err)
 	}
 	yvals, err := NewValueFunc(y, qf)
 	if err != nil {
-		return XYZer{}, errors.Propagate("NewXYZer", err)
+		return XYZer{}, qerrors.Propagate("NewXYZer", err)
 	}
 	zvals, err := NewValueFunc(z, qf)
 	if err != nil {
-		return XYZer{}, errors.Propagate("NewXYZer", err)
+		return XYZer{}, qerrors.Propagate("NewXYZer", err)
 	}
 	return XYZer{len: qf.Len(), xfn: xvals, yfn: yvals, zfn: zvals}, nil
 }
@@ -237,7 +237,7 @@ func NewXYZer(x, y, z string, qf qframe.QFrame) (XYZer, error) {
 func MustNewXYZer(x, y, z string, qf qframe.QFrame) XYZer {
 	xyzer, err := NewXYZer(x, y, z, qf)
 	if err != nil {
-		panic(errors.Propagate("MustNewXYZer", err))
+		panic(qerrors.Propagate("MustNewXYZer", err))
 	}
 	return xyzer
 }
@@ -258,11 +258,11 @@ func (ye YErrorer) YError(i int) (float64, float64) { return ye.low(i), ye.high(
 func NewYErrorer(low, high string, qf qframe.QFrame) (YErrorer, error) {
 	lowFn, err := NewValueFunc(low, qf)
 	if err != nil {
-		return YErrorer{}, errors.Propagate("NewYErrorer", err)
+		return YErrorer{}, qerrors.Propagate("NewYErrorer", err)
 	}
 	highFn, err := NewValueFunc(high, qf)
 	if err != nil {
-		return YErrorer{}, errors.Propagate("NewYErrorer", err)
+		return YErrorer{}, qerrors.Propagate("NewYErrorer", err)
 	}
 	return YErrorer{low: lowFn, high: highFn}, nil
 }
@@ -273,7 +273,7 @@ func NewYErrorer(low, high string, qf qframe.QFrame) (YErrorer, error) {
 func MustNewYErrorer(low, high string, qf qframe.QFrame) YErrorer {
 	y, err := NewYErrorer(low, high, qf)
 	if err != nil {
-		panic(errors.Propagate("MustNewYErrorer", err))
+		panic(qerrors.Propagate("MustNewYErrorer", err))
 	}
 	return y
 }
@@ -294,11 +294,11 @@ func (xe XErrorer) XError(i int) (float64, float64) { return xe.low(i), xe.high(
 func NewXErrorer(low, high string, qf qframe.QFrame) (XErrorer, error) {
 	lowFn, err := NewValueFunc(low, qf)
 	if err != nil {
-		return XErrorer{}, errors.Propagate("NewXErrorer", err)
+		return XErrorer{}, qerrors.Propagate("NewXErrorer", err)
 	}
 	highFn, err := NewValueFunc(high, qf)
 	if err != nil {
-		return XErrorer{}, errors.Propagate("NewXErrorer", err)
+		return XErrorer{}, qerrors.Propagate("NewXErrorer", err)
 	}
 	return XErrorer{low: lowFn, high: highFn}, nil
 }
@@ -309,7 +309,7 @@ func NewXErrorer(low, high string, qf qframe.QFrame) (XErrorer, error) {
 func MustNewXErrorer(low, high string, qf qframe.QFrame) XErrorer {
 	x, err := NewXErrorer(low, high, qf)
 	if err != nil {
-		panic(errors.Propagate("MustNewXErrorer", err))
+		panic(qerrors.Propagate("MustNewXErrorer", err))
 	}
 	return x
 }

@@ -1,7 +1,7 @@
 package scolumn
 
 import (
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
@@ -71,7 +71,7 @@ func in(index index.Int, s Column, comparatee qfstrings.StringSet, bIndex index.
 func regexFilter(index index.Int, s Column, comparatee string, bIndex index.Bool, caseSensitive bool) error {
 	matcher, err := qfstrings.NewMatcher(comparatee, caseSensitive)
 	if err != nil {
-		return errors.Propagate("Regex filter", err)
+		return qerrors.Propagate("Regex filter", err)
 	}
 
 	for i, x := range bIndex {

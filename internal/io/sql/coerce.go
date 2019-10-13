@@ -3,7 +3,7 @@ package sql
 import (
 	"reflect"
 
-	"github.com/tobgu/qframe/errors"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 // CoerceFunc returns a function that does an explicit
@@ -18,7 +18,7 @@ func Int64ToBool(c *Column) func(t interface{}) error {
 	return func(t interface{}) error {
 		v, ok := t.(int64)
 		if !ok {
-			return errors.New(
+			return qerrors.New(
 				"Coercion Int64ToBool", "type %s is not int64", reflect.TypeOf(t).Kind())
 		}
 		c.Bool(v != 0)
