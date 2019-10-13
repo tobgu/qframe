@@ -1,3 +1,7 @@
+### 2019-10-13 v0.3.0
+* Backwards incompatible change of errors package name to qerrors to support code generator.
+* Some performance improvements to grouping since v0.2.0.
+
 ### 2018-09-09 v0.2.0
 SQL and plotting support! Thanks a lot to @kevinschoon for adding this!
 * Add support for reading from/writing to SQL databases. Thanks @kevinschoon for this!
