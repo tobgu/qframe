@@ -7,6 +7,11 @@ generate:
 test: generate
 	go test ./...
 
+lint:
+	~/go/bin/golangci-lint run .
+
+ci: test lint
+
 fmt: generate
 	go fmt ./...
 
@@ -22,6 +27,8 @@ deps:
 
 dev-deps: deps
 	go get github.com/mauricelam/genny
+	mkdir -p ~/go/bin
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b ~/go/bin v1.20.0
 
 qplot_examples:
 	cd contrib/gonum/qplot/examples \

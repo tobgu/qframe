@@ -241,9 +241,9 @@ func BenchmarkQFrame_SortSorted(b *testing.B) {
 func csvBytes(rowCount int) []byte {
 	buf := new(bytes.Buffer)
 	writer := stdcsv.NewWriter(buf)
-	writer.Write([]string{"INT1", "INT2", "FLOAT1", "FLOAT2", "BOOL1", "STRING1", "STRING2"})
+	_ = writer.Write([]string{"INT1", "INT2", "FLOAT1", "FLOAT2", "BOOL1", "STRING1", "STRING2"})
 	for i := 0; i < rowCount; i++ {
-		writer.Write([]string{"123", "1234567", "5.2534", "9834543.25", "true", fmt.Sprintf("Foo bar baz %d", i%10000), "ABCDEFGHIJKLMNOPQRSTUVWXYZ"})
+		_ = writer.Write([]string{"123", "1234567", "5.2534", "9834543.25", "true", fmt.Sprintf("Foo bar baz %d", i%10000), "ABCDEFGHIJKLMNOPQRSTUVWXYZ"})
 	}
 	writer.Flush()
 
@@ -254,9 +254,9 @@ func csvBytes(rowCount int) []byte {
 func csvEnumBytes(rowCount, cardinality int) []byte {
 	buf := new(bytes.Buffer)
 	writer := stdcsv.NewWriter(buf)
-	writer.Write([]string{"COL1", "COL2"})
+	_ = writer.Write([]string{"COL1", "COL2"})
 	for i := 0; i < rowCount; i++ {
-		writer.Write([]string{
+		_ = writer.Write([]string{
 			fmt.Sprintf("Foo bar baz %d", i%cardinality),
 			fmt.Sprintf("AB%d", i%cardinality)})
 	}

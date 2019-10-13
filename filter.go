@@ -22,8 +22,8 @@ type FilterClause interface {
 type Filter filter.Filter
 
 type comboClause struct {
-	err        error
-	subClauses []FilterClause
+	err        error                //nolint:structcheck
+	subClauses []FilterClause       //nolint:structcheck
 }
 
 // AndClause represents the logical conjunction of multiple clauses.
