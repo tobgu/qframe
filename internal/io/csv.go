@@ -25,6 +25,7 @@ type CSVConfig struct {
 	Types            map[string]types.DataType
 	EnumVals         map[string][]string
 	RowCountHint     int
+	Headers          []string
 }
 
 func isEmptyLine(fields [][]byte) bool {
@@ -33,15 +34,21 @@ func isEmptyLine(fields [][]byte) bool {
 
 func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string, error) {
 	r := fastcsv.NewReader(reader, conf.Delimiter)
-	byteHeader, err := r.Read()
-	if err != nil {
-		return nil, nil, qerrors.Propagate("ReadCSV read header", err)
+	headers := conf.Headers
+	if len(headers) == 0 {
+		byteHeader, err := r.Read()
+		if err != nil {
+			return nil, nil, qerrors.Propagate("ReadCSV read header", err)
+		}
+
+		headers = make([]string, len(byteHeader))
+		for i := range headers {
+			headers[i] = string(byteHeader[i])
+		}
 	}
 
-	headers := make([]string, len(byteHeader))
 	colPointers := make([][]bytePointer, len(headers))
 	for i := range headers {
-		headers[i] = string(byteHeader[i])
 		colPointers[i] = []bytePointer{}
 	}
 

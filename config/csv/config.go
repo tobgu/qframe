@@ -94,3 +94,13 @@ func RowCountHint(rowCount int) ConfigFunc {
 		c.RowCountHint = rowCount
 	}
 }
+
+
+// Headers can be used to specify the header names for a CSV file without header.
+//
+// header - Slice with column names.
+func Headers(headers []string) ConfigFunc {
+	return func(c *Config) {
+		c.Headers = headers
+	}
+}

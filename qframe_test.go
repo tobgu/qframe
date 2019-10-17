@@ -1007,6 +1007,17 @@ func TestQFrame_ReadCSVNoRowsNoTypes(t *testing.T) {
 	})
 }
 
+func TestQFrame_ReadCSVNoHeader(t *testing.T) {
+	input := `1,2`
+
+	out := qframe.ReadCSV(strings.NewReader(input), csv.Headers([]string{"abc","def"}))
+	assertNotErr(t, out.Err)
+
+	expected := qframe.New(map[string]interface{}{"abc": []int{1}, "def": []int{2}})
+	assertNotErr(t, out.Err)
+	assertEquals(t, expected, out)
+}
+
 func TestQFrame_Enum(t *testing.T) {
 	mon, tue, wed, thu, fri, sat, sun := "mon", "tue", "wed", "thu", "fri", "sat", "sun"
 	t.Run("Applies specified order", func(t *testing.T) {
