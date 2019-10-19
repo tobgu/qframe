@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 

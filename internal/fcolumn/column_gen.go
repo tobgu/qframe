@@ -10,6 +10,8 @@ package fcolumn
 import (
 	"fmt"
 
+	"github.com/tobgu/qframe/config/rolling"
+
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/qerrors"
@@ -173,6 +175,10 @@ func (c Column) subsetWithBuf(index index.Int, buf *[]float64) Column {
 
 func (c Column) View(ix index.Int) View {
 	return View{data: c.data, index: ix}
+}
+
+func (c Column) Rolling(fn interface{}, ix index.Int, config rolling.Config) (column.Column, error) {
+	return c, nil
 }
 
 type Comparable struct {

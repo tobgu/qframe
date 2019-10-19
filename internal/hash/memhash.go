@@ -16,7 +16,7 @@ type stringStruct struct {
 
 // MemHash holds a buffer of bytes and allows calculation of a hash over the bytes.
 type MemHash struct {
- 	buf []byte
+	buf []byte
 }
 
 // Reset resets the memory buffer

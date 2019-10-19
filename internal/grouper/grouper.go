@@ -27,13 +27,13 @@ type tableEntry struct {
 }
 
 type table struct {
-	entries       []tableEntry
-	comparables   []column.Comparable
-	stats         GroupStats
-	hashBuf       *hash.MemHash
-	loadFactor    float64
-	groupCount    uint32
-	collectIx     bool
+	entries     []tableEntry
+	comparables []column.Comparable
+	stats       GroupStats
+	hashBuf     *hash.MemHash
+	loadFactor  float64
+	groupCount  uint32
+	collectIx   bool
 }
 
 const growthFactor = 2

@@ -1,10 +1,10 @@
 package qframe
 
 import (
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/grouper"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 

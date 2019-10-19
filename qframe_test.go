@@ -3,6 +3,7 @@ package qframe_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/tobgu/qframe/config/rolling"
 	"math"
 	"reflect"
 	"regexp"
@@ -650,6 +651,41 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 	}
 }
 
+func TestQFrame_RollingWindow(t *testing.T) {
+	sum := func(col []int) int {
+		result := 0
+		for _, x := range col {
+			result += x
+		}
+		return result
+	}
+
+	table := []struct {
+		name     string
+		input    map[string]interface{}
+		expected map[string]interface{}
+		fn       interface{}
+		configs  []rolling.ConfigFunc
+	}{
+		{
+			name:     "default one element window",
+			input:    map[string]interface{}{"source": []int{1, 2, 3}},
+			expected: map[string]interface{}{"destination": []int{1, 2, 3}},
+			fn:       sum,
+		},
+	}
+
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("Rolling %s", tc.name), func(t *testing.T) {
+			in := qframe.New(tc.input)
+
+			out := in.Rolling(tc.fn, "destination", "source")
+
+			assertEquals(t, qframe.New(tc.expected), out.Select("destination"))
+		})
+	}
+}
+
 func colNamesToOrders(colNames ...string) []qframe.Order {
 	result := make([]qframe.Order, len(colNames))
 	for i, name := range colNames {
@@ -1010,7 +1046,7 @@ func TestQFrame_ReadCSVNoRowsNoTypes(t *testing.T) {
 func TestQFrame_ReadCSVNoHeader(t *testing.T) {
 	input := `1,2`
 
-	out := qframe.ReadCSV(strings.NewReader(input), csv.Headers([]string{"abc","def"}))
+	out := qframe.ReadCSV(strings.NewReader(input), csv.Headers([]string{"abc", "def"}))
 	assertNotErr(t, out.Err)
 
 	expected := qframe.New(map[string]interface{}{"abc": []int{1}, "def": []int{2}})

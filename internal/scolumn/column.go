@@ -2,13 +2,14 @@ package scolumn
 
 import (
 	"fmt"
+	"github.com/tobgu/qframe/config/rolling"
 	"reflect"
 
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -348,8 +349,8 @@ func (c Column) String() string {
 func (c Column) Aggregate(indices []index.Int, fn interface{}) (column.Column, error) {
 	switch t := fn.(type) {
 	case string:
-		// There are currently no build in aggregations for strings
-		return nil, qerrors.New("enum aggregate", "aggregation function %c is not defined for string column", fn)
+		// There are currently no built in aggregations for strings
+		return nil, qerrors.New("string aggregate", "aggregation function %c is not defined for string column", fn)
 	case func([]*string) *string:
 		data := make([]*string, 0, len(indices))
 		for _, ix := range indices {
@@ -427,6 +428,10 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 
 func (c Column) View(ix index.Int) View {
 	return View{column: c, index: ix}
+}
+
+func (c Column) Rolling(fn interface{}, ix index.Int, config rolling.Config) (column.Column, error) {
+	return c, nil
 }
 
 func (c Column) FunctionType() types.FunctionType {

@@ -2,6 +2,7 @@ package column
 
 import (
 	"fmt"
+	"github.com/tobgu/qframe/config/rolling"
 
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -22,6 +23,8 @@ type Column interface {
 
 	Apply1(fn interface{}, ix index.Int) (interface{}, error)
 	Apply2(fn interface{}, s2 Column, ix index.Int) (Column, error)
+
+	Rolling(fn interface{}, ix index.Int, config rolling.Config) (Column, error)
 
 	FunctionType() types.FunctionType
 	DataType() types.DataType

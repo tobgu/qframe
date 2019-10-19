@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	stdcsv "encoding/csv"
 	"fmt"
+	"github.com/tobgu/qframe/config/rolling"
 	"io"
 	"reflect"
 	"sort"
@@ -14,7 +15,6 @@ import (
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	qsql "github.com/tobgu/qframe/config/sql"
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/bcolumn"
 	"github.com/tobgu/qframe/internal/column"
@@ -29,6 +29,7 @@ import (
 	"github.com/tobgu/qframe/internal/scolumn"
 	qfsort "github.com/tobgu/qframe/internal/sort"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 
 	// This dependency has been been added just to make sure that "go get" installs it.
@@ -484,7 +485,7 @@ func (qf QFrame) Distinct(configFns ...groupby.ConfigFunc) QFrame {
 func (qf QFrame) checkColumns(operation string, columns []string) error {
 	for _, col := range columns {
 		if _, ok := qf.columnsByName[col]; !ok {
-			return qerrors.New("operation", unknownCol(col))
+			return qerrors.New(operation, unknownCol(col))
 		}
 	}
 
@@ -572,6 +573,30 @@ func (qf QFrame) GroupBy(configFns ...groupby.ConfigFunc) Grouper {
 	g.indices = indices
 	g.Stats = GroupStats(stats)
 	return g
+}
+
+func (qf QFrame) Rolling(fn types.SliceFuncOrBuiltInId, dstCol, srcCol string, configFns ...rolling.ConfigFunc) QFrame {
+	if qf.Err != nil {
+		return qf
+	}
+
+	conf, err := rolling.NewConfig(configFns)
+	if err != nil {
+		return qf.withErr(err)
+	}
+
+	namedColumn, ok := qf.columnsByName[srcCol]
+	if !ok {
+		return qf.withErr(qerrors.New("Rolling", unknownCol(srcCol)))
+	}
+
+	srcColumn := namedColumn.Column
+	resultColumn, err := srcColumn.Rolling(fn, qf.index, conf)
+	if err != nil {
+		return qf.withErr(qerrors.Propagate("Rolling", err))
+	}
+
+	return qf.setColumn(dstCol, resultColumn)
 }
 
 func fixLengthString(s string, pad string, desiredLen int) string {

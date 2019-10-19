@@ -4,11 +4,12 @@ package template
 
 import (
 	"fmt"
+	"github.com/tobgu/qframe/config/rolling"
 
 	"github.com/mauricelam/genny/generic"
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 type genericDataType generic.Number
@@ -175,6 +176,10 @@ func (c Column) subsetWithBuf(index index.Int, buf *[]genericDataType) Column {
 
 func (c Column) View(ix index.Int) View {
 	return View{data: c.data, index: ix}
+}
+
+func (c Column) Rolling(fn interface{}, ix index.Int, config rolling.Config) (column.Column, error) {
+	return c, nil
 }
 
 type Comparable struct {

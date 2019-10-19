@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/function"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 

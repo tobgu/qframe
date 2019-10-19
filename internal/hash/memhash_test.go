@@ -80,7 +80,7 @@ func Test_SmallIntDistribution(t *testing.T) {
 	hasher := hash.MemHash{}
 	for i := 1; i < 177; i++ {
 		hasher.Reset()
-		hasher.Write([]byte{0,0,0,0,0,0,0,byte(i)})
+		hasher.Write([]byte{0, 0, 0, 0, 0, 0, 0, byte(i)})
 		hash := hasher.Hash()
 		result[hash] = result[hash] + 1
 	}

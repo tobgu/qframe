@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/bcolumn"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/ecolumn"
@@ -12,6 +11,7 @@ import (
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/scolumn"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 type SQLConfig struct {

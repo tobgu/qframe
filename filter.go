@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/math/integer"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 // FilterClause is an internal interface representing a filter of some kind that can be applied on a QFrame.
@@ -22,8 +22,8 @@ type FilterClause interface {
 type Filter filter.Filter
 
 type comboClause struct {
-	err        error                //nolint:structcheck
-	subClauses []FilterClause       //nolint:structcheck
+	err        error          //nolint:structcheck
+	subClauses []FilterClause //nolint:structcheck
 }
 
 // AndClause represents the logical conjunction of multiple clauses.

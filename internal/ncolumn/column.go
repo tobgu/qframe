@@ -7,6 +7,7 @@ It is for example used when reading zero row CSVs without type hints.
 */
 
 import (
+	"github.com/tobgu/qframe/config/rolling"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -60,6 +61,10 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 }
 
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
+	return c, nil
+}
+
+func (c Column) Rolling(fn interface{}, ix index.Int, config rolling.Config) (column.Column, error) {
 	return c, nil
 }
 

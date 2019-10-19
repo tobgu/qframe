@@ -4,11 +4,11 @@ import (
 	"io"
 	"math"
 
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/internal/ecolumn"
 	"github.com/tobgu/qframe/internal/fastcsv"
 	"github.com/tobgu/qframe/internal/ncolumn"
 	"github.com/tobgu/qframe/internal/strings"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 

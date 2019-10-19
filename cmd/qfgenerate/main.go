@@ -7,13 +7,13 @@ import (
 	"go/format"
 	"os"
 
-	"github.com/tobgu/qframe/qerrors"
 	bgenerator "github.com/tobgu/qframe/internal/bcolumn"
 	egenerator "github.com/tobgu/qframe/internal/ecolumn"
 	fgenerator "github.com/tobgu/qframe/internal/fcolumn"
 	igenerator "github.com/tobgu/qframe/internal/icolumn"
 	qfgenerator "github.com/tobgu/qframe/internal/qframe/generator"
 	sgenerator "github.com/tobgu/qframe/internal/scolumn"
+	"github.com/tobgu/qframe/qerrors"
 )
 
 /*

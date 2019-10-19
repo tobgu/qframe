@@ -2,16 +2,17 @@ package ecolumn
 
 import (
 	"fmt"
+	"github.com/tobgu/qframe/config/rolling"
 	"reflect"
 	"strings"
 
-	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/scolumn"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -565,6 +566,10 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 
 func (c Column) View(ix index.Int) View {
 	return View{column: c, index: ix}
+}
+
+func (c Column) Rolling(fn interface{}, ix index.Int, config rolling.Config) (column.Column, error) {
+	return c, nil
 }
 
 func (c Column) FunctionType() types.FunctionType {
