@@ -1153,9 +1153,8 @@ func Doc() string {
 // - Support access by x, y (to support GoNum matrix interface), or support returning a data type that supports that
 //   interface.
 // - More serialization and deserialization tests
-// - Improve error handling further. Make it possible to classify errors. Fix errors conflict in Genny.
+// - Improve error handling further. Make it possible to classify errors.
 // - ApplyN?
-// - Add option to drop NaN/Null before grouping?
 // - Are special cases in aggregations that do not rely on index order worth the extra code for the increase in
 //   performance allowed by avoiding use of the index?
 // - Optional specification of destination column for aggregations, to be able to do 50perc, 90perc, 99perc in one
@@ -1165,4 +1164,3 @@ func Doc() string {
 // TODO performance?
 // - Check out https://github.com/glenn-brown/golang-pkg-pcre for regex filtering. Could be performing better
 //   than the stdlib version.
-// - Test https://github.com/pierrec/xxHash instead of murmur for hashing?
