@@ -48,14 +48,14 @@ func (fs *fields) reset() {
 func (fs *fields) nextUnquotedField() bool {
 	const sizeEOL = 1
 	const sizeDelim = 1
+	cursor := fs.buffer.cursor
 	for {
 		// next byte
-		if fs.buffer.cursor >= len(fs.buffer.data) {
+		if cursor >= len(fs.buffer.data) {
 			if err := fs.buffer.more(); err != nil {
 				if err == io.EOF {
 					start := fs.fieldStart
-					end := fs.buffer.cursor
-					fs.field = fs.buffer.data[start:end]
+					fs.field = fs.buffer.data[start:cursor]
 					fs.hitEOL = true
 					fs.err = err
 					return true
@@ -64,17 +64,18 @@ func (fs *fields) nextUnquotedField() bool {
 				return false
 			}
 		}
-		ch := fs.buffer.data[fs.buffer.cursor]
-		fs.buffer.cursor++
 
-		// handle byte
+		ch := fs.buffer.data[cursor]
+		cursor++
+		fs.buffer.cursor = cursor
+
 		switch ch {
 		case fs.delimiter:
-			fs.field = fs.buffer.data[fs.fieldStart : fs.buffer.cursor-sizeDelim]
-			fs.fieldStart = fs.buffer.cursor
+			fs.field = fs.buffer.data[fs.fieldStart : cursor-sizeDelim]
+			fs.fieldStart = cursor
 			return true
 		case '\n':
-			fs.field = fs.buffer.data[fs.fieldStart : fs.buffer.cursor-sizeEOL]
+			fs.field = fs.buffer.data[fs.fieldStart : cursor-sizeEOL]
 			fs.hitEOL = true
 			return true
 		default:
