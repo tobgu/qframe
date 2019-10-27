@@ -277,8 +277,9 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
-	buf.WriteByte(byte(c.column.data[i]))
+func (c Comparable) Hash(i uint32, seed uint64) uint64 {
+	b := [1]byte{byte(c.column.data[i])}
+	return hash.HashBytes(b[:], seed)
 }
 
 func equalTypes(s1, s2 Column) bool {

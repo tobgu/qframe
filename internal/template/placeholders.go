@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/tobgu/qframe/internal/column"
-	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
 )
@@ -52,5 +51,6 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
+func (c Comparable) Hash(i uint32, seed uint64) uint64 {
+	return 0
 }

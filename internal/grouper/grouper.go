@@ -4,7 +4,6 @@ import (
 	"math/bits"
 
 	"github.com/tobgu/qframe/internal/column"
-	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/internal/math/integer"
 )
@@ -30,7 +29,6 @@ type table struct {
 	entries     []tableEntry
 	comparables []column.Comparable
 	stats       GroupStats
-	hashBuf     *hash.MemHash
 	loadFactor  float64
 	groupCount  uint32
 	collectIx   bool
@@ -58,12 +56,16 @@ func (t *table) grow() {
 }
 
 func (t *table) hash(i uint32) uint32 {
-	t.hashBuf.Reset()
-	for _, c := range t.comparables {
-		c.HashBytes(i, t.hashBuf)
+	if len(t.comparables) == 1 {
+		return uint32(t.comparables[0].Hash(i, 0))
 	}
 
-	return t.hashBuf.Hash()
+	hashVal := uint64(0)
+	for _, c := range t.comparables {
+		hashVal = c.Hash(i, hashVal)
+	}
+
+	return uint32(hashVal)
 }
 
 const maxLoadFactor = 0.5
@@ -113,8 +115,7 @@ func newTable(sizeExp int, comparables []column.Comparable, collectIx bool) *tab
 	return &table{
 		entries:     make([]tableEntry, integer.Pow2(sizeExp)),
 		comparables: comparables,
-		collectIx:   collectIx,
-		hashBuf:     new(hash.MemHash)}
+		collectIx:   collectIx}
 }
 
 func equals(comparables []column.Comparable, i, j uint32) bool {

@@ -11,8 +11,6 @@ github.com/llgcode/draw2d v0.0.0-20180817132918-587a55234ca2 h1:3xDkT1Tbsw2yDtKW
 github.com/llgcode/draw2d v0.0.0-20180817132918-587a55234ca2/go.mod h1:mVa0dA29Db2S4LVqDYLlsePDzRJLDfdhVZiI15uY0FA=
 github.com/llgcode/ps v0.0.0-20150911083025-f1443b32eedb h1:61ndUreYSlWFeCY44JxDDkngVoI7/1MVhEl98Nm0KOk=
 github.com/llgcode/ps v0.0.0-20150911083025-f1443b32eedb/go.mod h1:1l8ky+Ew27CMX29uG+a2hNOKpeNYEQjjtiALiBlFQbY=
-github.com/mauricelam/genny v0.0.0-20180903214747-eb2c5232c885 h1:nCU/HIvsORu8nlebFTTkEpxao5zA/yt5Y4yQccm34bM=
-github.com/mauricelam/genny v0.0.0-20180903214747-eb2c5232c885/go.mod h1:wRyVMWiOZeVj+MieWS5tIBBtJ3RtqqMbPsA5Z+t5b5U=
 github.com/mauricelam/genny v0.0.0-20190320071652-0800202903e5 h1:PnFl95tWh3j7c5DebZG/TGsBJvbnHvPjK4lzltouI4Y=
 github.com/mauricelam/genny v0.0.0-20190320071652-0800202903e5/go.mod h1:i2AazGGunAlAR5u0zXGYVmIT7nnwE6j9lwKSMx7N6ko=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

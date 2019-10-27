@@ -55,15 +55,13 @@ func Test_StringDistribution(t *testing.T) {
 	strs2 := genStringsWithCardinality(seed2, 100000, 10, 10)
 	strs3 := genStringsWithCardinality(seed3, 100000, 2, 10)
 
-	hasher := hash.MemHash{}
 	hashCounter := make(map[uint32]int)
 	stringCounter := make(map[string]int)
 	for i := 0; i < size; i++ {
-		hasher.Reset()
-		hasher.Write([]byte(strs1[i]))
-		hasher.Write([]byte(strs2[i]))
-		hasher.Write([]byte(strs3[i]))
-		h := hasher.Hash()
+		val := hash.HashBytes([]byte(strs1[i]), 0)
+		val = hash.HashBytes([]byte(strs2[i]), val)
+		val = hash.HashBytes([]byte(strs3[i]), val)
+		h := uint32(val)
 		hashCounter[h] += 1
 		stringCounter[strs1[i]+strs2[i]+strs3[i]] += 1
 	}
@@ -76,42 +74,13 @@ func Test_StringDistribution(t *testing.T) {
 }
 
 func Test_SmallIntDistribution(t *testing.T) {
-	result := make(map[uint32]uint32)
-	hasher := hash.MemHash{}
+	result := make(map[uint64]uint64)
 	for i := 1; i < 177; i++ {
-		hasher.Reset()
-		hasher.Write([]byte{0, 0, 0, 0, 0, 0, 0, byte(i)})
-		hash := hasher.Hash()
-		result[hash] = result[hash] + 1
+		val := hash.HashBytes([]byte{0, 0, 0, 0, 0, 0, 0, byte(i)}, 0)
+		result[val] = result[val] + 1
 	}
 
 	if len(result) != 176 {
 		t.Errorf("%d: %v", len(result), result)
-	}
-}
-
-func Test_Fuzz(t *testing.T) {
-	// Verify that there are no crashes for different
-	// combinations of input length.
-	hasher := hash.MemHash{}
-	for i := 0; i < 10; i++ {
-		hasher.Reset()
-		hasher.Write(make([]byte, i))
-		hasher.Hash()
-
-		for j := 0; j < 10; j++ {
-			hasher.Reset()
-			hasher.Write(make([]byte, i))
-			hasher.Write(make([]byte, j))
-			hasher.Hash()
-
-			for k := 0; k < 10; k++ {
-				hasher.Reset()
-				hasher.Write(make([]byte, i))
-				hasher.Write(make([]byte, j))
-				hasher.Write(make([]byte, k))
-				hasher.Hash()
-			}
-		}
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/tobgu/qframe/config/rolling"
 
-	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
 )
@@ -43,9 +42,5 @@ const (
 
 type Comparable interface {
 	Compare(i, j uint32) CompareResult
-
-	// Write bytes to be used for hashing into buf. Using specific type for hash.Reset
-	// here rather than the general Writer interface to avoid that objects escape to heap
-	// due to unknown target.
-	HashBytes(i uint32, buf *hash.MemHash)
+	Hash(i uint32, seed uint64) uint64
 }

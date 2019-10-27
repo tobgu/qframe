@@ -56,10 +56,10 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
+func (c Comparable) Hash(i uint32, seed uint64) uint64 {
 	x := &c.data[i]
 	b := (*[8]byte)(unsafe.Pointer(x))[:]
-	buf.Write(b)
+	return hash.HashBytes(b, seed)
 }
 
 func intComp(comparatee interface{}) (int, bool) {

@@ -1,16 +1,17 @@
 package scolumn
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/tobgu/qframe/config/rolling"
-	"reflect"
-
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
+	"math/rand"
+	"reflect"
 )
 
 var stringApplyFuncs = map[string]func(index.Int, Column) interface{}{
@@ -106,8 +107,8 @@ func (c Column) Equals(index index.Int, other column.Column, otherIndex index.In
 }
 
 func (c Comparable) Compare(i, j uint32) column.CompareResult {
-	x, xNull := c.column.stringAt(i)
-	y, yNull := c.column.stringAt(j)
+	x, xNull := c.column.bytesAt(i)
+	y, yNull := c.column.bytesAt(j)
 	if xNull || yNull {
 		if !xNull {
 			return c.nullGtValue
@@ -120,18 +121,18 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 		return c.equalNullValue
 	}
 
-	if x < y {
+	r := bytes.Compare(x, y)
+	switch r {
+	case -1:
 		return c.ltValue
-	}
-
-	if x > y {
+	case 1:
 		return c.gtValue
+	default:
+		return column.Equal
 	}
-
-	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
+func (c Comparable) Hash(i uint32, seed uint64) uint64 {
 	x, isNull := c.column.bytesAt(i)
 	if isNull {
 		if c.equalNullValue == column.NotEqual {
@@ -139,13 +140,14 @@ func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
 			// we don't consider null to equal null.
 			// Use a random value here to avoid hash collisions when
 			// we don't consider null to equal null.
-			buf.WriteRand32()
-		} else {
-			buf.WriteByte(0)
+			return rand.Uint64()
 		}
-	} else {
-		buf.Write(x)
+
+		b := [1]byte{0}
+		return hash.HashBytes(b[:], seed)
 	}
+
+	return hash.HashBytes(x, seed)
 }
 
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {

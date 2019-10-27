@@ -1,14 +1,13 @@
 package bcolumn
 
 import (
-	"reflect"
-	"strconv"
-
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
+	"reflect"
+	"strconv"
 )
 
 func (c Comparable) Compare(i, j uint32) column.CompareResult {
@@ -24,11 +23,14 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return c.ltValue
 }
 
-func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
+func (c Comparable) Hash(i uint32, seed uint64) uint64 {
 	if c.data[i] {
-		buf.WriteByte(1)
+		b := [1]byte{1}
+		return hash.HashBytes(b[:], seed)
 	}
-	buf.WriteByte(0)
+
+	b := [1]byte{0}
+	return hash.HashBytes(b[:], seed)
 }
 
 func (c Column) DataType() types.DataType {

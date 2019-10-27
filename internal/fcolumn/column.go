@@ -2,6 +2,7 @@ package fcolumn
 
 import (
 	"math"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"unsafe"
@@ -83,17 +84,17 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 	return column.Equal
 }
 
-func (c Comparable) HashBytes(i uint32, buf *hash.MemHash) {
+func (c Comparable) Hash(i uint32, seed uint64) uint64 {
 	f := c.data[i]
 	if math.IsNaN(f) && c.equalNullValue == column.NotEqual {
 		// Use a random value here to avoid hash collisions when
 		// we don't consider null to equal null.
-		buf.WriteRand32()
-	} else {
-		bits := math.Float64bits(c.data[i])
-		b := (*[8]byte)(unsafe.Pointer(&bits))[:]
-		buf.Write(b)
+		return rand.Uint64()
 	}
+
+	bits := math.Float64bits(c.data[i])
+	b := (*[8]byte)(unsafe.Pointer(&bits))[:]
+	return hash.HashBytes(b, seed)
 }
 
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
