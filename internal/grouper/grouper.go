@@ -56,10 +56,6 @@ func (t *table) grow() {
 }
 
 func (t *table) hash(i uint32) uint32 {
-	if len(t.comparables) == 1 {
-		return uint32(t.comparables[0].Hash(i, 0))
-	}
-
 	hashVal := uint64(0)
 	for _, c := range t.comparables {
 		hashVal = c.Hash(i, hashVal)

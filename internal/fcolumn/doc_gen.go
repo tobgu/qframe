@@ -14,6 +14,7 @@ func Doc() string {
 		"  isnull\n" +
 
 		"\n Built in aggregations\n" +
+		"  avg\n" +
 		"  sum\n" +
 		"\n"
 }
