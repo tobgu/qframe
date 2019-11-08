@@ -269,6 +269,20 @@ func (qf QFrame) filter(filters ...filter.Filter) QFrame {
 			if !ok {
 				return qf.withErr(qerrors.New("Filter", `unknown argument column: "%s"`, name))
 			}
+
+			// Allow comparison of int and float columns by temporarily promoting int column to float.
+			// This is expensive compared to a comparison between columns of the same type and should be avoided
+			// if performance is critical.
+			if ic, ok := s.Column.(icolumn.Column); ok {
+				if _, ok := argC.Column.(fcolumn.Column); ok {
+					s.Column = fcolumn.New(ic.FloatSlice())
+				}
+			} else if _, ok := s.Column.(fcolumn.Column); ok {
+				if ic, ok := argC.Column.(icolumn.Column); ok {
+					argC.Column = fcolumn.New(ic.FloatSlice())
+				}
+			} // else: No conversions for other combinations
+
 			f.Arg = argC.Column
 		}
 

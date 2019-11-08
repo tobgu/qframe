@@ -129,12 +129,28 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 			clause:   qframe.Filter{Column: "COL1", Comparator: ">=", Arg: 1.5},
 			input:    []int{0, 1, 2},
 			expected: []int{1, 2}},
+		{
+			name:     "int column against neq nil/NaN, valid for convenience and always true",
+			clause:   qframe.Filter{Column: "COL1", Comparator: "!=", Arg: nil},
+			input:    []int{0, 1, 2},
+			expected: []int{0, 1, 2}},
+		{
+			name:     "int column against eq nil/NaN, valid for convenience and always false",
+			clause:   qframe.Filter{Column: "COL1", Comparator: "=", Arg: nil},
+			input:    []int{0, 1, 2},
+			expected: []int{}},
+		{
+			name:     "int column against eq nil/NaN, valid for convenience and always false",
+			clause:   qframe.Filter{Column: "COL1", Comparator: "=", Arg: math.NaN()},
+			input:    []int{0, 1, 2},
+			expected: []int{}},
 	}
 
 	for i, tc := range table {
 		t.Run(fmt.Sprintf("Filter %d", i), func(t *testing.T) {
 			input := qframe.New(map[string]interface{}{"COL1": tc.input})
 			output := input.Filter(tc.clause)
+			assertNotErr(t, output.Err)
 			expected := qframe.New(map[string]interface{}{"COL1": tc.expected})
 			assertEquals(t, expected, output)
 		})
@@ -302,6 +318,16 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 			comparator: ">",
 			input:      map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []int{10, 1, 10}},
 			expected:   map[string]interface{}{"COL1": []int{1, 3}, "COL2": []int{10, 10}}},
+		{
+			name:       "int with float compare possible",
+			comparator: "=",
+			input:      map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []float64{1.0, 2.5, 3.0}},
+			expected:   map[string]interface{}{"COL1": []int{1, 3}, "COL2": []float64{1.0, 3.0}}},
+		{
+			name:       "float with int compare possible",
+			comparator: "=",
+			input:      map[string]interface{}{"COL1": []float64{1.0, 2.5, 3.0}, "COL2": []int{1, 2, 3}},
+			expected:   map[string]interface{}{"COL1": []float64{1.0, 3.0}, "COL2": []int{1, 3}}},
 		{
 			name:       "custom int compare",
 			comparator: func(a, b int) bool { return a > b },
