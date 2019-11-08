@@ -74,7 +74,7 @@ func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
 }
 
 func (c Column) ByteSize() int {
-	return 8*len(c.pointers) + cap(c.data)
+	return 8*cap(c.pointers) + cap(c.data)
 }
 
 func (c Column) Len() int {

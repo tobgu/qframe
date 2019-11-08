@@ -47,7 +47,7 @@ func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
 
 func (c Column) ByteSize() int {
 	// Slice header + data
-	return 2*8 + len(c.data)
+	return 2*8 + cap(c.data)
 }
 
 func (c Column) Equals(index index.Int, other column.Column, otherIndex index.Int) bool {

@@ -224,7 +224,7 @@ func (c Column) ByteSize() int {
 	for _, s := range c.values {
 		totalSize += len(s)
 	}
-	totalSize += len(c.data)
+	totalSize += cap(c.data)
 	return totalSize
 }
 
