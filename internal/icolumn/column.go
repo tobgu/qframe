@@ -1,13 +1,11 @@
 package icolumn
 
 import (
-	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
-	"math"
 	"reflect"
 	"strconv"
 	"unsafe"
@@ -132,18 +130,6 @@ func (is intSet) Contains(x int) bool {
 	return ok
 }
 
-func isNilly(x interface{}) bool {
-	if x == nil {
-		return true
-	}
-
-	if f, ok := x.(float64); ok {
-		return math.IsNaN(f)
-	}
-
-	return false
-}
-
 func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee interface{}, bIndex index.Bool) error {
 	if intC, ok := intComp(comparatee); ok {
 		filterFn, ok := filterFuncs[comparator]
@@ -163,16 +149,12 @@ func (c Column) filterBuiltIn(index index.Int, comparator string, comparatee int
 			return qerrors.New("filter int", "unknown filter operator %v", comparator)
 		}
 		filterFn(index, c.data, columnC.data, bIndex)
-	} else if isNilly(comparatee) {
-		// Special convenience case, int columns can never be nil/NaN but allow comparisons against it
-		// adhering to how NaN is usually compared
-		value := false
-		if comparator == filter.Neq {
-			value = true
+	} else if comparatee == nil {
+		compFunc, ok := filterFuncs0[comparator]
+		if !ok {
+			return qerrors.New("filter int", "invalid comparison operator to zero argument filter, %v", comparator)
 		}
-		for i := range bIndex {
-			bIndex[i] = value
-		}
+		compFunc(index, c.data, bIndex)
 	} else {
 		return qerrors.New("filter int", "invalid comparison value type %v", reflect.TypeOf(comparatee))
 	}

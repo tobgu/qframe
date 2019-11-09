@@ -32,6 +32,30 @@ var filterFuncs2 = map[string]func(index.Int, []int, []int, index.Bool){
 	filter.Neq: neq2,
 }
 
+// Column only
+var filterFuncs0 = map[string]func(index.Int, []int, index.Bool){
+	filter.IsNull:    isNull,
+	filter.IsNotNull: isNotNull,
+}
+
+func isNull(_ index.Int, _ []int, bIndex index.Bool) {
+	// Int columns are never null, this function is provided for convenience to avoid
+	// clients from having to keep track of if a column is of type int or float for
+	// common operations.
+	for i := range bIndex {
+		bIndex[i] = false
+	}
+}
+
+func isNotNull(_ index.Int, _ []int, bIndex index.Bool) {
+	// Int columns are never null, this function is provided for convenience to avoid
+	// clients from having to keep track of if a column is of type int or float for
+	// common operations.
+	for i := range bIndex {
+		bIndex[i] = true
+	}
+}
+
 func in(index index.Int, column []int, comp intSet, bIndex index.Bool) {
 	for i, x := range bIndex {
 		if !x {

@@ -129,21 +129,6 @@ func TestQFrame_FilterAgainstConstant(t *testing.T) {
 			clause:   qframe.Filter{Column: "COL1", Comparator: ">=", Arg: 1.5},
 			input:    []int{0, 1, 2},
 			expected: []int{1, 2}},
-		{
-			name:     "int column against neq nil/NaN, valid for convenience and always true",
-			clause:   qframe.Filter{Column: "COL1", Comparator: "!=", Arg: nil},
-			input:    []int{0, 1, 2},
-			expected: []int{0, 1, 2}},
-		{
-			name:     "int column against eq nil/NaN, valid for convenience and always false",
-			clause:   qframe.Filter{Column: "COL1", Comparator: "=", Arg: nil},
-			input:    []int{0, 1, 2},
-			expected: []int{}},
-		{
-			name:     "int column against eq nil/NaN, valid for convenience and always false",
-			clause:   qframe.Filter{Column: "COL1", Comparator: "=", Arg: math.NaN()},
-			input:    []int{0, 1, 2},
-			expected: []int{}},
 	}
 
 	for i, tc := range table {
@@ -261,6 +246,8 @@ func TestQFrame_FilterIsNull(t *testing.T) {
 		{operation: "isnotnull", input: []*string{&a, nil, nil, &b}, expected: []*string{&a, &b}, isEnum: true},
 		{operation: "isnull", input: []float64{1, math.NaN(), 2}, expected: []float64{math.NaN()}},
 		{operation: "isnotnull", input: []float64{1, math.NaN(), 2}, expected: []float64{1, 2}},
+		{operation: "isnull", input: []int{1, 2, 3}, expected: []int{}},
+		{operation: "isnotnull", input: []int{1, 2, 3}, expected: []int{1, 2, 3}},
 	}
 
 	for _, tc := range table {
@@ -328,6 +315,16 @@ func TestQFrame_FilterAgainstColumn(t *testing.T) {
 			comparator: "=",
 			input:      map[string]interface{}{"COL1": []float64{1.0, 2.5, 3.0}, "COL2": []int{1, 2, 3}},
 			expected:   map[string]interface{}{"COL1": []float64{1.0, 3.0}, "COL2": []int{1, 3}}},
+		{
+			name:       "int with float neq NaN compare possible",
+			comparator: "!=",
+			input:      map[string]interface{}{"COL1": []int{1, 2, 3}, "COL2": []float64{1.0, math.NaN(), 3.0}},
+			expected:   map[string]interface{}{"COL1": []int{2}, "COL2": []float64{math.NaN()}}},
+		{
+			name:       "float with int neq NaN compare possible",
+			comparator: "!=",
+			input:      map[string]interface{}{"COL1": []float64{1.0, math.NaN(), 3.0}, "COL2": []int{1, 2, 3}},
+			expected:   map[string]interface{}{"COL1": []float64{math.NaN()}, "COL2": []int{2}}},
 		{
 			name:       "custom int compare",
 			comparator: func(a, b int) bool { return a > b },
