@@ -1293,6 +1293,16 @@ func TestQFrame_ToFromJSON(t *testing.T) {
 	err := originalDf.ToJSON(buf)
 	assertNotErr(t, err)
 
+	// Map order should be consistent across calls
+	for i := 0; i < 10; i++ {
+		buf2 := new(bytes.Buffer)
+		err := originalDf.ToJSON(buf2)
+		assertNotErr(t, err)
+		if buf.String() != buf2.String() {
+			t.Errorf("%s != %s", buf.String(), buf.String())
+		}
+	}
+
 	jsonDf := qframe.ReadJSON(buf, config...)
 	assertNotErr(t, jsonDf.Err)
 	assertEquals(t, originalDf, jsonDf)

@@ -417,7 +417,15 @@ func BenchmarkQFrame_ToCSV(b *testing.B) {
 	}
 }
 
-func toJSON(b *testing.B) {
+// NOP writer just to make sure we don't contaminate the benchmarks
+// the performance characteristics of the writer implementation.
+type dummyWriter struct{}
+
+func (_ dummyWriter) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func BenchmarkQFrame_ToJSONRecords(b *testing.B) {
 	rowCount := 100000
 	input := exampleData(rowCount)
 	df := qf.New(input)
@@ -429,16 +437,11 @@ func toJSON(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		buf := new(bytes.Buffer)
-		err := df.ToJSON(buf)
+		err := df.ToJSON(dummyWriter{})
 		if err != nil {
-			b.Errorf("Unexpected ToCSV error: %s", err)
+			b.Errorf("Unexpected ToJSON error: %s", err)
 		}
 	}
-}
-
-func BenchmarkQFrame_ToJSONRecords(b *testing.B) {
-	toJSON(b)
 }
 
 func BenchmarkQFrame_FilterEnumVsString(b *testing.B) {

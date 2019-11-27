@@ -1073,11 +1073,9 @@ func (qf QFrame) ToJSON(writer io.Writer) error {
 		return qerrors.Propagate("ToJSON", qf.Err)
 	}
 
-	colByteNames := make([][]byte, 0, len(qf.columns))
-	columns := make([]column.Column, 0, len(qf.columns))
-	for name, col := range qf.columnsByName {
-		columns = append(columns, col)
-		colByteNames = append(colByteNames, qfstrings.QuotedBytes(name))
+	colByteNames := make([][]byte, len(qf.columns))
+	for i, col := range qf.columns {
+		colByteNames[i] = qfstrings.QuotedBytes(col.name)
 	}
 
 	// Custom JSON generator for records due to performance reasons
@@ -1095,7 +1093,7 @@ func (qf QFrame) ToJSON(writer io.Writer) error {
 
 		jsonBuf = append(jsonBuf, byte('{'))
 
-		for j, col := range columns {
+		for j, col := range qf.columns {
 			jsonBuf = append(jsonBuf, colByteNames[j]...)
 			jsonBuf = append(jsonBuf, byte(':'))
 			jsonBuf = col.AppendByteStringAt(jsonBuf, ix)
