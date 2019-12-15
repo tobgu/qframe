@@ -1,0 +1,1 @@
+This is a copy of selected parts from https://github.com/cespare/ryu/.

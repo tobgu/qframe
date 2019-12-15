@@ -1,6 +1,7 @@
 package fcolumn
 
 import (
+	"github.com/tobgu/qframe/internal/ryu"
 	"math"
 	"math/rand"
 	"reflect"
@@ -32,7 +33,7 @@ func (c Column) AppendByteStringAt(buf []byte, i uint32) []byte {
 		return append(buf, "null"...)
 	}
 
-	return strconv.AppendFloat(buf, value, 'f', -1, 64)
+	return ryu.AppendFloat64f(buf, value)
 }
 
 func (c Column) ByteSize() int {
