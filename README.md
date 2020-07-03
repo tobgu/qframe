@@ -63,7 +63,7 @@ Load data to and from an in-memory SQLite database. Note
 that this example requires you to have [go-sqlite3](https://github.com/mattn/go-sqlite3) installed
 prior to running.
 
-```
+```go
 package main
 
 import (
