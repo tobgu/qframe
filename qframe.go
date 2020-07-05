@@ -914,6 +914,21 @@ func (qf QFrame) Apply(instructions ...Instruction) QFrame {
 	return result
 }
 
+// WithRowNums returns a new QFrame with a new column added which
+// contains the row numbers. Row numbers start at 0.
+//
+// Time complexity O(n), where n = number of rows.
+func (qf QFrame) WithRowNums(colName string) QFrame {
+	i := -1
+	return qf.Apply(Instruction{
+		DstCol: colName,
+		Fn: func() int {
+			i++
+			return i
+		},
+	})
+}
+
 // FilteredApply works like Apply but allows adding a filter which limits the
 // rows to which the instructions are applied to. Any rows not matching the filter
 // will be assigned the zero value of the column type.

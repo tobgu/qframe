@@ -2314,6 +2314,14 @@ func TestQFrame_Typing(t *testing.T) {
 	assertTrue(t, qf.ColumnTypes()[4] == types.Enum)
 }
 
+func TestQFrame_WithRows(t *testing.T) {
+	input := qframe.New(map[string]interface{}{"COL1": []int{11, 22, 33}})
+	expected := qframe.New(map[string]interface{}{
+		"ROWNUMS": []int{0, 1, 2},
+		"COL1":    []int{11, 22, 33}})
+	assertEquals(t, expected, input.WithRowNums("ROWNUMS"))
+}
+
 func assertContains(t *testing.T, actual, expected string) {
 	t.Helper()
 	if !strings.Contains(actual, expected) {
