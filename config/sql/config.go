@@ -29,14 +29,26 @@ func coerceFunc(cType coerceType) qsqlio.CoerceFunc {
 }
 
 // Config holds configuration parameters for reading/writing to/from a SQL DB.
-type Config qsqlio.SQLConfig
+type Config = qsqlio.SQLConfig
+
+// StatementFunc returns a query for a SQL Prepare() method
+type StatementFunc = qsqlio.StatementFunc
+
+var (
+	// Insert creates a dialect specific INSERT statement
+	// for writing to a SQL database. This is the default.
+	Insert = qsqlio.Insert
+)
 
 // ConfigFunc manipulates a Config object.
 type ConfigFunc func(*Config)
 
 // NewConfig creates a new config object.
 func NewConfig(ff []ConfigFunc) Config {
-	conf := Config{}
+	// defaults
+	conf := Config{
+		Statement: Insert,
+	}
 	for _, f := range ff {
 		f(&conf)
 	}
@@ -123,5 +135,22 @@ func Coerce(pairs ...CoercePair) ConfigFunc {
 func Precision(i int) ConfigFunc {
 	return func(c *Config) {
 		c.Precision = i
+	}
+}
+
+// Statement is a function that returns a raw SQL statement
+// to be passed into a sql.Tx function to generate a prepared
+// statement prior to writing data into the database.
+func Statement(fn StatementFunc) ConfigFunc {
+	return func(c *Config) {
+		c.Statement = fn
+	}
+}
+
+// RawStatement is a convience function to return a raw query
+// for generating a prepared statement.
+func RawStatement(stmt string) StatementFunc {
+	return func([]string, Config) string {
+		return stmt
 	}
 }
