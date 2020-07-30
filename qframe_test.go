@@ -3,13 +3,17 @@ package qframe_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/tobgu/qframe/config/rolling"
 	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/tobgu/qframe/config/rolling"
+
+	"io"
+	"log"
 
 	"github.com/tobgu/qframe"
 	"github.com/tobgu/qframe/aggregation"
@@ -18,8 +22,6 @@ import (
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/types"
-	"io"
-	"log"
 )
 
 func assertEquals(t *testing.T, expected, actual qframe.QFrame) {
@@ -615,6 +617,28 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL3"}},
 		},
 		{
+			name: "built in max aggregation function",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 1, 2},
+				"COL2": []int{1, 2, 3, 5, 7}},
+			expected: map[string]interface{}{
+				"COL1": []int{0, 1, 2},
+				"COL2": []int{2, 5, 7}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "max", Column: "COL2"}},
+		},
+		{
+			name: "built in min aggregation function",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 1, 2},
+				"COL2": []int{1, 2, 3, 5, 7}},
+			expected: map[string]interface{}{
+				"COL1": []int{0, 1, 2},
+				"COL2": []int{1, 3, 7}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "min", Column: "COL2"}},
+		},
+		{
 			name: "user defined aggregation function",
 			input: map[string]interface{}{
 				"COL1": []int{0, 0, 1, 1},
@@ -635,6 +659,28 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 				"COL2": []int{}},
 			groupColumns: []string{"COL1"},
 			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL2"}},
+		},
+		{
+			name: "empty max qframe",
+			input: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []int{}},
+			expected: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []int{}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "max", Column: "COL2"}},
+		},
+		{
+			name: "empty min qframe",
+			input: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []int{}},
+			expected: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []int{}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "min", Column: "COL2"}},
 		},
 		{
 			// This will trigger hash table relocations
@@ -661,6 +707,124 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 			expected:     map[string]interface{}{"COL1": []bool{false, true}, "COL2": []int{2, 4}},
 			groupColumns: []string{"COL1"},
 			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL2"}},
+		},
+	}
+
+	for _, tc := range table {
+		t.Run(fmt.Sprintf("GroupByAggregate %s", tc.name), func(t *testing.T) {
+			in := qframe.New(tc.input)
+			out := in.GroupBy(groupby.Columns(tc.groupColumns...)).Aggregate(tc.aggregations...)
+
+			assertEquals(t, qframe.New(tc.expected), out.Sort(colNamesToOrders(tc.groupColumns...)...))
+		})
+	}
+}
+
+func TestQFrame_GroupByAggregateFloats(t *testing.T) {
+	ownSum := func(col []float64) float64 {
+		result := 0.0
+		for _, x := range col {
+			result += x
+		}
+		return result
+	}
+
+	table := []struct {
+		name         string
+		input        map[string]interface{}
+		expected     map[string]interface{}
+		groupColumns []string
+		aggregations []qframe.Aggregation
+	}{
+		{
+			name: "built in aggregation function",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 2},
+				"COL2": []int{0, 0, 1, 1},
+				"COL3": []float64{1.0, 2.0, 5.0, 7.0}},
+			expected: map[string]interface{}{
+				"COL1": []int{0, 1, 2},
+				"COL2": []int{0, 1, 1},
+				"COL3": []float64{3.0, 5.0, 7.0}},
+			groupColumns: []string{"COL1", "COL2"},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL3"}},
+		},
+		{
+			name: "built in count aggregation function",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 1, 2},
+				"COL2": []float64{1.0, 2.0, 3.0, 5.0, 7.0}},
+			expected: map[string]interface{}{
+				"COL1": []int{0, 1, 2},
+				"COL2": []int{2, 2, 1}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "count", Column: "COL2"}},
+		},
+		{
+			name: "built in max aggregation function",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 1, 2},
+				"COL2": []float64{1.0, 2.0, 3.0, 5.0, 7.0}},
+			expected: map[string]interface{}{
+				"COL1": []int{0, 1, 2},
+				"COL2": []float64{2.0, 5.0, 7.0}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "max", Column: "COL2"}},
+		},
+		{
+			name: "built in min aggregation function",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 1, 2},
+				"COL2": []float64{1.0, 2.0, 3.0, 5.0, 7.0}},
+			expected: map[string]interface{}{
+				"COL1": []int{0, 1, 2},
+				"COL2": []float64{1.0, 3.0, 7.0}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "min", Column: "COL2"}},
+		},
+		{
+			name: "user defined aggregation function",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 1},
+				"COL2": []float64{1.0, 2.0, 5.0, 7.0}},
+			expected: map[string]interface{}{
+				"COL1": []int{0, 1},
+				"COL2": []float64{3.0, 12.0}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: ownSum, Column: "COL2"}},
+		},
+		{
+			name: "empty qframe",
+			input: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []float64{}},
+			expected: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []float64{}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "sum", Column: "COL2"}},
+		},
+		{
+			name: "empty max qframe",
+			input: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []float64{}},
+			expected: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []float64{}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "max", Column: "COL2"}},
+		},
+		{
+			name: "empty min qframe",
+			input: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []float64{}},
+			expected: map[string]interface{}{
+				"COL1": []int{},
+				"COL2": []float64{}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{{Fn: "min", Column: "COL2"}},
 		},
 	}
 
