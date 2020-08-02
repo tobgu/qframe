@@ -43,7 +43,7 @@ func (qf QFrame) IntView(colName string) (IntView, error) {
 // colName - Name of the column.
 //
 // Panics if the column is missing or of wrong type.
-// Time complexity 0(1).
+// Time complexity O(1).
 func (qf QFrame) MustIntView(colName string) IntView {
 	view, err := qf.IntView(colName)
 	if err != nil {
@@ -84,7 +84,7 @@ func (qf QFrame) FloatView(colName string) (FloatView, error) {
 // colName - Name of the column.
 //
 // Panics if the column is missing or of wrong type.
-// Time complexity 0(1).
+// Time complexity O(1).
 func (qf QFrame) MustFloatView(colName string) FloatView {
 	view, err := qf.FloatView(colName)
 	if err != nil {
@@ -125,7 +125,7 @@ func (qf QFrame) BoolView(colName string) (BoolView, error) {
 // colName - Name of the column.
 //
 // Panics if the column is missing or of wrong type.
-// Time complexity 0(1).
+// Time complexity O(1).
 func (qf QFrame) MustBoolView(colName string) BoolView {
 	view, err := qf.BoolView(colName)
 	if err != nil {
@@ -166,7 +166,7 @@ func (qf QFrame) StringView(colName string) (StringView, error) {
 // colName - Name of the column.
 //
 // Panics if the column is missing or of wrong type.
-// Time complexity 0(1).
+// Time complexity O(1).
 func (qf QFrame) MustStringView(colName string) StringView {
 	view, err := qf.StringView(colName)
 	if err != nil {
@@ -207,7 +207,7 @@ func (qf QFrame) EnumView(colName string) (EnumView, error) {
 // colName - Name of the column.
 //
 // Panics if the column is missing or of wrong type.
-// Time complexity 0(1).
+// Time complexity O(1).
 func (qf QFrame) MustEnumView(colName string) EnumView {
 	view, err := qf.EnumView(colName)
 	if err != nil {

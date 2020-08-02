@@ -42,7 +42,7 @@ func (qf QFrame) {{.type}}View(colName string) ({{.type}}View, error) {
 // colName - Name of the column.
 //
 // Panics if the column is missing or of wrong type.
-// Time complexity 0(1).
+// Time complexity O(1).
 func (qf QFrame) Must{{.type}}View(colName string) {{.type}}View {
 	view, err := qf.{{.type}}View(colName)
 	if err != nil {

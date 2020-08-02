@@ -444,6 +444,11 @@ func (c Column) DataType() types.DataType {
 	return types.String
 }
 
+func (c Column) Append(cols ...column.Column) (column.Column, error) {
+	// TODO Append
+	return nil, qerrors.New("Append", "Not implemented yet")
+}
+
 type Comparable struct {
 	column         Column
 	ltValue        column.CompareResult

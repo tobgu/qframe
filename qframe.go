@@ -985,6 +985,55 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 	return namedColumn.FunctionType(), nil
 }
 
+// Append appends all supplied QFrames, in order, to the current one and returns
+// a new QFrame with the result.
+// Column count, names and types must be the same for all involved QFrames.
+//
+// NB! This functionality is very much work in progress and should not be used yet.
+//     A lot of the implementation is still missing and what is currently there will be rewritten.
+//
+// Time complexity: ???
+func (qf QFrame) Append(qff ...QFrame) QFrame {
+	// TODO: Check error status on all involved QFrames
+	// TODO: Check that all columns have the same length? This should always be true.
+	result := qf
+	appendCols := make([]column.Column, 0, len(qff))
+	for _, col := range qf.columns {
+		for _, otherQf := range qff {
+			// TODO: Verify that column exists
+			appendCols = append(appendCols, otherQf.columnsByName[col.name].Column)
+		}
+
+		newCol, err := col.Append(appendCols...)
+		if err != nil {
+			return result.withErr(err)
+		}
+
+		// TODO: Could potentially be optimized with a "setColumns" function that sets all colums provided
+		//       to avoid excessive allocations per column.
+		result = result.setColumn(col.name, newCol)
+	}
+
+	// Construct new index
+	newIxLen := qf.index.Len()
+	for _, otherQf := range qff {
+		newIxLen += otherQf.Len()
+	}
+
+	newIx := make(index.Int, newIxLen)
+	start := copy(newIx, qf.index)
+	rowOffset := uint32(qf.columns[0].Len())
+	for _, otherQf := range qff {
+		for i := 0; i < otherQf.Len(); i++ {
+			newIx[start+i] = otherQf.index[i] + rowOffset
+		}
+		start += otherQf.Len()
+		rowOffset += uint32(otherQf.columns[0].Len())
+	}
+
+	return result.withIndex(newIx)
+}
+
 ////////////
 //// IO ////
 ////////////

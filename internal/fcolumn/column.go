@@ -169,3 +169,8 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 func (c Column) FunctionType() types.FunctionType {
 	return types.FunctionTypeFloat
 }
+
+func (c Column) Append(cols ...column.Column) (column.Column, error) {
+	// TODO Append
+	return nil, qerrors.New("Append", "Not implemented yet")
+}

@@ -12,6 +12,7 @@ type Column interface {
 	fmt.Stringer
 	Filter(index index.Int, comparator interface{}, comparatee interface{}, bIndex index.Bool) error
 	Subset(index index.Int) Column
+	Append(cols ...Column) (Column, error)
 	Equals(index index.Int, other Column, otherIndex index.Int) bool
 	Comparable(reverse, equalNull, nullLast bool) Comparable
 	Aggregate(indices []index.Int, fn interface{}) (Column, error)

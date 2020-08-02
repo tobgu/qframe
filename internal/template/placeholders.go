@@ -2,6 +2,7 @@ package template
 
 import (
 	"encoding/json"
+	"github.com/tobgu/qframe/qerrors"
 
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
@@ -45,6 +46,10 @@ func (c Column) Marshaler(index index.Int) json.Marshaler {
 
 func (c Column) StringAt(i uint32, naRep string) string {
 	return ""
+}
+
+func (c Column) Append(cols ...column.Column) (column.Column, error) {
+	return nil, qerrors.New("Append", "Not implemented")
 }
 
 func (c Comparable) Compare(i, j uint32) column.CompareResult {

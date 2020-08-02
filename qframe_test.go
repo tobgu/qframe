@@ -2507,3 +2507,11 @@ func TestDoc(t *testing.T) {
 	assertContains(t, doc, "filters")
 	assertContains(t, doc, "aggregations")
 }
+
+func TestQFrame_AppendSuccess(t *testing.T) {
+	f1 := qframe.New(map[string]interface{}{"COL1": []int{11, 22}})
+	f2 := qframe.New(map[string]interface{}{"COL1": []int{33}})
+	f3 := qframe.New(map[string]interface{}{"COL1": []int{44, 55}})
+	expected := qframe.New(map[string]interface{}{"COL1": []int{11, 22, 33, 44, 55}})
+	assertEquals(t, expected, f1.Append(f2, f3))
+}

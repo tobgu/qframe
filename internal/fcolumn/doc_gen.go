@@ -15,6 +15,8 @@ func Doc() string {
 
 		"\n Built in aggregations\n" +
 		"  avg\n" +
+		"  max\n" +
+		"  min\n" +
 		"  sum\n" +
 		"\n"
 }

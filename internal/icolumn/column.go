@@ -203,3 +203,25 @@ func (c Column) Filter(index index.Int, comparator interface{}, comparatee inter
 func (c Column) FunctionType() types.FunctionType {
 	return types.FunctionTypeInt
 }
+
+func (c Column) Append(cols ...column.Column) (column.Column, error) {
+	// TODO Improve, currently copies all data over to a new column, this may not be the best solution...
+	newLen := c.Len()
+	intCols := append(make([]Column, 0, len(cols)+1), c)
+	for _, col := range cols {
+		intCol, ok := col.(Column)
+		if !ok {
+			return nil, qerrors.New("append int", "can only append integer columns to integer column")
+		}
+		newLen += intCol.Len()
+		intCols = append(intCols, intCol)
+	}
+
+	newData := make([]int, newLen)
+	offset := 0
+	for _, col := range intCols {
+		offset += copy(newData[offset:], col.data)
+	}
+
+	return New(newData), nil
+}

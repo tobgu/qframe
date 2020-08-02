@@ -10,6 +10,7 @@ import (
 	"github.com/tobgu/qframe/config/rolling"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
+	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
 )
 
@@ -83,4 +84,9 @@ func (c Comparable) Compare(i, j uint32) column.CompareResult {
 
 func (c Comparable) Hash(i uint32, seed uint64) uint64 {
 	return 0
+}
+
+func (c Column) Append(cols ...column.Column) (column.Column, error) {
+	// TODO Append
+	return nil, qerrors.New("Append", "Not implemented yet")
 }
