@@ -34,6 +34,10 @@ type Aggregation struct {
 
 	// Column is the name of the column to apply the aggregation to.
 	Column string
+
+	// As can be used to specify the destination column name, if not given defaults to the
+	// value of Column.
+	As string
 }
 
 // Aggregate applies the given aggregations to all row groups in the Grouper.
@@ -68,11 +72,17 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 			return QFrame{Err: qerrors.New("Aggregate", unknownCol(agg.Column))}
 		}
 
-		_, ok = newColumnsByName[agg.Column]
+		newColumnName := agg.Column
+		if agg.As != "" {
+			newColumnName = agg.As
+		}
+		col.name = newColumnName
+
+		_, ok = newColumnsByName[newColumnName]
 		if ok {
 			return QFrame{Err: qerrors.New(
 				"Aggregate",
-				"cannot aggregate on column that is part of group by or is already an aggregate: %s", agg.Column)}
+				"cannot aggregate on column that is part of group by or is already an aggregate: %s", newColumnName)}
 		}
 
 		if agg.Fn == "count" {
@@ -91,7 +101,7 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 			}
 		}
 
-		newColumnsByName[agg.Column] = col
+		newColumnsByName[newColumnName] = col
 		newColumns = append(newColumns, col)
 	}
 

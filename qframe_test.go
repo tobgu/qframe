@@ -639,6 +639,21 @@ func TestQFrame_GroupByAggregate(t *testing.T) {
 			aggregations: []qframe.Aggregation{{Fn: "min", Column: "COL2"}},
 		},
 		{
+			name: "combined max and min aggregation",
+			input: map[string]interface{}{
+				"COL1": []int{0, 0, 1, 1, 2},
+				"COL2": []int{1, 2, 3, 5, 7}},
+			expected: map[string]interface{}{
+				"COL1":     []int{0, 1, 2},
+				"min_COL2": []int{1, 3, 7},
+				"max_COL2": []int{2, 5, 7}},
+			groupColumns: []string{"COL1"},
+			aggregations: []qframe.Aggregation{
+				{Fn: "max", Column: "COL2", As: "max_COL2"},
+				{Fn: "min", Column: "COL2", As: "min_COL2"},
+			},
+		},
+		{
 			name: "user defined aggregation function",
 			input: map[string]interface{}{
 				"COL1": []int{0, 0, 1, 1},
