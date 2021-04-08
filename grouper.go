@@ -107,3 +107,19 @@ func (g Grouper) Aggregate(aggs ...Aggregation) QFrame {
 
 	return QFrame{columns: newColumns, columnsByName: newColumnsByName, index: index.NewAscending(uint32(len(g.indices)))}
 }
+
+// QFrames returns a slice of QFrame where each frame represents the content of one group.
+//
+// Time complexity O(n) where n = number of groups.
+func (g Grouper) QFrames() ([]QFrame, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+
+	baseFrame := QFrame{columns: g.columns, columnsByName: g.columnsByName, index: index.Int{}}
+	result := make([]QFrame, len(g.indices))
+	for i, ix := range g.indices {
+		result[i] = baseFrame.withIndex(ix)
+	}
+	return result, nil
+}

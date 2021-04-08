@@ -2478,7 +2478,7 @@ func TestQFrame_Typing(t *testing.T) {
 		"strings": []string{"a", "b"},
 		"enums":   []string{"a", "b"},
 	},
-		newqf.Enums(map[string][]string{"enums": []string{"a", "b"}}),
+		newqf.Enums(map[string][]string{"enums": {"a", "b"}}),
 		newqf.ColumnOrder("ints", "bools", "floats", "strings", "enums"),
 	)
 	assertTrue(t, qf.ColumnTypeMap()["ints"] == types.Int)
@@ -2529,4 +2529,28 @@ func TestQFrame_AppendSuccess(t *testing.T) {
 	f3 := qframe.New(map[string]interface{}{"COL1": []int{44, 55}})
 	expected := qframe.New(map[string]interface{}{"COL1": []int{11, 22, 33, 44, 55}})
 	assertEquals(t, expected, f1.Append(f2, f3))
+}
+
+func assertContainsQFrame(t *testing.T, frames []qframe.QFrame, frame qframe.QFrame) {
+	t.Helper()
+	for _, f := range frames {
+		if ok, _ := frame.Equals(f); ok {
+			return
+		}
+	}
+	t.Errorf("%v does not contain %v", frames, frame)
+}
+
+func TestQFrame_GroupByQFrames(t *testing.T) {
+	f := qframe.New(map[string]interface{}{
+		"COL1": []int{1, 1, 2, 3, 3},
+		"COL2": []int{10, 11, 20, 30, 31},
+	})
+
+	ff, err := f.GroupBy(groupby.Columns("COL1")).QFrames()
+	assertNotErr(t, err)
+	assertTrue(t, len(ff) == 3)
+	assertContainsQFrame(t, ff, qframe.New(map[string]interface{}{"COL1": []int{1, 1}, "COL2": []int{10, 11}}))
+	assertContainsQFrame(t, ff, qframe.New(map[string]interface{}{"COL1": []int{2}, "COL2": []int{20}}))
+	assertContainsQFrame(t, ff, qframe.New(map[string]interface{}{"COL1": []int{3, 3}, "COL2": []int{30, 31}}))
 }
