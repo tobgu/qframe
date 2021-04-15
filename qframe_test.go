@@ -2383,6 +2383,18 @@ func TestQFrame_EvalSuccess(t *testing.T) {
 			dstCol:   "COL2",
 			expected: []int{1, 2}},
 		{
+			name:     "column constant fill",
+			expr:     qframe.Val(3),
+			input:    map[string]interface{}{"COL1": []int{1, 2}},
+			dstCol:   "COL2",
+			expected: []int{3, 3}},
+		{
+			name:     "column nil fill",
+			expr:     qframe.Val(nil),
+			input:    map[string]interface{}{"COL1": []int{1, 2}},
+			dstCol:   "COL2",
+			expected: []*string{nil, nil}},
+		{
 			name:     "int col plus col",
 			expr:     qframe.Expr("+", col("COL1"), col("COL2")),
 			input:    map[string]interface{}{"COL1": []int{1, 2}, "COL2": []int{3, 4}},
