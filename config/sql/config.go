@@ -11,6 +11,7 @@ const (
 	// Int64ToBool casts an int64 type into a bool,
 	// useful for handling SQLite INT -> BOOL.
 	Int64ToBool
+	StringToFloat
 )
 
 // CoercePair casts the scanned value in Column
@@ -24,6 +25,8 @@ func coerceFunc(cType coerceType) qsqlio.CoerceFunc {
 	switch cType {
 	case Int64ToBool:
 		return qsqlio.Int64ToBool
+	case StringToFloat:
+		return qsqlio.StringToFloat
 	}
 	return nil
 }

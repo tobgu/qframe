@@ -2,6 +2,7 @@ package sql
 
 import (
 	"reflect"
+	"strconv"
 
 	"github.com/tobgu/qframe/qerrors"
 )
@@ -22,6 +23,23 @@ func Int64ToBool(c *Column) func(t interface{}) error {
 				"Coercion Int64ToBool", "type %s is not int64", reflect.TypeOf(t).Kind())
 		}
 		c.Bool(v != 0)
+		return nil
+	}
+}
+
+func StringToFloat(c *Column) func(t interface{}) error {
+	return func(t interface{}) error {
+		v, ok := t.(string)
+		if !ok {
+			return qerrors.New(
+				"Coercion StringToFloat", "type %s is not float", reflect.TypeOf(t).Kind())
+		}
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return qerrors.New(
+				"Coercion StringToFloat", "Could not convert %s", v)
+		}
+		c.Float(f)
 		return nil
 	}
 }
