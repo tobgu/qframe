@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	stdcsv "encoding/csv"
 	"fmt"
-	"github.com/tobgu/qframe/config/rolling"
 	"io"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/tobgu/qframe/config/rolling"
 
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
@@ -1093,7 +1094,7 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 //
 // This is function is currently unoptimized. It could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
-func (qf QFrame) ToCSV(writer io.Writer) error {
+func (qf QFrame) ToCSV(writer io.Writer, header bool) error {
 	if qf.Err != nil {
 		return qerrors.Propagate("ToCSV", qf.Err)
 	}
@@ -1102,16 +1103,18 @@ func (qf QFrame) ToCSV(writer io.Writer) error {
 	for _, s := range qf.columns {
 		row = append(row, s.name)
 	}
-
 	columns := make([]column.Column, 0, len(qf.columns))
 	for _, name := range row {
 		columns = append(columns, qf.columnsByName[name])
 	}
 
 	w := stdcsv.NewWriter(writer)
-	err := w.Write(row)
-	if err != nil {
-		return err
+	var err error
+	if header {
+		err = w.Write(row)
+		if err != nil {
+			return err
+		}
 	}
 
 	for i := 0; i < qf.Len(); i++ {

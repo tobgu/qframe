@@ -1450,7 +1450,7 @@ false,2.5,2,"b,c"
 			assertNotErr(t, in.Err)
 
 			buf := new(bytes.Buffer)
-			err := in.ToCSV(buf)
+			err := in.ToCSV(buf, true)
 			assertNotErr(t, err)
 
 			result := buf.String()
