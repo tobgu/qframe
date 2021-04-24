@@ -1109,9 +1109,8 @@ func (qf QFrame) ToCSV(writer io.Writer, header bool) error {
 	}
 
 	w := stdcsv.NewWriter(writer)
-	var err error
 	if header {
-		err = w.Write(row)
+		err := w.Write(row)
 		if err != nil {
 			return err
 		}
@@ -1122,7 +1121,7 @@ func (qf QFrame) ToCSV(writer io.Writer, header bool) error {
 		for _, col := range columns {
 			row = append(row, col.StringAt(qf.index[i], ""))
 		}
-		err = w.Write(row)
+		err := w.Write(row)
 		if err != nil {
 			return err
 		}
