@@ -1433,6 +1433,7 @@ func TestQFrame_ToCSV(t *testing.T) {
 	table := []struct {
 		input    map[string]interface{}
 		expected string
+		header   bool
 	}{
 		{
 			input: map[string]interface{}{
@@ -1441,6 +1442,15 @@ func TestQFrame_ToCSV(t *testing.T) {
 true,1.5,1,a
 false,2.5,2,"b,c"
 `,
+			header: true,
+		},
+		{
+			input: map[string]interface{}{
+				"STRING1": []string{"a", "b,c"}, "INT1": []int{1, 2}, "FLOAT1": []float64{1.5, 2.5}, "BOOL1": []bool{true, false}},
+			expected: `true,1.5,1,a
+false,2.5,2,"b,c"
+`,
+			header: false,
 		},
 	}
 
@@ -1450,12 +1460,12 @@ false,2.5,2,"b,c"
 			assertNotErr(t, in.Err)
 
 			buf := new(bytes.Buffer)
-			err := in.ToCSV(buf, true)
+			err := in.ToCSV(buf, tc.header)
 			assertNotErr(t, err)
 
 			result := buf.String()
 			if result != tc.expected {
-				t.Errorf("QFrames not equal, %s ||| %s", result, tc.expected)
+				t.Errorf("QFrames not equal. \nGot:\n%s\nExpected:\n%s", result, tc.expected)
 			}
 		})
 	}
