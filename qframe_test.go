@@ -1460,7 +1460,8 @@ false,2.5,2,"b,c"
 			assertNotErr(t, in.Err)
 
 			buf := new(bytes.Buffer)
-			err := in.ToCSV(buf, tc.header)
+			csvOption := qframe.CSVOption{Header: tc.header}
+			err := in.ToCSV(buf, csvOption)
 			assertNotErr(t, err)
 
 			result := buf.String()

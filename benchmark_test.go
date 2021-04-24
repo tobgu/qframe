@@ -410,7 +410,7 @@ func BenchmarkQFrame_ToCSV(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		buf := new(bytes.Buffer)
-		err := df.ToCSV(buf, true)
+		err := df.ToCSV(buf)
 		if err != nil {
 			b.Errorf("Unexpected ToCSV error: %s", err)
 		}

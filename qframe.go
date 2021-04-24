@@ -1094,7 +1094,12 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 //
 // This is function is currently unoptimized. It could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
-func (qf QFrame) ToCSV(writer io.Writer, header bool) error {
+type CSVOption struct {
+	// Should the csv file include a header. Useful for new files, not when appending
+	Header bool
+}
+
+func (qf QFrame) ToCSV(writer io.Writer, options ...CSVOption) error {
 	if qf.Err != nil {
 		return qerrors.Propagate("ToCSV", qf.Err)
 	}
@@ -1109,6 +1114,11 @@ func (qf QFrame) ToCSV(writer io.Writer, header bool) error {
 	}
 
 	w := stdcsv.NewWriter(writer)
+	header := true
+	for _, o := range options {
+		header = o.Header
+	}
+
 	if header {
 		err := w.Write(row)
 		if err != nil {
