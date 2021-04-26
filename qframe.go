@@ -1056,13 +1056,13 @@ func ReadCSV(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 // ReadJSON returns a QFrame with data, in JSON format, taken from reader.
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
-func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
+func ReadJSON(reader io.Reader, confFuncs ...newqf.ConfigFunc) QFrame {
 	data, err := qfio.UnmarshalJSON(reader)
 	if err != nil {
 		return QFrame{Err: err}
 	}
 
-	return New(data, fns...)
+	return New(data, confFuncs...)
 }
 
 // ReadSQL returns a QFrame by reading the results of a SQL query.
@@ -1094,12 +1094,8 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 //
 // This is function is currently unoptimized. It could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
-type CSVOption struct {
-	// Should the csv file include a header. Useful for new files, not when appending
-	Header bool
-}
-
-func (qf QFrame) ToCSV(writer io.Writer, options ...CSVOption) error {
+func (qf QFrame) ToCSV(writer io.Writer, confFuncs ...csv.ToConfigFunc) error {
+	conf := csv.NewToConfig(confFuncs)
 	if qf.Err != nil {
 		return qerrors.Propagate("ToCSV", qf.Err)
 	}
@@ -1114,12 +1110,8 @@ func (qf QFrame) ToCSV(writer io.Writer, options ...CSVOption) error {
 	}
 
 	w := stdcsv.NewWriter(writer)
-	header := true
-	for _, o := range options {
-		header = o.Header
-	}
 
-	if header {
+	if conf.Header {
 		err := w.Write(row)
 		if err != nil {
 			return err

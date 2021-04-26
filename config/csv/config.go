@@ -103,3 +103,27 @@ func Headers(headers []string) ConfigFunc {
 		c.Headers = headers
 	}
 }
+
+// ToConfig holds configuration for writing CSV files
+type ToConfig qfio.ToCsvConfig
+
+// ToConfigFunc is a function that operates on a ToConfig object.
+type ToConfigFunc func(*ToConfig)
+
+// NewConfig creates a new ToConfig object.
+// This function should never be called from outside QFrame.
+func NewToConfig(ff []ToConfigFunc) ToConfig {
+	conf := ToConfig{Header: true} //Default
+	for _, f := range ff {
+		f(&conf)
+	}
+	return conf
+}
+
+// Header indicates whether or not the CSV file should be written with a header.
+// Default is true.
+func Header(header bool) ToConfigFunc {
+	return func(c *ToConfig) {
+		c.Header = header
+	}
+}

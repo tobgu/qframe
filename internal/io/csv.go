@@ -18,6 +18,7 @@ type bytePointer struct {
 	end   uint32
 }
 
+//For reading  CSV
 type CSVConfig struct {
 	EmptyNull        bool
 	IgnoreEmptyLines bool
@@ -26,6 +27,11 @@ type CSVConfig struct {
 	EnumVals         map[string][]string
 	RowCountHint     int
 	Headers          []string
+}
+
+//For writing CSV
+type ToCsvConfig struct {
+	Header bool
 }
 
 func isEmptyLine(fields [][]byte) bool {
