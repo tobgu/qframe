@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	stdcsv "encoding/csv"
 	"fmt"
-	"github.com/tobgu/qframe/config/rolling"
 	"io"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/tobgu/qframe/config/rolling"
 
 	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/eval"
@@ -1055,13 +1056,13 @@ func ReadCSV(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {
 // ReadJSON returns a QFrame with data, in JSON format, taken from reader.
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
-func ReadJSON(reader io.Reader, fns ...newqf.ConfigFunc) QFrame {
+func ReadJSON(reader io.Reader, confFuncs ...newqf.ConfigFunc) QFrame {
 	data, err := qfio.UnmarshalJSON(reader)
 	if err != nil {
 		return QFrame{Err: err}
 	}
 
-	return New(data, fns...)
+	return New(data, confFuncs...)
 }
 
 // ReadSQL returns a QFrame by reading the results of a SQL query.
@@ -1093,7 +1094,8 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 //
 // This is function is currently unoptimized. It could probably be a lot speedier with
 // a custom written CSV writer that handles quoting etc. differently.
-func (qf QFrame) ToCSV(writer io.Writer) error {
+func (qf QFrame) ToCSV(writer io.Writer, confFuncs ...csv.ToConfigFunc) error {
+	conf := csv.NewToConfig(confFuncs)
 	if qf.Err != nil {
 		return qerrors.Propagate("ToCSV", qf.Err)
 	}
@@ -1102,16 +1104,18 @@ func (qf QFrame) ToCSV(writer io.Writer) error {
 	for _, s := range qf.columns {
 		row = append(row, s.name)
 	}
-
 	columns := make([]column.Column, 0, len(qf.columns))
 	for _, name := range row {
 		columns = append(columns, qf.columnsByName[name])
 	}
 
 	w := stdcsv.NewWriter(writer)
-	err := w.Write(row)
-	if err != nil {
-		return err
+
+	if conf.Header {
+		err := w.Write(row)
+		if err != nil {
+			return err
+		}
 	}
 
 	for i := 0; i < qf.Len(); i++ {
@@ -1119,7 +1123,7 @@ func (qf QFrame) ToCSV(writer io.Writer) error {
 		for _, col := range columns {
 			row = append(row, col.StringAt(qf.index[i], ""))
 		}
-		err = w.Write(row)
+		err := w.Write(row)
 		if err != nil {
 			return err
 		}
