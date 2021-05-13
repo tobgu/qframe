@@ -1,6 +1,7 @@
 package io
 
 import (
+	"fmt"
 	"io"
 	"math"
 
@@ -20,13 +21,15 @@ type bytePointer struct {
 
 //For reading  CSV
 type CSVConfig struct {
-	EmptyNull        bool
-	IgnoreEmptyLines bool
-	Delimiter        byte
-	Types            map[string]types.DataType
-	EnumVals         map[string][]string
-	RowCountHint     int
-	Headers          []string
+	EmptyNull              bool
+	IgnoreEmptyLines       bool
+	Delimiter              byte
+	Types                  map[string]types.DataType
+	EnumVals               map[string][]string
+	RowCountHint           int
+	Headers                []string
+	RenameDuplicateColumns bool
+	MissingColumnNameAlias string
 }
 
 //For writing CSV
@@ -98,6 +101,16 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 		}
 	}
 
+	if conf.MissingColumnNameAlias != "" {
+		headers = addAliasToMissingColumnNames(headers, conf.MissingColumnNameAlias)
+
+	}
+
+	if conf.RenameDuplicateColumns {
+		headers = renameDuplicateColumns(headers)
+
+	}
+
 	dataMap := make(map[string]interface{}, len(headers))
 	for i, header := range headers {
 		data, err := columnToData(colBytes[i], colPointers[i], header, conf)
@@ -122,10 +135,8 @@ func ReadCSV(reader io.Reader, conf CSVConfig) (map[string]interface{}, []string
 				headerSet.Add(h)
 			}
 		}
-
 		return nil, nil, qerrors.New("ReadCsv", "Duplicate columns detected: %v", duplicates)
 	}
-
 	return dataMap, headers, nil
 }
 
@@ -149,6 +160,48 @@ func resizeColBytes(bytes [][]byte, currentRowCount, sizeHint int) {
 			bytes[i] = newB
 		}
 	}
+}
+
+func renameDuplicateColumns(headers []string) []string {
+	headersMap := make(map[string]int)
+	// loop through column names and add the index of first occurence to the  headersMap
+	// any occurance after first is considered duplicate.
+	for i, h := range headers {
+		_, ok := headersMap[h]
+		if !ok {
+			headersMap[h] = i
+		}
+	}
+	// iterate through all column names and rename the duplicates with candidateName
+	for i, h := range headers {
+		index, ok := headersMap[h]
+		if ok && i != index {
+			counter := 0
+			for {
+				candidateName := headers[i] + fmt.Sprint(counter)
+				_, ok = headersMap[candidateName]
+				if ok {
+					counter++
+				} else {
+					headers[i] = candidateName
+					headersMap[headers[i]] = i
+					break
+				}
+			}
+		}
+	}
+	return headers
+
+}
+
+// Handle Missing Columnnames
+func addAliasToMissingColumnNames(headers []string, alias string) []string {
+	for i, name := range headers {
+		if name == "" {
+			headers[i] = alias
+		}
+	}
+	return headers
 }
 
 // Convert bytes to data columns, try, in turn int, float, bool and last string.
