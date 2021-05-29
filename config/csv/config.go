@@ -33,10 +33,24 @@ func EmptyNull(emptyNull bool) ConfigFunc {
 	}
 }
 
+// MissingColumnNameAlias sets the name to be used for empty columns name with given string
+func MissingColumnNameAlias(MissingColumnNameAlias string) ConfigFunc {
+	return func(c *Config) {
+		c.MissingColumnNameAlias = MissingColumnNameAlias
+	}
+}
+
+// RenameDuplicateColumns configures if duplicate column names should have the column index appended to the column name to resolve the conflict.
+func RenameDuplicateColumns(RenameDuplicateColumns bool) ConfigFunc {
+	return func(c *Config) {
+		c.RenameDuplicateColumns = RenameDuplicateColumns
+	}
+}
+
 // IgnoreEmptyLines configures if a line without any characters should be ignored or interpreted
 // as a zero length string.
 //
-// ignoreEmptyLines - If set to true empty lines will not produce any data.
+// IgnoreEmptyLines - If set to true empty lines will not produce any data.
 func IgnoreEmptyLines(ignoreEmptyLines bool) ConfigFunc {
 	return func(c *Config) {
 		c.IgnoreEmptyLines = ignoreEmptyLines

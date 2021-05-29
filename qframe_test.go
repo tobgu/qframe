@@ -1373,6 +1373,44 @@ mon
 	})
 }
 
+func TestQFrame_ReadCSVMissingColumnName(t *testing.T) {
+	input := `,COL2
+a,1.5`
+	expectedIn := `COL,COL2
+a,1.5`
+
+	out := qframe.ReadCSV(strings.NewReader(input), csv.MissingColumnNameAlias("COL"))
+	expected := qframe.ReadCSV(strings.NewReader(expectedIn))
+	assertNotErr(t, out.Err)
+	assertEquals(t, expected, out)
+}
+
+func TestQFrame_ReadCSVDuplicateColumnName(t *testing.T) {
+	input := `COL,COL,COL,COL,COL,KOL,KOL
+	a,1.5,1.6,1.7,1.8,1.9,2.0`
+
+	expectedIn := `COL,COL0,COL1,COL2,COL3,KOL,KOL0
+	a,1.5,1.6,1.7,1.8,1.9,2.0`
+
+	out := qframe.ReadCSV(strings.NewReader(input), csv.RenameDuplicateColumns(true))
+	expected := qframe.ReadCSV(strings.NewReader(expectedIn))
+	assertNotErr(t, out.Err)
+	assertEquals(t, expected, out)
+}
+
+func TestQFrame_ReadCSVDuplicateAndEmptyColumnName(t *testing.T) {
+	input := `,
+a,1.5`
+
+	expectedIn := `COL,COL0
+a,1.5`
+
+	out := qframe.ReadCSV(strings.NewReader(input), csv.RenameDuplicateColumns(true), csv.MissingColumnNameAlias("COL"))
+	expected := qframe.ReadCSV(strings.NewReader(expectedIn))
+	assertNotErr(t, out.Err)
+	assertEquals(t, expected, out)
+}
+
 func TestQFrame_ReadJSON(t *testing.T) {
 	/*
 		>>> pd.DataFrame.from_records([dict(a=1.5), dict(a=None)])

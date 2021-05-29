@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/tobgu/qframe"
+	"github.com/tobgu/qframe/config/csv"
 	"github.com/tobgu/qframe/config/groupby"
 	"github.com/tobgu/qframe/config/newqf"
 	"github.com/tobgu/qframe/function"
@@ -92,13 +93,45 @@ c,3.0`
 	f := qframe.ReadCSV(strings.NewReader(input))
 	fmt.Println(f)
 	// Output:
-	// COL1(s) COL2(f)
+	// COL(s) COL0(f)
+	// ------ -------
+	// 	 a     1.5
+	// 	 b    2.25
+
+	// Dims = 2 x 2
+
+}
+
+func ExampleReadCSV_configRenameDuplicateColumns() {
+	input := `COL,COL
+a,1.5
+b,2.25`
+
+	f := qframe.ReadCSV(strings.NewReader(input), csv.RenameDuplicateColumns(true))
+	fmt.Println(f)
+	// Output:
+	// COL(s)  COL0(f)
 	// ------- -------
 	//       a     1.5
 	//       b    2.25
-	//       c       3
-	//
-	// Dims = 2 x 3
+
+	// Dims = 2 x 2
+}
+
+func ExampleReadCSV_configMissingColumnNameAlias() {
+	input := `,COL1
+a,1.5
+b,2.25`
+
+	f := qframe.ReadCSV(strings.NewReader(input), csv.MissingColumnNameAlias("COL"))
+	fmt.Println(f)
+	// Output:
+	// COL(s)  COL1(f)
+	// ------- -------
+	//       a     1.5
+	//       b    2.25
+
+	// Dims = 2 x 2
 }
 
 func ExampleNew() {
