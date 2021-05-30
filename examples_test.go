@@ -93,13 +93,13 @@ c,3.0`
 	f := qframe.ReadCSV(strings.NewReader(input))
 	fmt.Println(f)
 	// Output:
-	// COL(s) COL0(f)
-	// ------ -------
-	// 	 a     1.5
-	// 	 b    2.25
-
-	// Dims = 2 x 2
-
+	// COL1(s) COL2(f)
+	// ------- -------
+	//       a     1.5
+	//       b    2.25
+	//       c       3
+	//
+	// Dims = 2 x 3
 }
 
 func ExampleReadCSV_configRenameDuplicateColumns() {
@@ -110,11 +110,11 @@ b,2.25`
 	f := qframe.ReadCSV(strings.NewReader(input), csv.RenameDuplicateColumns(true))
 	fmt.Println(f)
 	// Output:
-	// COL(s)  COL0(f)
-	// ------- -------
-	//       a     1.5
-	//       b    2.25
-
+	// COL(s) COL0(f)
+	// ------ -------
+	//      a     1.5
+	//      b    2.25
+	//
 	// Dims = 2 x 2
 }
 
@@ -126,11 +126,11 @@ b,2.25`
 	f := qframe.ReadCSV(strings.NewReader(input), csv.MissingColumnNameAlias("COL"))
 	fmt.Println(f)
 	// Output:
-	// COL(s)  COL1(f)
-	// ------- -------
-	//       a     1.5
-	//       b    2.25
-
+	// COL(s) COL1(f)
+	// ------ -------
+	//      a     1.5
+	//      b    2.25
+	//
 	// Dims = 2 x 2
 }
 
