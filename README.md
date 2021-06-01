@@ -78,39 +78,51 @@ import (
 func main() {
 	// Create a new in-memory SQLite database.
 	db, _ := sql.Open("sqlite3", ":memory:")
-	// Add a new table.
+	// Add a new table, qframe will not create
+	// them on it's own.
 	db.Exec(`
-	CREATE TABLE test (
-		COL1 INT,
-		COL2 REAL,
-		COL3 TEXT,
-		COL4 BOOL
+	create table test (
+		col1 int primary key,
+		col2 real,
+		col3 text,
+		col4 bool
 	);`)
 	// Create a new QFrame to populate our table with.
 	qf := qframe.New(map[string]interface{}{
-		"COL1": []int{1, 2, 3},
-		"COL2": []float64{1.1, 2.2, 3.3},
-		"COL3": []string{"one", "two", "three"},
-		"COL4": []bool{true, true, true},
+		"col1": []int{1, 2, 3},
+		"col2": []float64{1.1, 2.2, 3.3},
+		"col3": []string{"one", "two", "three"},
+		"col4": []bool{true, true, true},
 	})
 	fmt.Println(qf)
 	// Start a new SQL Transaction.
 	tx, _ := db.Begin()
 	// Write the QFrame to the database.
-	qf.ToSQL(tx,
-		// Write only to the test table
+	fmt.Println(qf.ToSQL(tx,
+		// Write to the test table
 		qsql.Table("test"),
 		// Explicitly set SQLite compatibility.
 		qsql.SQLite(),
-	)
+	))
+	// It is also possible to pass a raw SQL Statement
+	// to use when writing to the database. NOTE: When
+	// using raw SQL, compatibility options must be handled
+	// in the statement manually, QFrame will not convert them
+	// into the correct dialect for you.
+	fmt.Println(qf.ToSQL(tx,
+		qsql.Statement(qsql.RawStatement(`
+		insert into test values ($1, $2, $3, $4) on conflict (col1) do
+		update set col2=excluded.col2, col3=excluded.col3, col4=excluded.col4
+		`)),
+	))
 	// Create a new QFrame from SQL.
 	newQf := qframe.ReadSQL(tx,
-		// A query must return at least one column. In this 
+		// A query must return at least one column. In this
 		// case it will return all of the columns we created above.
 		qsql.Query("SELECT * FROM test"),
 		// SQLite stores boolean values as integers, so we
 		// can coerce them back to bools with the CoercePair option.
-		qsql.Coerce(qsql.CoercePair{Column: "COL4", Type: qsql.Int64ToBool}),
+		qsql.Coerce(qsql.CoercePair{Column: "col4", Type: qsql.Int64ToBool}),
 		qsql.SQLite(),
 	)
 	fmt.Println(newQf)

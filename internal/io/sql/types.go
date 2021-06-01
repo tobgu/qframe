@@ -37,7 +37,14 @@ type SQLConfig struct {
 	// Precision specifies how much precision float values
 	// should have. 0 has no effect.
 	Precision int
+	// Statement is a function that returns a raw SQL statement
+	// to be passed into a sql.Tx function to generate a prepared
+	// statement prior to writing data into the database.
+	Statement StatementFunc
 }
+
+// StatementFunc returns a query for a SQL Prepare() method
+type StatementFunc func([]string, SQLConfig) string
 
 type ArgBuilder func(ix index.Int, i int) interface{}
 
