@@ -1070,7 +1070,7 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 	return ReadSQLWithArgs(tx, []interface{}{}, confFuncs...)
 }
 
-// ReadSQLPreparedreturns a QFrame by reading the results of a SQL query with arguments
+// ReadSQLWithArgs returns a QFrame by reading the results of a SQL query with arguments
 func ReadSQLWithArgs(tx *sql.Tx, queryArgs []interface{}, confFuncs ...qsql.ConfigFunc) QFrame {
 	conf := qsql.NewConfig(confFuncs)
 	// The MySQL can only use prepared
