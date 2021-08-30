@@ -1067,6 +1067,11 @@ func ReadJSON(reader io.Reader, confFuncs ...newqf.ConfigFunc) QFrame {
 
 // ReadSQL returns a QFrame by reading the results of a SQL query.
 func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
+	return ReadSQLWithArgs(tx, []interface{}{}, confFuncs...)
+}
+
+// ReadSQLWithArgs returns a QFrame by reading the results of a SQL query with arguments
+func ReadSQLWithArgs(tx *sql.Tx, queryArgs []interface{}, confFuncs ...qsql.ConfigFunc) QFrame {
 	conf := qsql.NewConfig(confFuncs)
 	// The MySQL can only use prepared
 	// statements to return "native" types, otherwise
@@ -1077,7 +1082,7 @@ func ReadSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) QFrame {
 		return QFrame{Err: err}
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(queryArgs...)
 	if err != nil {
 		return QFrame{Err: err}
 	}

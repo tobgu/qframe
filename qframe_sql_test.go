@@ -29,6 +29,9 @@ type MockDriver struct {
 		// to the database
 		values [][]driver.Value
 	}
+
+	// optional statement Query implementation
+	mockQuery MockQuery
 }
 
 func (m MockDriver) Open(name string) (driver.Conn, error) {
@@ -40,6 +43,7 @@ func (m MockDriver) Open(name string) (driver.Conn, error) {
 			columns: m.results.columns,
 			values:  m.results.values,
 		},
+		mockQuery: m.mockQuery,
 	}
 	return &MockConn{
 		t:     m.t,
@@ -77,10 +81,11 @@ func (m MockTx) Commit() error { return nil }
 func (m MockTx) Rollback() error { return nil }
 
 type MockStmt struct {
-	t      *testing.T
-	rows   *MockRows
-	idx    int
-	values [][]driver.Value
+	t         *testing.T
+	rows      *MockRows
+	idx       int
+	values    [][]driver.Value
+	mockQuery MockQuery
 }
 
 func (s MockStmt) Close() error { return nil }
@@ -103,8 +108,14 @@ func (s *MockStmt) Exec(args []driver.Value) (driver.Result, error) {
 }
 
 func (s MockStmt) Query(args []driver.Value) (driver.Rows, error) {
+	// use the mock query implementation if supplied by the test
+	if s.mockQuery != nil {
+		return s.mockQuery(args)
+	}
 	return s.rows, nil
 }
+
+type MockQuery func(args []driver.Value) (driver.Rows, error)
 
 type MockConn struct {
 	t     *testing.T
@@ -193,6 +204,51 @@ func TestQFrame_ReadSQLCoercion(t *testing.T) {
 	expected := qframe.New(map[string]interface{}{
 		"COL1": []bool{true, true, false},
 		"COL2": []bool{false, false, true},
+	})
+	assertEquals(t, expected, qf)
+}
+
+func TestQFrame_ReadWithArgs(t *testing.T) {
+	dvr := MockDriver{t: t}
+	dvr.args.values = [][]driver.Value{{""}}
+
+	// mock rows indexed by string COL3
+	indexRows := map[string][][]driver.Value{
+		"one":   {{int64(1), 1.1, "one", true}},
+		"two":   {{int64(2), 1.2, "two", false}},
+		"three": {{int64(3), 1.3, "three", true}},
+	}
+	dvr.mockQuery = func(args []driver.Value) (driver.Rows, error) {
+		// to confirm our argument made it through to the db driver as expected
+		if len(args) != 1 {
+			t.Error("expecting one argument in query invocation")
+		}
+		val, valid := args[0].(string)
+		if !valid {
+			t.Error("expecting argument in query invocation to be a string")
+		}
+		matching, has := indexRows[val]
+		if !has {
+			matching = [][]driver.Value{}
+		}
+		return &MockRows{
+			t:       t,
+			columns: []string{"COL1", "COL2", "COL3", "COL4"},
+			values:  matching,
+		}, nil
+	}
+	stmt := "SELECT * FROM mock_table WHERE COL3=$1"
+	dvr.query = stmt
+	sql.Register("TestReadPrepared", dvr)
+	db, _ := sql.Open("TestReadPrepared", "")
+	tx, _ := db.Begin()
+	qf := qframe.ReadSQLWithArgs(tx, []interface{}{"one"}, qsql.Query(stmt))
+	assertNotErr(t, qf.Err)
+	expected := qframe.New(map[string]interface{}{
+		"COL1": []int{1},
+		"COL2": []float64{1.1},
+		"COL3": []string{"one"},
+		"COL4": []bool{true},
 	})
 	assertEquals(t, expected, qf)
 }
