@@ -1202,12 +1202,17 @@ func (qf QFrame) ToSQL(tx *sql.Tx, confFuncs ...qsql.ConfigFunc) error {
 			return qerrors.New("ToSQL", err.Error())
 		}
 	}
+	cfg := qsql.NewConfig(confFuncs)
+	stmt, err := tx.Prepare(cfg.Statement(qf.ColumnNames(), cfg))
+	if err != nil {
+		return qerrors.New("ToSQL", err.Error())
+	}
 	for i := range qf.index {
 		args := make([]interface{}, len(qf.columns))
 		for j, b := range builders {
 			args[j] = b(qf.index, i)
 		}
-		_, err = tx.Exec(qfsqlio.Insert(qf.ColumnNames(), qfsqlio.SQLConfig(qsql.NewConfig(confFuncs))), args...)
+		_, err = stmt.Exec(args...)
 		if err != nil {
 			return qerrors.New("ToSQL", err.Error())
 		}
