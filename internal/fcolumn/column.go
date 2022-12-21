@@ -2,6 +2,7 @@ package fcolumn
 
 import (
 	"github.com/tobgu/qframe/internal/ryu"
+	"io"
 	"math"
 	"math/rand"
 	"reflect"
@@ -173,4 +174,8 @@ func (c Column) FunctionType() types.FunctionType {
 func (c Column) Append(cols ...column.Column) (column.Column, error) {
 	// TODO Append
 	return nil, qerrors.New("Append", "Not implemented yet")
+}
+
+func (c Column) ToQBin(w io.Writer) error {
+	panic("Not implemented")
 }

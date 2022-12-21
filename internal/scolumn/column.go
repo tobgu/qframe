@@ -10,6 +10,7 @@ import (
 	qfstrings "github.com/tobgu/qframe/internal/strings"
 	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
+	"io"
 	"math/rand"
 	"reflect"
 )
@@ -447,6 +448,10 @@ func (c Column) DataType() types.DataType {
 func (c Column) Append(cols ...column.Column) (column.Column, error) {
 	// TODO Append
 	return nil, qerrors.New("Append", "Not implemented yet")
+}
+
+func (c Column) ToQBin(w io.Writer) error {
+	panic("Not implemented")
 }
 
 type Comparable struct {

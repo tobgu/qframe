@@ -50,10 +50,12 @@ var Inverse = map[string]string{
 // Filter represents a filter to apply to a QFrame.
 //
 // Example using a built in comparator on a float column:
-//   Filter{Comparator: ">", Column: "COL1", Arg: 1.2}
+//
+//	Filter{Comparator: ">", Column: "COL1", Arg: 1.2}
 //
 // Same example as above but with a custom function:
-//   Filter{Comparator: func(f float64) bool { return f > 1.2 }, Column: "COL1"}
+//
+//	Filter{Comparator: func(f float64) bool { return f > 1.2 }, Column: "COL1"}
 type Filter struct {
 	// Comparator may be a string referring to a built in or a function taking an argument matching the
 	// column type and returning a bool bool.

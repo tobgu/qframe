@@ -12,6 +12,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
+	"io"
 )
 
 type Column struct{}
@@ -89,4 +90,8 @@ func (c Comparable) Hash(i uint32, seed uint64) uint64 {
 func (c Column) Append(cols ...column.Column) (column.Column, error) {
 	// TODO Append
 	return nil, qerrors.New("Append", "Not implemented yet")
+}
+
+func (c Column) ToQBin(w io.Writer) error {
+	panic("Not implemented")
 }

@@ -376,7 +376,8 @@ func Val(value interface{}) Expression {
 // Temporary columns will be created as necessary to hold intermediate results.
 //
 // Pseudo example:
-//     ["/", 18, 2, 3] is evaluated as ["/", ["/", 18, 2], 3] (= 3)
+//
+//	["/", 18, 2, 3] is evaluated as ["/", ["/", 18, 2], 3] (= 3)
 func Expr(name string, args ...interface{}) Expression {
 	if len(args) == 0 {
 		// This is currently the case. It may change if introducing variables for example.

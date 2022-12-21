@@ -41,7 +41,7 @@ func (c Column) fnName(name string) string {
 	return fmt.Sprintf("%s.%s", c.DataType(), name)
 }
 
-// Apply single argument function. The result may be a column
+// Apply1 applies a single argument function. The result may be a column
 // of a different type than the current column.
 func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 	switch t := fn.(type) {
@@ -74,7 +74,7 @@ func (c Column) Apply1(fn interface{}, ix index.Int) (interface{}, error) {
 	}
 }
 
-// Apply double argument function to two columns. Both columns must have the
+// Apply2 applies a double argument function to two columns. Both columns must have the
 // same type. The resulting column will have the same type as this column.
 func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.Column, error) {
 	ss2, ok := s2.(Column)

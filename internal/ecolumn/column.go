@@ -3,6 +3,7 @@ package ecolumn
 import (
 	"fmt"
 	"github.com/tobgu/qframe/config/rolling"
+	"io"
 	"reflect"
 	"strings"
 
@@ -584,6 +585,10 @@ func (c Column) DataType() types.DataType {
 func (c Column) Append(cols ...column.Column) (column.Column, error) {
 	// TODO Append
 	return nil, qerrors.New("Append", "Not implemented yet")
+}
+
+func (c Column) ToQBin(w io.Writer) error {
+	panic("Not implemented")
 }
 
 type Comparable struct {

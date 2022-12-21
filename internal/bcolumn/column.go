@@ -6,6 +6,7 @@ import (
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/qerrors"
 	"github.com/tobgu/qframe/types"
+	"io"
 	"reflect"
 	"strconv"
 )
@@ -130,4 +131,8 @@ func (c Column) FunctionType() types.FunctionType {
 func (c Column) Append(cols ...column.Column) (column.Column, error) {
 	// TODO Append
 	return nil, qerrors.New("Append", "Not implemented yet")
+}
+
+func (c Column) ToQBin(w io.Writer) error {
+	panic("Not implemented")
 }

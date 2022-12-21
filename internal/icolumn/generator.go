@@ -2,7 +2,6 @@ package icolumn
 
 import (
 	"bytes"
-
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/maps"
 	"github.com/tobgu/qframe/internal/template"

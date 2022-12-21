@@ -19,7 +19,7 @@ type bytePointer struct {
 	end   uint32
 }
 
-//For reading  CSV
+// For reading  CSV
 type CSVConfig struct {
 	EmptyNull              bool
 	IgnoreEmptyLines       bool
@@ -32,7 +32,7 @@ type CSVConfig struct {
 	MissingColumnNameAlias string
 }
 
-//For writing CSV
+// For writing CSV
 type ToCsvConfig struct {
 	Header bool
 }

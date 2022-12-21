@@ -3,6 +3,7 @@ package column
 import (
 	"fmt"
 	"github.com/tobgu/qframe/config/rolling"
+	"io"
 
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
@@ -28,6 +29,8 @@ type Column interface {
 
 	FunctionType() types.FunctionType
 	DataType() types.DataType
+
+	ToQBin(w io.Writer) error
 }
 
 type CompareResult byte

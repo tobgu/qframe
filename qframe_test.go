@@ -1568,6 +1568,35 @@ func TestQFrame_ToJSONInt(t *testing.T) {
 	}
 }
 
+func TestQFrame_ToFromQBinInt(t *testing.T) {
+	input := `COL1,COL2
+1,2
+3,4`
+
+	qf := qframe.ReadCSV(strings.NewReader(input))
+	assertNotErr(t, qf.Err)
+
+	bb := &bytes.Buffer{}
+	err := qf.ToQBin(bb)
+	assertNotErr(t, err)
+
+	newQf := qframe.ReadQBin(bb)
+	assertNotErr(t, newQf.Err)
+	assertEquals(t, qf, newQf)
+}
+
+// TODO:
+// - string
+// - bool
+// - float
+// - enum
+// - null column
+// - combined
+// - not possible for frame with errors
+// - Unexpected error during read (EOF, etc.)
+// - Unexpected error during write
+// - Invalid magic number
+
 func TestQFrame_FilterEnum(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
 	enums := newqf.Enums(map[string][]string{"COL1": {"a", "b", "c", "d", "e"}})
