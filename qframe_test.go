@@ -1585,6 +1585,19 @@ func TestQFrame_ToFromQBinInt(t *testing.T) {
 	assertEquals(t, qf, newQf)
 }
 
+func TestQFrame_ToQBinWithErrorFrameResultsInError(t *testing.T) {
+	input := `COL1,COL2
+1,2
+3,4
+5,6,7`
+
+	qf := qframe.ReadCSV(strings.NewReader(input))
+	assertErr(t, qf.Err, "wrong number of columns")
+
+	err := qf.ToQBin(&bytes.Buffer{})
+	assertErr(t, err, "error writing qbin")
+}
+
 // TODO:
 // - string
 // - bool
@@ -1592,7 +1605,6 @@ func TestQFrame_ToFromQBinInt(t *testing.T) {
 // - enum
 // - null column
 // - combined
-// - not possible for frame with errors
 // - Unexpected error during read (EOF, etc.)
 // - Unexpected error during write
 // - Invalid magic number
