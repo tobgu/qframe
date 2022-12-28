@@ -1598,6 +1598,12 @@ func TestQFrame_ToQBinWithErrorFrameResultsInError(t *testing.T) {
 	assertErr(t, err, "error writing qbin")
 }
 
+func TestQFrame_FromQBinWithInvalidMagicNumberFails(t *testing.T) {
+	bytes.NewReader([]byte{0x1, 0x2, 0x3, 0x4, 0x5})
+	qf := qframe.ReadQBin(bytes.NewReader([]byte{0x1, 0x2, 0x3, 0x4, 0x5}))
+	assertErr(t, qf.Err, "invalid magic number")
+}
+
 // TODO:
 // - string
 // - bool
@@ -1607,7 +1613,6 @@ func TestQFrame_ToQBinWithErrorFrameResultsInError(t *testing.T) {
 // - combined
 // - Unexpected error during read (EOF, etc.)
 // - Unexpected error during write
-// - Invalid magic number
 
 func TestQFrame_FilterEnum(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
