@@ -1622,6 +1622,24 @@ func TestQFrame_FromQBinUnexpectedErrorDuringRead(t *testing.T) {
 	assertErr(t, newQf.Err, "unexpected EOF")
 }
 
+func TestQFrame_FromQBinUnexpectedTrailingBytesDuringRead(t *testing.T) {
+	input := `COL1,COL2
+1,2
+3,4`
+
+	qf := qframe.ReadCSV(strings.NewReader(input))
+	assertNotErr(t, qf.Err)
+
+	bb := &bytes.Buffer{}
+	err := qf.ToQBin(bb)
+	assertNotErr(t, err)
+
+	// Write an additional byte of data to buffer
+	bb.Write([]byte{0x01})
+	newQf := qframe.ReadQBin(bb)
+	assertErr(t, newQf.Err, "unexpected trailing bytes")
+}
+
 // TODO:
 // - string
 // - bool
@@ -1630,7 +1648,6 @@ func TestQFrame_FromQBinUnexpectedErrorDuringRead(t *testing.T) {
 // - null column
 // - combined
 // - Unexpected error during write
-// - Unexpected trailing bytes
 
 func TestQFrame_FilterEnum(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
