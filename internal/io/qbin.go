@@ -85,6 +85,7 @@ func readQBinColumns(r io.Reader) ([]QBinColumn, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading column name: %w", err)
 		}
+		name := string(nameBytes)
 
 		columnType, err := qfbinary.Read[qbinColumnType](r)
 		if err != nil {
@@ -99,8 +100,12 @@ func readQBinColumns(r io.Reader) ([]QBinColumn, error) {
 			return nil, fmt.Errorf("unexpected column type: %d", col)
 		}
 
+		if err != nil {
+			return nil, fmt.Errorf("error reading data for column %s: %w", name, err)
+		}
+
 		result[i] = QBinColumn{
-			Name:   string(nameBytes),
+			Name:   name,
 			Column: col,
 		}
 	}

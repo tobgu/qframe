@@ -1604,6 +1604,24 @@ func TestQFrame_FromQBinWithInvalidMagicNumberFails(t *testing.T) {
 	assertErr(t, qf.Err, "invalid magic number")
 }
 
+func TestQFrame_FromQBinUnexpectedErrorDuringRead(t *testing.T) {
+	input := `COL1,COL2
+1,2
+3,4`
+
+	qf := qframe.ReadCSV(strings.NewReader(input))
+	assertNotErr(t, qf.Err)
+
+	bb := &bytes.Buffer{}
+	err := qf.ToQBin(bb)
+	assertNotErr(t, err)
+
+	// Truncate buffer to cause premature EOF
+	bb.Truncate(bb.Len() - 1)
+	newQf := qframe.ReadQBin(bb)
+	assertErr(t, newQf.Err, "unexpected EOF")
+}
+
 // TODO:
 // - string
 // - bool
@@ -1611,8 +1629,8 @@ func TestQFrame_FromQBinWithInvalidMagicNumberFails(t *testing.T) {
 // - enum
 // - null column
 // - combined
-// - Unexpected error during read (EOF, etc.)
 // - Unexpected error during write
+// - Unexpected trailing bytes
 
 func TestQFrame_FilterEnum(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
