@@ -1,6 +1,8 @@
 package fcolumn
 
 import (
+	"fmt"
+	qfbinary "github.com/tobgu/qframe/internal/binary"
 	"github.com/tobgu/qframe/internal/ryu"
 	"io"
 	"math"
@@ -177,5 +179,30 @@ func (c Column) Append(cols ...column.Column) (column.Column, error) {
 }
 
 func (c Column) ToQBin(w io.Writer) error {
-	panic("Not implemented")
+	err := qfbinary.Write[uint64](w, uint64(len(c.data)))
+	if err != nil {
+		return fmt.Errorf("error writing float column length: %w", err)
+	}
+
+	_, err = w.Write(qfbinary.UnsafeByteSlice(c.data))
+	if err != nil {
+		return fmt.Errorf("error writing float column: %w", err)
+	}
+
+	return nil
+}
+
+func ReadQBin(r io.Reader) (Column, error) {
+	colLen, err := qfbinary.Read[uint64](r)
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading float column length: %w", err)
+	}
+
+	data := make([]float64, colLen)
+	_, err = io.ReadFull(r, qfbinary.UnsafeByteSlice(data))
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading float column data: %w", err)
+	}
+
+	return New(data), nil
 }

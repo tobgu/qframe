@@ -1581,6 +1581,10 @@ func TestQFrame_ToFromQBin(t *testing.T) {
 			csv:      "COL1,COL2\nabc def,défåäöΦ\nccc,ddd",
 			typeName: "string",
 		},
+		{
+			csv:      "COL1,COL2\n1.23,4.0\n10,1.999999999",
+			typeName: "float",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1656,7 +1660,6 @@ func TestQFrame_FromQBinUnexpectedTrailingBytesDuringRead(t *testing.T) {
 
 // TODO:
 // - bool
-// - float
 // - enum
 // - null column
 // - combined
