@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/tobgu/qframe/config/rolling"
+	qfbinary "github.com/tobgu/qframe/internal/binary"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/hash"
 	"github.com/tobgu/qframe/internal/index"
@@ -19,7 +20,7 @@ var stringApplyFuncs = map[string]func(index.Int, Column) interface{}{
 	"ToUpper": toUpper,
 }
 
-// This is an example of how a more efficient built in function
+// This is an example of how a more efficient built-in function
 // could be implemented that makes use of the underlying representation
 // to make the operation faster than what could be done using the
 // generic function based API.
@@ -422,7 +423,7 @@ func (c Column) Apply2(fn interface{}, s2 column.Column, ix index.Int) (column.C
 		}
 		return New(result), nil
 	case string:
-		// No built in functions for strings at this stage
+		// No built-in functions for strings at this stage
 		return nil, qerrors.New("string.apply2", "unknown built in function %s", t)
 	default:
 		return nil, qerrors.New("string.apply2", "cannot apply type %#v to column", fn)
@@ -451,7 +452,44 @@ func (c Column) Append(cols ...column.Column) (column.Column, error) {
 }
 
 func (c Column) ToQBin(w io.Writer) error {
-	panic("Not implemented")
+	err := qfbinary.Write[uint64](w, uint64(len(c.pointers)))
+	if err != nil {
+		return fmt.Errorf("error writing string column length: %w", err)
+	}
+
+	_, err = w.Write(qfbinary.UnsafeByteSlice(c.pointers))
+	if err != nil {
+		return fmt.Errorf("error writing string column pointers: %w", err)
+	}
+
+	_, err = w.Write(c.data)
+	if err != nil {
+		return fmt.Errorf("error writing string column data: %w", err)
+	}
+
+	return nil
+}
+
+func ReadQBin(r io.Reader) (Column, error) {
+	colLen, err := qfbinary.Read[uint64](r)
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading string column length: %w", err)
+	}
+
+	pointers := make([]qfstrings.Pointer, colLen)
+	_, err = io.ReadFull(r, qfbinary.UnsafeByteSlice(pointers))
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading string column pointers: %w", err)
+	}
+
+	lastPointer := pointers[len(pointers)-1]
+	data := make([]byte, lastPointer.Offset()+lastPointer.Len())
+	_, err = io.ReadFull(r, data)
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading string column data: %w", err)
+	}
+
+	return NewBytes(pointers, data), nil
 }
 
 type Comparable struct {

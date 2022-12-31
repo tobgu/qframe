@@ -1585,6 +1585,23 @@ func TestQFrame_ToFromQBinInt(t *testing.T) {
 	assertEquals(t, qf, newQf)
 }
 
+func TestQFrame_ToFromQBinString(t *testing.T) {
+	input := `COL1,COL2
+abc def,défåäöΦ
+ccc,ddd`
+
+	qf := qframe.ReadCSV(strings.NewReader(input))
+	assertNotErr(t, qf.Err)
+
+	bb := &bytes.Buffer{}
+	err := qf.ToQBin(bb)
+	assertNotErr(t, err)
+
+	newQf := qframe.ReadQBin(bb)
+	assertNotErr(t, newQf.Err)
+	assertEquals(t, qf, newQf)
+}
+
 func TestQFrame_ToQBinWithErrorFrameResultsInError(t *testing.T) {
 	input := `COL1,COL2
 1,2

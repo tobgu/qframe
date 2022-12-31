@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	qfbinary "github.com/tobgu/qframe/internal/binary"
-
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/icolumn"
 	"github.com/tobgu/qframe/internal/index"
+	"github.com/tobgu/qframe/internal/scolumn"
 	"io"
 	"math"
 )
@@ -28,6 +28,7 @@ type qbinColumnType uint8
 
 const (
 	qbinColumnTypeInteger qbinColumnType = iota
+	qbinColumnTypeString
 )
 
 func ReadQBin(r io.Reader) (*QBinFrame, error) {
@@ -96,6 +97,8 @@ func readQBinColumns(r io.Reader) ([]QBinColumn, error) {
 		switch columnType {
 		case qbinColumnTypeInteger:
 			col, err = icolumn.ReadQBin(r)
+		case qbinColumnTypeString:
+			col, err = scolumn.ReadQBin(r)
 		default:
 			return nil, fmt.Errorf("unexpected column type: %d", col)
 		}
@@ -145,8 +148,10 @@ func writeQBinColumns(cols []QBinColumn, w io.Writer) error {
 		switch t := col.Column.(type) {
 		case icolumn.Column:
 			columnType = qbinColumnTypeInteger
+		case scolumn.Column:
+			columnType = qbinColumnTypeString
 		default:
-			return fmt.Errorf("unexpected column type %+v", t)
+			return fmt.Errorf("unexpected column type: %s", t.DataType())
 		}
 
 		err := qfbinary.Write[qbinColumnType](w, columnType)
