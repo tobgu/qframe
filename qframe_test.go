@@ -1568,38 +1568,35 @@ func TestQFrame_ToJSONInt(t *testing.T) {
 	}
 }
 
-func TestQFrame_ToFromQBinInt(t *testing.T) {
-	input := `COL1,COL2
-1,2
-3,4`
+func TestQFrame_ToFromQBin(t *testing.T) {
+	testCases := []struct {
+		csv      string
+		typeName string
+	}{
+		{
+			csv:      "COL1,COL2\n1,2\n3,4",
+			typeName: "integer",
+		},
+		{
+			csv:      "COL1,COL2\nabc def,défåäöΦ\nccc,ddd",
+			typeName: "string",
+		},
+	}
 
-	qf := qframe.ReadCSV(strings.NewReader(input))
-	assertNotErr(t, qf.Err)
+	for _, tc := range testCases {
+		t.Run(tc.typeName, func(t *testing.T) {
+			qf := qframe.ReadCSV(strings.NewReader(tc.csv))
+			assertNotErr(t, qf.Err)
 
-	bb := &bytes.Buffer{}
-	err := qf.ToQBin(bb)
-	assertNotErr(t, err)
+			bb := &bytes.Buffer{}
+			err := qf.ToQBin(bb)
+			assertNotErr(t, err)
 
-	newQf := qframe.ReadQBin(bb)
-	assertNotErr(t, newQf.Err)
-	assertEquals(t, qf, newQf)
-}
-
-func TestQFrame_ToFromQBinString(t *testing.T) {
-	input := `COL1,COL2
-abc def,défåäöΦ
-ccc,ddd`
-
-	qf := qframe.ReadCSV(strings.NewReader(input))
-	assertNotErr(t, qf.Err)
-
-	bb := &bytes.Buffer{}
-	err := qf.ToQBin(bb)
-	assertNotErr(t, err)
-
-	newQf := qframe.ReadQBin(bb)
-	assertNotErr(t, newQf.Err)
-	assertEquals(t, qf, newQf)
+			newQf := qframe.ReadQBin(bb)
+			assertNotErr(t, newQf.Err)
+			assertEquals(t, qf, newQf)
+		})
+	}
 }
 
 func TestQFrame_ToQBinWithErrorFrameResultsInError(t *testing.T) {
@@ -1658,7 +1655,6 @@ func TestQFrame_FromQBinUnexpectedTrailingBytesDuringRead(t *testing.T) {
 }
 
 // TODO:
-// - string
 // - bool
 // - float
 // - enum
