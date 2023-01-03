@@ -1256,7 +1256,7 @@ func (qf QFrame) ToQBin(w io.Writer) error {
 	}
 
 	// TODO: Should the qframe be "compacted" if needed before writing it?
-	qBinCols := make([]qfio.QBinColumn, len(qf.index))
+	qBinCols := make([]qfio.QBinColumn, len(qf.columns))
 	for i, namedCol := range qf.columns {
 		qBinCols[i] = qfio.QBinColumn{
 			Name:   namedCol.name,

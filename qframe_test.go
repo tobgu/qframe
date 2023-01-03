@@ -1585,6 +1585,10 @@ func TestQFrame_ToFromQBin(t *testing.T) {
 			csv:      "COL1,COL2\n1.23,4.0\n10,1.999999999",
 			typeName: "float",
 		},
+		{
+			csv:      "COL1,COL2",
+			typeName: "null",
+		},
 	}
 
 	for _, tc := range testCases {

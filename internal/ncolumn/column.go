@@ -30,7 +30,8 @@ func (c Column) Subset(index index.Int) column.Column {
 }
 
 func (c Column) Equals(index index.Int, other column.Column, otherIndex index.Int) bool {
-	return false
+	_, ok := other.(Column)
+	return ok
 }
 
 func (c Column) Comparable(reverse, equalNull, nullLast bool) column.Comparable {
@@ -93,5 +94,9 @@ func (c Column) Append(cols ...column.Column) (column.Column, error) {
 }
 
 func (c Column) ToQBin(w io.Writer) error {
-	panic("Not implemented")
+	return nil
+}
+
+func ReadQBin(r io.Reader) (Column, error) {
+	return Column{}, nil
 }
