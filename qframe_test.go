@@ -1589,6 +1589,10 @@ func TestQFrame_ToFromQBin(t *testing.T) {
 			csv:      "COL1,COL2",
 			typeName: "null",
 		},
+		{
+			csv:      "COL1,COL2\ntrue,false\nfalse,true",
+			typeName: "bool",
+		},
 	}
 
 	for _, tc := range testCases {

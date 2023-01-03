@@ -9,8 +9,10 @@ package fcolumn
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/tobgu/qframe/config/rolling"
+	qfbinary "github.com/tobgu/qframe/internal/binary"
 
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
@@ -179,6 +181,35 @@ func (c Column) View(ix index.Int) View {
 
 func (c Column) Rolling(fn interface{}, ix index.Int, config rolling.Config) (column.Column, error) {
 	return c, nil
+}
+
+func (c Column) ToQBin(w io.Writer) error {
+	err := qfbinary.Write[uint64](w, uint64(len(c.data)))
+	if err != nil {
+		return fmt.Errorf("error writing %s column length: %w", c.DataType(), err)
+	}
+
+	_, err = w.Write(qfbinary.UnsafeByteSlice(c.data))
+	if err != nil {
+		return fmt.Errorf("error writing %s column: %w", c.DataType(), err)
+	}
+
+	return nil
+}
+
+func ReadQBin(r io.Reader) (Column, error) {
+	colLen, err := qfbinary.Read[uint64](r)
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading %s column length: %w", Column{}.DataType(), err)
+	}
+
+	data := make([]float64, colLen)
+	_, err = io.ReadFull(r, qfbinary.UnsafeByteSlice(data))
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading %s column data: %w", Column{}.DataType(), err)
+	}
+
+	return New(data), nil
 }
 
 type Comparable struct {

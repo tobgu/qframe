@@ -5,7 +5,6 @@ import (
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/index"
 	"github.com/tobgu/qframe/types"
-	"io"
 )
 
 // This file contains definitions for data and functions that need to be added
@@ -49,10 +48,6 @@ func (c Column) StringAt(i uint32, naRep string) string {
 }
 
 func (c Column) Append(cols ...column.Column) (column.Column, error) {
-	panic("Not implemented")
-}
-
-func (c Column) ToQBin(w io.Writer) error {
 	panic("Not implemented")
 }
 

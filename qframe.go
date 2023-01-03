@@ -1041,7 +1041,7 @@ func (qf QFrame) Append(qff ...QFrame) QFrame {
 ////////////
 
 // ReadCSV returns a QFrame with data, in CSV format, taken from reader.
-// Column data types are auto detected if not explicitly specified.
+// Column data types are auto-detected if not explicitly specified.
 //
 // Time complexity O(m * n) where m = number of columns, n = number of rows.
 func ReadCSV(reader io.Reader, confFuncs ...csv.ConfigFunc) QFrame {

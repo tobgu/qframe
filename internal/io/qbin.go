@@ -3,6 +3,7 @@ package io
 import (
 	"errors"
 	"fmt"
+	"github.com/tobgu/qframe/internal/bcolumn"
 	qfbinary "github.com/tobgu/qframe/internal/binary"
 	"github.com/tobgu/qframe/internal/column"
 	"github.com/tobgu/qframe/internal/fcolumn"
@@ -32,6 +33,7 @@ const (
 	qbinColumnTypeInteger qbinColumnType = iota
 	qbinColumnTypeString
 	qbinColumnTypeFloat
+	qbinColumnTypeBool
 	qbinColumnTypeUndefined
 )
 
@@ -105,6 +107,8 @@ func readQBinColumns(r io.Reader) ([]QBinColumn, error) {
 			col, err = scolumn.ReadQBin(r)
 		case qbinColumnTypeFloat:
 			col, err = fcolumn.ReadQBin(r)
+		case qbinColumnTypeBool:
+			col, err = bcolumn.ReadQBin(r)
 		case qbinColumnTypeUndefined:
 			col, err = ncolumn.ReadQBin(r)
 		default:
@@ -160,6 +164,8 @@ func writeQBinColumns(cols []QBinColumn, w io.Writer) error {
 			columnType = qbinColumnTypeString
 		case fcolumn.Column:
 			columnType = qbinColumnTypeFloat
+		case bcolumn.Column:
+			columnType = qbinColumnTypeBool
 		case ncolumn.Column:
 			columnType = qbinColumnTypeUndefined
 		default:

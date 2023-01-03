@@ -7,7 +7,7 @@ import (
 
 // Config holds configuration for reading CSV files into QFrames.
 // It should be considered a private implementation detail and should never be
-// referenced or used directly outside of the QFrame code. To manipulate it
+// referenced or used directly outside the QFrame code. To manipulate it
 // use the functions returning ConfigFunc below.
 type Config qfio.CSVConfig
 
@@ -68,7 +68,7 @@ func Delimiter(delimiter byte) ConfigFunc {
 }
 
 // Types is used set types for certain columns.
-// If types are not given a best effort attempt will be done to auto detected the type.
+// If types are not given a best effort attempt will be done to auto-detect the type.
 //
 // typs - map column name -> type name. For a list of type names see package qframe/types.
 func Types(typs map[string]string) ConfigFunc {
@@ -124,7 +124,7 @@ type ToConfig qfio.ToCsvConfig
 // ToConfigFunc is a function that operates on a ToConfig object.
 type ToConfigFunc func(*ToConfig)
 
-// NewConfig creates a new ToConfig object.
+// NewToConfig creates a new ToConfig object.
 // This function should never be called from outside QFrame.
 func NewToConfig(ff []ToConfigFunc) ToConfig {
 	conf := ToConfig{Header: true} //Default
@@ -134,7 +134,7 @@ func NewToConfig(ff []ToConfigFunc) ToConfig {
 	return conf
 }
 
-// Header indicates whether or not the CSV file should be written with a header.
+// Header indicates whether the CSV file should be written with a header or not.
 // Default is true.
 func Header(header bool) ToConfigFunc {
 	return func(c *ToConfig) {
