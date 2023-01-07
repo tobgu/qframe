@@ -1569,6 +1569,11 @@ func TestQFrame_ToJSONInt(t *testing.T) {
 }
 
 func TestQFrame_ToFromQBin(t *testing.T) {
+	combinedInput := `INT,FLOAT,BOOL,STRING,ENUM
+1,1.23,true,Some value,ABC
+2,4.56,false,Another value,DEF
+`
+
 	testCases := []struct {
 		csv      string
 		typeName string
@@ -1600,6 +1605,13 @@ func TestQFrame_ToFromQBin(t *testing.T) {
 			config: []csv.ConfigFunc{
 				csv.Types(map[string]string{"COL1": "enum", "COL2": "enum"}),
 				csv.EnumValues(map[string][]string{"COL1": {"def", "abc"}, "COL2": nil}),
+			},
+		},
+		{
+			csv:      combinedInput,
+			typeName: "combined",
+			config: []csv.ConfigFunc{
+				csv.Types(map[string]string{"ENUM": "enum"}),
 			},
 		},
 	}
