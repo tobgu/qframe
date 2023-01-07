@@ -3,9 +3,12 @@ package ecolumn
 import (
 	"fmt"
 	"github.com/tobgu/qframe/config/rolling"
+	qfbinary "github.com/tobgu/qframe/internal/binary"
 	"io"
+	"math"
 	"reflect"
 	"strings"
+	"unsafe"
 
 	"github.com/tobgu/qframe/filter"
 	"github.com/tobgu/qframe/internal/column"
@@ -27,7 +30,7 @@ func (v enumVal) isNull() bool {
 }
 
 func (v enumVal) compVal() int {
-	// Convenience function to be able to compare null and non null values
+	// Convenience function to be able to compare null and non-null values
 	// in a straight forward way. Null is considered smaller than all other values.
 	if v == nullValue {
 		return -1
@@ -588,7 +591,99 @@ func (c Column) Append(cols ...column.Column) (column.Column, error) {
 }
 
 func (c Column) ToQBin(w io.Writer) error {
-	panic("Not implemented")
+	// Strictness flag
+	err := qfbinary.Write(w, c.strict)
+	if err != nil {
+		return fmt.Errorf("error writing enum strictness: %w", err)
+	}
+
+	// Enum values
+	err = qfbinary.Write(w, uint8(len(c.values)))
+	if err != nil {
+		return fmt.Errorf("error writing enum value count: %w", err)
+	}
+
+	for _, value := range c.values {
+		valueLen := len(value)
+		if valueLen > math.MaxUint8 {
+			// Semi arbitrary limit to reduce space needed to describe value
+			return fmt.Errorf("error writing enum value, too long (> %d) for '%s'", math.MaxUint8, value)
+		}
+
+		err = qfbinary.Write(w, uint8(valueLen))
+		if err != nil {
+			return fmt.Errorf("error writing enum value length: %w", err)
+		}
+
+		_, err = w.Write(unsafeStringToBytes(value))
+		if err != nil {
+			return fmt.Errorf("error writing enum value: %w", err)
+		}
+	}
+
+	// Data
+	err = qfbinary.Write[uint64](w, uint64(len(c.data)))
+	if err != nil {
+		return fmt.Errorf("error writing enum column length: %w", err)
+	}
+
+	_, err = w.Write(qfbinary.UnsafeByteSlice(c.data))
+	if err != nil {
+		return fmt.Errorf("error writing enum column data: %w", err)
+	}
+
+	return nil
+}
+
+func unsafeStringToBytes(s string) []byte {
+	// TODO: Replace this with the following in Go 1.20:
+	// d := unsafe.StringData(str)
+	// b := unsafe.Slice(d, len(str))
+	return unsafe.Slice((*byte)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&s)).Data)), len(s))
+}
+
+func ReadQBin(r io.Reader) (Column, error) {
+	// Strictness flag
+	strict, err := qfbinary.Read[bool](r)
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading enum strictness flag: %w", err)
+	}
+
+	// Values
+	valueCount, err := qfbinary.Read[uint8](r)
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading enum value count: %w", err)
+	}
+
+	values := make([]string, valueCount)
+	valueBuf := make([]byte, math.MaxUint8)
+	for i := 0; i < int(valueCount); i++ {
+		valueLen, err := qfbinary.Read[uint8](r)
+		if err != nil {
+			return Column{}, fmt.Errorf("error reading enum value length: %w", err)
+		}
+
+		valueBytes := valueBuf[0:int(valueLen)]
+		_, err = io.ReadFull(r, valueBytes)
+		if err != nil {
+			return Column{}, fmt.Errorf("error reading enum value: %w", err)
+		}
+		values[i] = string(valueBytes)
+	}
+
+	// Data
+	colLen, err := qfbinary.Read[uint64](r)
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading enum column length: %w", err)
+	}
+
+	data := make([]enumVal, colLen)
+	_, err = io.ReadFull(r, qfbinary.UnsafeByteSlice(data))
+	if err != nil {
+		return Column{}, fmt.Errorf("error reading enum column data: %w", err)
+	}
+
+	return Column{strict: strict, values: values, data: data}, nil
 }
 
 type Comparable struct {

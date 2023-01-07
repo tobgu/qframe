@@ -1572,6 +1572,7 @@ func TestQFrame_ToFromQBin(t *testing.T) {
 	testCases := []struct {
 		csv      string
 		typeName string
+		config   []csv.ConfigFunc
 	}{
 		{
 			csv:      "COL1,COL2\n1,2\n3,4",
@@ -1593,11 +1594,19 @@ func TestQFrame_ToFromQBin(t *testing.T) {
 			csv:      "COL1,COL2\ntrue,false\nfalse,true",
 			typeName: "bool",
 		},
+		{
+			csv:      "COL1,COL2\nabc,aaa\ndef,aaa",
+			typeName: "enum",
+			config: []csv.ConfigFunc{
+				csv.Types(map[string]string{"COL1": "enum", "COL2": "enum"}),
+				csv.EnumValues(map[string][]string{"COL1": {"def", "abc"}, "COL2": nil}),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.typeName, func(t *testing.T) {
-			qf := qframe.ReadCSV(strings.NewReader(tc.csv))
+			qf := qframe.ReadCSV(strings.NewReader(tc.csv), tc.config...)
 			assertNotErr(t, qf.Err)
 
 			bb := &bytes.Buffer{}
@@ -1667,11 +1676,10 @@ func TestQFrame_FromQBinUnexpectedTrailingBytesDuringRead(t *testing.T) {
 }
 
 // TODO:
-// - bool
-// - enum
-// - null column
-// - combined
+// - Combined
 // - Unexpected error during write
+// - Fix lint issues
+// - Add benchmark, compare to CSV and JSON and profile for bottlenecks
 
 func TestQFrame_FilterEnum(t *testing.T) {
 	a, b, c, d, e := "a", "b", "c", "d", "e"
