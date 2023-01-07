@@ -1304,7 +1304,7 @@ func Doc() string {
 		types.Float:  fcolumn.Doc(),
 		types.Int:    icolumn.Doc(),
 		types.String: scolumn.Doc()} {
-		result += fmt.Sprintf("%s\n%s\n%s\n", strings.Title(string(typeName)), strings.Repeat("-", len(typeName)), docString)
+		result += fmt.Sprintf("%s\n%s\n%s\n", strings.ToUpper(string(typeName)), strings.Repeat("-", len(typeName)), docString)
 	}
 
 	return result

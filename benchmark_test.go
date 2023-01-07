@@ -5,7 +5,7 @@ import (
 	stdcsv "encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"testing"
 
@@ -247,7 +247,7 @@ func csvBytes(rowCount int) []byte {
 	}
 	writer.Flush()
 
-	csvBytes, _ := ioutil.ReadAll(buf)
+	csvBytes, _ := io.ReadAll(buf)
 	return csvBytes
 }
 
@@ -262,7 +262,7 @@ func csvEnumBytes(rowCount, cardinality int) []byte {
 	}
 	writer.Flush()
 
-	csvBytes, _ := ioutil.ReadAll(buf)
+	csvBytes, _ := io.ReadAll(buf)
 	return csvBytes
 }
 

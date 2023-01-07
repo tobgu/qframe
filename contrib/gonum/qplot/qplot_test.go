@@ -2,7 +2,6 @@ package qplot_test
 
 import (
 	"crypto/sha256"
-	"io/ioutil"
 	"math"
 	"os"
 	"testing"
@@ -105,11 +104,11 @@ func ExampleQPlot() {
 	// Create a new QPlot
 	qp := qplot.NewQPlot(cfg)
 	// Write the plot to disk
-	panicOnErr(ioutil.WriteFile("testdata/GlobalTemperatures.png", qp.MustBytes(), 0644))
+	panicOnErr(os.WriteFile("testdata/GlobalTemperatures.png", qp.MustBytes(), 0644))
 }
 
 func getHash(t *testing.T, path string) [32]byte {
-	raw, err := ioutil.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	panicOnErr(err)
 	return sha256.Sum256(raw)
 }

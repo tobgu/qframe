@@ -23,6 +23,9 @@ func ParseBool(b []byte) (bool, error) {
 }
 
 func UnsafeBytesToString(in []byte) string {
+	// TODO: There are some linting remarks on this function that should be
+	//       addressed (possible misuse of reflect.SliceHeader/StringHeader)
+	// Changes here need to be tested and profiled closely though.
 	src := *(*reflect.SliceHeader)(unsafe.Pointer(&in))
 	dst := reflect.StringHeader{
 		Data: src.Data,
@@ -39,7 +42,7 @@ func QuotedBytes(s string) []byte {
 	return append(result, byte('"'))
 }
 
-// This is a modified, zero alloc, version of the stdlib function strings.ToUpper.
+// ToUpper is a modified, zero alloc, version of the stdlib function strings.ToUpper.
 // The passed in byte buffer is used to hold the converted string. The returned
 // string is not safe to use when bP goes out of scope and the content may
 // be overwritten upon next call to this function.

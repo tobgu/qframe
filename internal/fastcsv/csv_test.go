@@ -5,7 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -147,11 +147,11 @@ func TestRead(t *testing.T) {
 }
 
 func BenchmarkRead(b *testing.B) {
-	data, err := ioutil.ReadFile("testdata/fl_insurance.csv")
+	data, err := os.ReadFile("testdata/fl_insurance.csv")
 	if err != nil {
 		b.Fatal(err)
 	}
-	quotedData, err := ioutil.ReadFile("testdata/fl_insurance_quoted.csv")
+	quotedData, err := os.ReadFile("testdata/fl_insurance_quoted.csv")
 	if err != nil {
 		b.Fatal(err)
 	}

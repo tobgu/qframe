@@ -37,7 +37,7 @@ func LabelOfFloat(fmt byte, view qframe.FloatView) LabelFunc {
 // LabelOfInt returns an IntView compatible LabelFunc
 func LabelOfInt(view qframe.IntView) LabelFunc {
 	return func(i int) string {
-		return strconv.FormatInt(int64(view.ItemAt(i)), 64)
+		return strconv.FormatInt(int64(view.ItemAt(i)), 10)
 	}
 }
 
