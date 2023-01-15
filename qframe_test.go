@@ -1568,12 +1568,12 @@ func TestQFrame_ToJSONInt(t *testing.T) {
 	}
 }
 
-func TestQFrame_ToFromQBin(t *testing.T) {
-	combinedInput := `INT,FLOAT,BOOL,STRING,ENUM
+const combinedInput = `INT,FLOAT,BOOL,STRING,ENUM
 1,1.23,true,Some value,ABC
 2,4.56,false,Another value,DEF
 `
 
+func TestQFrame_ToFromQBin(t *testing.T) {
 	testCases := []struct {
 		csv      string
 		typeName string
@@ -1651,22 +1651,46 @@ func TestQFrame_FromQBinWithInvalidMagicNumberFails(t *testing.T) {
 	assertErr(t, qf.Err, "invalid magic number")
 }
 
-func TestQFrame_FromQBinUnexpectedErrorDuringRead(t *testing.T) {
-	input := `COL1,COL2
-1,2
-3,4`
+type errorReader struct {
+	io.Reader
+	callCount   int
+	errorAtCall int
+}
 
-	qf := qframe.ReadCSV(strings.NewReader(input))
+func (w *errorReader) Read(bb []byte) (int, error) {
+	w.callCount += 1
+	if w.errorTriggered() {
+		return 0, fmt.Errorf("error reading during test")
+	}
+
+	return w.Reader.Read(bb)
+}
+
+func (w *errorReader) errorTriggered() bool {
+	return w.callCount >= w.errorAtCall
+}
+
+func TestQFrame_FromQBinUnexpectedErrorDuringRead(t *testing.T) {
+	qf := qframe.ReadCSV(strings.NewReader(combinedInput))
 	assertNotErr(t, qf.Err)
 
 	bb := &bytes.Buffer{}
 	err := qf.ToQBin(bb)
 	assertNotErr(t, err)
 
-	// Truncate buffer to cause premature EOF
-	bb.Truncate(bb.Len() - 1)
-	newQf := qframe.ReadQBin(bb)
-	assertErr(t, newQf.Err, "unexpected EOF")
+	// Verify error promotion for all reads
+	for i := 0; true; i++ {
+		ew := &errorReader{Reader: bytes.NewBuffer(bb.Bytes()), errorAtCall: i}
+		qf := qframe.ReadQBin(ew)
+		if !ew.errorTriggered() {
+			assertNotErr(t, qf.Err)
+			return
+		}
+
+		t.Run(fmt.Sprintf("unexpected error at read %d", i), func(t *testing.T) {
+			assertErr(t, qf.Err, "during test")
+		})
+	}
 }
 
 func TestQFrame_FromQBinUnexpectedTrailingBytesDuringRead(t *testing.T) {
@@ -1687,9 +1711,48 @@ func TestQFrame_FromQBinUnexpectedTrailingBytesDuringRead(t *testing.T) {
 	assertErr(t, newQf.Err, "unexpected trailing bytes")
 }
 
+type errorWriter struct {
+	callCount   int
+	errorAtCall int
+}
+
+func (w *errorWriter) Write(bb []byte) (int, error) {
+	w.callCount += 1
+	if w.errorTriggered() {
+		return 0, fmt.Errorf("error writing during test")
+	}
+
+	return len(bb), nil
+}
+
+func (w *errorWriter) errorTriggered() bool {
+	return w.callCount >= w.errorAtCall
+}
+
+func TestQFrame_ToQBinUnexpectedErrorDuringWrite(t *testing.T) {
+	qf := qframe.ReadCSV(strings.NewReader(combinedInput))
+	assertNotErr(t, qf.Err)
+
+	bb := &bytes.Buffer{}
+	err := qf.ToQBin(bb)
+	assertNotErr(t, err)
+
+	// Verify error promotion for all writes
+	for i := 0; true; i++ {
+		ew := &errorWriter{errorAtCall: i}
+		err := qf.ToQBin(ew)
+		if !ew.errorTriggered() {
+			assertNotErr(t, err)
+			return
+		}
+
+		t.Run(fmt.Sprintf("unexpected error at write %d", i), func(t *testing.T) {
+			assertErr(t, err, "during test")
+		})
+	}
+}
+
 // TODO:
-// - Combined
-// - Unexpected error during write
 // - Fix lint issues
 // - Add benchmark, compare to CSV and JSON and profile for bottlenecks
 
