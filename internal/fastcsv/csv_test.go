@@ -114,6 +114,14 @@ func TestRead(t *testing.T) {
 		Title:  "CRLF",
 		Input:  "a,b,c\r\nd,e,f",
 		Wanted: [][]string{{"a", "b", "c"}, {"d", "e", "f"}},
+	}, {
+		Title:  "CRLF with quote in last column",
+		Input:  "\"a\"\r\n\"b\"",
+		Wanted: [][]string{{"a"}, {"b"}},
+	}, {
+		Title:  "CRLF with quote in last column with EOF",
+		Input:  "\"a\"\r\n",
+		Wanted: [][]string{{"a"}},
 	}}
 
 	for _, testCase := range testCases {

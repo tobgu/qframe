@@ -111,6 +111,9 @@ func nextQuotedField(buffer *bufferedReader, delimiter byte) ([]byte, bool, erro
 			if quoteCount%2 != 0 {
 				return buffer.data[start:writeCursor], true, nil
 			}
+		case '\r':
+			// Ignore carriage returns, assume they are followed by a newline
+			continue
 		case '"':
 			quoteCount++
 

@@ -1052,12 +1052,12 @@ func TestQFrame_ReadCSV(t *testing.T) {
 		{
 			name:         "mixed",
 			inputHeaders: []string{"int", "float", "bool", "string"},
-			inputData:    "1,2.5,true,hello\n10,20.5,false,\"bye, bye\"",
+			inputData:    "1,2.5,true,hello\n10,20.5,false,\"bye,\n bye\"",
 			expected: map[string]interface{}{
 				"int":    []int{1, 10},
 				"float":  []float64{2.5, 20.5},
 				"bool":   []bool{true, false},
-				"string": []string{"hello", "bye, bye"}},
+				"string": []string{"hello", "bye,\n bye"}},
 		},
 		{
 			name:         "null string",
@@ -1151,6 +1151,14 @@ func TestQFrame_ReadCSV(t *testing.T) {
 			inputHeaders: []string{"foo", "bar", "foo"},
 			inputData:    "a,b,c",
 			expectedErr:  "Duplicate columns",
+		},
+		{
+			name:         "CRLF combined with quotes",
+			inputHeaders: []string{"foo"},
+			inputData:    "\"a\"\r\n\"b\"\r\n",
+			expected: map[string]interface{}{
+				"foo": []string{"a", "b"},
+			},
 		},
 	}
 
