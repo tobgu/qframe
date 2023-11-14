@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/tobgu/qframe.png)](https://travis-ci.org/tobgu/qframe)
-[![gocover.run](https://gocover.run/github.com/tobgu/qframe.svg?style=flat&tag=1.10)](https://gocover.run?tag=1.10&repo=github.com%2Ftobgu%2Fqframe)
+[![CI Status](https://github.com/tobgu/qframe/actions/workflows/ci.yaml/badge.svg)](https://github.com/tobgu/qframe/actions/workflows/ci.yaml)
+[![Go Coverage](https://github.com/tobgu/qframe/wiki/coverage.svg)](https://raw.githack.com/wiki/tobgu/qframe/coverage.html)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tobgu/qframe)](https://goreportcard.com/report/github.com/tobgu/qframe)
 [![GoDoc](https://godoc.org/github.com/tobgu/qframe?status.svg)](https://godoc.org/github.com/tobgu/qframe)
 
