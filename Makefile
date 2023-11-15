@@ -26,7 +26,7 @@ deps:
 	go get -t ./...
 
 dev-deps: deps
-	go install github.com/mauricelam/genny
+	go install github.com/mauricelam/genny@latest
 	mkdir -p ~/go/bin
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b ~/go/bin v1.55.2
 
