@@ -5,7 +5,7 @@ import (
 	stdcsv "encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"testing"
 
@@ -18,7 +18,7 @@ import (
 
 func genInts(seed int64, size int) []int {
 	result := make([]int, size)
-	rand.Seed(seed)
+	r := rand.New(rand.NewSource(seed))
 	if seed == noSeed {
 		// Sorted slice
 		for ix := range result {
@@ -27,7 +27,7 @@ func genInts(seed int64, size int) []int {
 	} else {
 		// Random slice
 		for ix := range result {
-			result[ix] = rand.Intn(size)
+			result[ix] = r.Intn(size)
 		}
 	}
 
@@ -247,7 +247,7 @@ func csvBytes(rowCount int) []byte {
 	}
 	writer.Flush()
 
-	csvBytes, _ := ioutil.ReadAll(buf)
+	csvBytes, _ := io.ReadAll(buf)
 	return csvBytes
 }
 
@@ -262,7 +262,7 @@ func csvEnumBytes(rowCount, cardinality int) []byte {
 	}
 	writer.Flush()
 
-	csvBytes, _ := ioutil.ReadAll(buf)
+	csvBytes, _ := io.ReadAll(buf)
 	return csvBytes
 }
 

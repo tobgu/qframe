@@ -2,7 +2,6 @@ package qplot_test
 
 import (
 	"crypto/sha256"
-	"io/ioutil"
 	"math"
 	"os"
 	"testing"
@@ -53,7 +52,7 @@ func ExampleQPlot() {
 	// data so we convert the timestamp to epoch time.
 	qf = qf.Apply(qframe.Instruction{
 		Fn: func(ts *string) int {
-			tm, err := time.Parse("2006-02-01", *ts)
+			tm, err := time.Parse("2006-01-02", *ts)
 			if err != nil {
 				panic(err)
 			}
@@ -105,11 +104,11 @@ func ExampleQPlot() {
 	// Create a new QPlot
 	qp := qplot.NewQPlot(cfg)
 	// Write the plot to disk
-	panicOnErr(ioutil.WriteFile("testdata/GlobalTemperatures.png", qp.MustBytes(), 0644))
+	panicOnErr(os.WriteFile("testdata/GlobalTemperatures.png", qp.MustBytes(), 0644))
 }
 
 func getHash(t *testing.T, path string) [32]byte {
-	raw, err := ioutil.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	panicOnErr(err)
 	return sha256.Sum256(raw)
 }

@@ -235,10 +235,10 @@ func (qf QFrame) Contains(colName string) bool {
 // Filters are applied via depth first traversal of the provided filter clause from left
 // to right. Use the following rules of thumb for best performance when constructing filters:
 //
-// 1. Cheap filters (eg. integer comparisons, ...) should go to the left of more
-//    expensive ones (eg. string regex, ...).
-// 2. High impact filters (eg. filters that you expect will drop a lot of data) should go to
-//    the left of low impact filters.
+//  1. Cheap filters (eg. integer comparisons, ...) should go to the left of more
+//     expensive ones (eg. string regex, ...).
+//  2. High impact filters (eg. filters that you expect will drop a lot of data) should go to
+//     the left of low impact filters.
 //
 // Time complexity O(m * n) where m = number of columns to filter by, n = number of rows.
 func (qf QFrame) Filter(clause FilterClause) QFrame {
@@ -991,7 +991,8 @@ func (qf QFrame) functionType(name string) (types.FunctionType, error) {
 // Column count, names and types must be the same for all involved QFrames.
 //
 // NB! This functionality is very much work in progress and should not be used yet.
-//     A lot of the implementation is still missing and what is currently there will be rewritten.
+//
+//	A lot of the implementation is still missing and what is currently there will be rewritten.
 //
 // Time complexity: ???
 func (qf QFrame) Append(qff ...QFrame) QFrame {
@@ -1249,7 +1250,7 @@ func Doc() string {
 		types.Float:  fcolumn.Doc(),
 		types.Int:    icolumn.Doc(),
 		types.String: scolumn.Doc()} {
-		result += fmt.Sprintf("%s\n%s\n%s\n", strings.Title(string(typeName)), strings.Repeat("-", len(typeName)), docString)
+		result += fmt.Sprintf("%s\n%s\n%s\n", string(typeName), strings.Repeat("-", len(typeName)), docString)
 	}
 
 	return result

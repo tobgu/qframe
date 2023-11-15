@@ -26,9 +26,9 @@ deps:
 	go get -t ./...
 
 dev-deps: deps
-	go get github.com/mauricelam/genny
+	go install github.com/mauricelam/genny
 	mkdir -p ~/go/bin
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b ~/go/bin v1.20.0
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b ~/go/bin v1.55.2
 
 qplot_examples:
 	cd contrib/gonum/qplot/examples \

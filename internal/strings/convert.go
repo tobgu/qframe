@@ -1,7 +1,6 @@
 package strings
 
 import (
-	"reflect"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
@@ -23,13 +22,7 @@ func ParseBool(b []byte) (bool, error) {
 }
 
 func UnsafeBytesToString(in []byte) string {
-	src := *(*reflect.SliceHeader)(unsafe.Pointer(&in))
-	dst := reflect.StringHeader{
-		Data: src.Data,
-		Len:  src.Len,
-	}
-	s := *(*string)(unsafe.Pointer(&dst))
-	return s
+	return unsafe.String(unsafe.SliceData(in), len(in))
 }
 
 func QuotedBytes(s string) []byte {
