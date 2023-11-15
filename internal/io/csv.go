@@ -19,7 +19,7 @@ type bytePointer struct {
 	end   uint32
 }
 
-//For reading  CSV
+// For reading  CSV
 type CSVConfig struct {
 	EmptyNull              bool
 	IgnoreEmptyLines       bool
@@ -32,7 +32,7 @@ type CSVConfig struct {
 	MissingColumnNameAlias string
 }
 
-//For writing CSV
+// For writing CSV
 type ToCsvConfig struct {
 	Header bool
 }
@@ -164,8 +164,8 @@ func resizeColBytes(bytes [][]byte, currentRowCount, sizeHint int) {
 
 func renameDuplicateColumns(headers []string) []string {
 	headersMap := make(map[string]int)
-	// loop through column names and add the index of first occurence to the  headersMap
-	// any occurance after first is considered duplicate.
+	// loop through column names and add the index of first occurrence to the  headersMap
+	// any occurrence after first is considered duplicate.
 	for i, h := range headers {
 		_, ok := headersMap[h]
 		if !ok {
