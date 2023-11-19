@@ -1,3 +1,7 @@
+### 2023-11-19 v0.4.0
+* Modernize codebase, update to Go 1.20+.
+* Fix #44, ignore <CR> when reading quoted fields.
+
 ### 2019-10-13 v0.3.0
 * Backwards incompatible change of errors package name to qerrors to support code generator.
 * Some performance improvements to grouping since v0.2.0.
