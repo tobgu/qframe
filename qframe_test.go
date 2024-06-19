@@ -1475,6 +1475,60 @@ func TestQFrame_ReadJSON(t *testing.T) {
 	}
 }
 
+func TestQFrame_ToCSV_ColOrder(t *testing.T) {
+	table := []struct {
+		input    string
+		config   []string
+		expected string
+		err      string
+	}{
+		{
+			input: `COL1,COL2,COL3
+1a,2a,3a
+1b,2b,3b`,
+			config: []string{"COL1", "COL3", "COL2"},
+			expected: `COL1,COL3,COL2
+1a,3a,2a
+1b,3b,2b`,
+			err: "",
+		},
+		{
+			input: `COL1,COL2,COL3
+1a,2a,3a
+1b,2b,3b`,
+			config:   []string{"COL1", "COLX", "COL2"},
+			err:      "COLX: column does not exist in QFrame",
+			expected: "",
+		},
+		{
+			input: `COL1,COL2,COL3
+1a,2a,3a
+1b,2b,3b`,
+			config:   []string{"COL1", "COL3", "COL2", "COL4"},
+			err:      "wrong number of columns: expected: 3",
+			expected: "",
+		},
+	}
+
+	for i, tc := range table {
+		t.Run(fmt.Sprintf("ToCSV (ordered) %d", i), func(t *testing.T) {
+			in := qframe.ReadCSV(strings.NewReader(tc.input))
+			assertNotErr(t, in.Err)
+			buf := new(bytes.Buffer)
+			err := in.ToCSV(buf, csv.Columns(tc.config))
+			if tc.err == "" {
+				assertNotErr(t, err)
+				output := strings.TrimSpace(buf.String())
+				if output != tc.expected {
+					t.Errorf("CSV columns not in order. \nGot:\n|%s|\nExpected:\n|%s|", output, tc.expected)
+				}
+			} else {
+				assertErr(t, err, tc.err)
+			}
+		})
+	}
+}
+
 func TestQFrame_ToCSV(t *testing.T) {
 	table := []struct {
 		input    map[string]interface{}

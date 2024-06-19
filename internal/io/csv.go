@@ -34,7 +34,8 @@ type CSVConfig struct {
 
 // For writing CSV
 type ToCsvConfig struct {
-	Header bool
+	Header  bool
+	Columns []string
 }
 
 func isEmptyLine(fields [][]byte) bool {

@@ -1106,8 +1106,26 @@ func (qf QFrame) ToCSV(writer io.Writer, confFuncs ...csv.ToConfigFunc) error {
 		return qerrors.Propagate("ToCSV", qf.Err)
 	}
 
-	row := make([]string, 0, len(qf.columns))
-	for _, s := range qf.columns {
+	var iterCols []namedColumn
+	if conf.Columns != nil {
+		if len(conf.Columns) != len(qf.columns) {
+			return qerrors.New("ToCSV", fmt.Sprintf("wrong number of columns: expected: %d", len(qf.columns)))
+		}
+		iterCols = make([]namedColumn, 0, len(qf.columns))
+		for i := 0; i < len(conf.Columns); i++ {
+			cname := conf.Columns[i]
+			if _, ok := qf.columnsByName[cname]; !ok {
+				return qerrors.New("ToCSV", fmt.Sprintf("%s: column does not exist in QFrame", cname))
+			} else {
+				iterCols = append(iterCols, qf.columnsByName[conf.Columns[i]])
+			}
+		}
+	} else {
+		iterCols = qf.columns
+	}
+
+	row := make([]string, 0, len(iterCols))
+	for _, s := range iterCols {
 		row = append(row, s.name)
 	}
 	columns := make([]column.Column, 0, len(qf.columns))
