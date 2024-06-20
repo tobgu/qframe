@@ -1114,10 +1114,10 @@ func (qf QFrame) ToCSV(writer io.Writer, confFuncs ...csv.ToConfigFunc) error {
 		iterCols = make([]namedColumn, 0, len(qf.columns))
 		for i := 0; i < len(conf.Columns); i++ {
 			cname := conf.Columns[i]
-			if _, ok := qf.columnsByName[cname]; !ok {
+			if col, ok := qf.columnsByName[cname]; !ok {
 				return qerrors.New("ToCSV", fmt.Sprintf("%s: column does not exist in QFrame", cname))
 			} else {
-				iterCols = append(iterCols, qf.columnsByName[conf.Columns[i]])
+				iterCols = append(iterCols, col)
 			}
 		}
 	} else {
