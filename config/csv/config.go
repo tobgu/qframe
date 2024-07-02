@@ -141,3 +141,10 @@ func Header(header bool) ToConfigFunc {
 		c.Header = header
 	}
 }
+
+// Columns holds the order to write CSV columns.
+func Columns(cols []string) ToConfigFunc {
+	return func(c *ToConfig) {
+		c.Columns = cols
+	}
+}
